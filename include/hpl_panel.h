@@ -67,14 +67,17 @@ typedef struct HPL_S_panel
    struct HPL_S_palg   * algo;          /* ptr to the algo parameters */
    struct HPL_S_pmat   * pmat;         /* ptr to the local array info */
    double              * A;              /* ptr to trailing part of A */
+   double              * dA;              /* ptr to trailing part of A */
    double              * WORK;                          /* work space */
    double              * dWORK;             /* device-copy work space */
    double              * L2;                              /* ptr to L */
    double              * L1;       /* ptr to jb x jb upper block of A */
+   double              * dL2;                              /* ptr to L */
+   double              * dL1;       /* ptr to jb x jb upper block of A */
    double              * DPIV;    /* ptr to replicated jb pivot array */
-   double              * dDPIV;/* devptr to replicated jb pivot array */
    double              * DINFO;      /* ptr to replicated scalar info */
    double              * U;                               /* ptr to U */
+   double              * dU;                               /* ptr to U */
    int                 * IWORK;     /* integer workspace for swapping */
    void                * * * buffers[2];   /* buffers for panel bcast */
    int                 counts [2];          /* counts for panel bcast */
@@ -92,12 +95,14 @@ typedef struct HPL_S_panel
    int                 ii;   /* local row index of trailing part of A */
    int                 jj;   /* local col index of trailing part of A */
    int                 lda;           /* local leading dim of array A */
+   int                 dlda;           /* local leading dim of array A */
    int                 prow;  /* proc. row owning 1st row of trail. A */
    int                 pcol;  /* proc. col owning 1st col of trail. A */
    int                 msgid;           /* message id for panel bcast */
    int                 ldl2;         /* local leading dim of array L2 */
    int                 len;      /* length of the buffer to broadcast */
    unsigned int        max_work_size;   /* largest size of WORK space */
+   unsigned int        max_A_size;   /* largest size of A space */
    unsigned int        free_work_now;         /* should we deallocate */
 #ifdef HPL_CALL_VSIPL
    vsip_block_d        * Ablock;                           /* A block */

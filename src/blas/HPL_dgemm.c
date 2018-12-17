@@ -406,27 +406,27 @@ void HPL_dgemm
  *
  * ---------------------------------------------------------------------
  */
-#ifdef ROCM
-   rocblas_operation transA, transB;
+// #ifdef ROCM
+//    rocblas_operation transA, transB;
 
-   if( ORDER == HplColumnMajor )
-   {
-      transA = ( TRANSA == HplNoTrans ? rocblas_operation_none : rocblas_operation_transpose );
-      transB = ( TRANSB == HplNoTrans ? rocblas_operation_none : rocblas_operation_transpose );
+//    if( ORDER == HplColumnMajor )
+//    {
+//       transA = ( TRANSA == HplNoTrans ? rocblas_operation_none : rocblas_operation_transpose );
+//       transB = ( TRANSB == HplNoTrans ? rocblas_operation_none : rocblas_operation_transpose );
 
-      rocblas_dgemm(handle, transA, transB, M, N, K, &ALPHA,
-                    A, LDA, B, LDB, &BETA, C, LDC);
-   }
-   else
-   {
-      transA = ( TRANSB == HplNoTrans ? rocblas_operation_none : rocblas_operation_transpose );
-      transB = ( TRANSA == HplNoTrans ? rocblas_operation_none : rocblas_operation_transpose );
+//       rocblas_dgemm(handle, transA, transB, M, N, K, &ALPHA,
+//                     A, LDA, B, LDB, &BETA, C, LDC);
+//    }
+//    else
+//    {
+//       transA = ( TRANSB == HplNoTrans ? rocblas_operation_none : rocblas_operation_transpose );
+//       transB = ( TRANSA == HplNoTrans ? rocblas_operation_none : rocblas_operation_transpose );
 
-      rocblas_dgemm(handle, transB, transA, N, M, K, &ALPHA,
-                    B, LDB, A, LDA, &BETA, C, LDC);
-   }
-   return;
-#endif
+//       rocblas_dgemm(handle, transB, transA, N, M, K, &ALPHA,
+//                     B, LDB, A, LDA, &BETA, C, LDC);
+//    }
+//    return;
+// #endif
 
 #ifdef HPL_CALL_CBLAS
    cblas_dgemm( ORDER, TRANSA, TRANSB, M, N, K, ALPHA, A, LDA, B, LDB,

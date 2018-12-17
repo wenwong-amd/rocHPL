@@ -1,36 +1,36 @@
-/* 
- * -- High Performance Computing Linpack Benchmark (HPL)                
- *    HPL - 2.2 - February 24, 2016                          
- *    Antoine P. Petitet                                                
- *    University of Tennessee, Knoxville                                
- *    Innovative Computing Laboratory                                 
- *    (C) Copyright 2000-2008 All Rights Reserved                       
- *                                                                      
- * -- Copyright notice and Licensing terms:                             
- *                                                                      
+/*
+ * -- High Performance Computing Linpack Benchmark (HPL)
+ *    HPL - 2.2 - February 24, 2016
+ *    Antoine P. Petitet
+ *    University of Tennessee, Knoxville
+ *    Innovative Computing Laboratory
+ *    (C) Copyright 2000-2008 All Rights Reserved
+ *
+ * -- Copyright notice and Licensing terms:
+ *
  * Redistribution  and  use in  source and binary forms, with or without
  * modification, are  permitted provided  that the following  conditions
- * are met:                                                             
- *                                                                      
+ * are met:
+ *
  * 1. Redistributions  of  source  code  must retain the above copyright
- * notice, this list of conditions and the following disclaimer.        
- *                                                                      
+ * notice, this list of conditions and the following disclaimer.
+ *
  * 2. Redistributions in binary form must reproduce  the above copyright
  * notice, this list of conditions,  and the following disclaimer in the
- * documentation and/or other materials provided with the distribution. 
- *                                                                      
+ * documentation and/or other materials provided with the distribution.
+ *
  * 3. All  advertising  materials  mentioning  features  or  use of this
- * software must display the following acknowledgement:                 
+ * software must display the following acknowledgement:
  * This  product  includes  software  developed  at  the  University  of
- * Tennessee, Knoxville, Innovative Computing Laboratory.             
- *                                                                      
+ * Tennessee, Knoxville, Innovative Computing Laboratory.
+ *
  * 4. The name of the  University,  the name of the  Laboratory,  or the
  * names  of  its  contributors  may  not  be used to endorse or promote
  * products  derived   from   this  software  without  specific  written
- * permission.                                                          
- *                                                                      
- * -- Disclaimer:                                                       
- *                                                                      
+ * permission.
+ *
+ * -- Disclaimer:
+ *
  * THIS  SOFTWARE  IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES,  INCLUDING,  BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -41,9 +41,9 @@
  * DATA OR PROFITS; OR BUSINESS INTERRUPTION)  HOWEVER CAUSED AND ON ANY
  * THEORY OF LIABILITY, WHETHER IN CONTRACT,  STRICT LIABILITY,  OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * ---------------------------------------------------------------------
- */ 
+ */
 /*
  * Include files
  */
@@ -64,7 +64,7 @@ void HPL_pdgesvK2
    HPL_T_pmat *                     A;
 #endif
 {
-/* 
+/*
  * Purpose
  * =======
  *
@@ -90,12 +90,12 @@ void HPL_pdgesvK2
  *         array information.
  *
  * ---------------------------------------------------------------------
- */ 
+ */
 /*
  * .. Local Variables ..
  */
    HPL_T_panel                * p, * * panel = NULL;
-   HPL_T_UPD_FUN              HPL_pdupdate; 
+   HPL_T_UPD_FUN              HPL_pdupdate;
    int                        N, depth, icurcol=0, j, jb, jj=0, jstart,
                               k, mycol, n, nb, nn, npcol, nq,
                               tag=MSGID_BEGIN_FACT, test=HPL_KEEP_TESTING;
@@ -151,6 +151,10 @@ void HPL_pdgesvK2
 /*
  * Factor and broadcast k-th panel
  */
+      hipMemcpy2D(panel[k]->A,  panel[k]->lda*sizeof(double),
+                       panel[k]->dA, panel[k]->dlda*sizeof(double),
+                       panel[k]->mp*sizeof(double), panel[k]->jb,
+                       hipMemcpyDeviceToHost);
       HPL_pdfact(         panel[k] );
       (void) HPL_binit(   panel[k] );
       do
@@ -174,7 +178,7 @@ void HPL_pdgesvK2
       n = N - j; jb = Mmin( n, nb );
 #ifdef HPL_PROGRESS_REPORT
       /* if this is process 0,0 and not the first panel */
-      if ( GRID->myrow == 0 && mycol == 0 && j > 0 ) 
+      if ( GRID->myrow == 0 && mycol == 0 && j > 0 )
       {
           time = HPL_timer_walltime() - start_time;
           gflops = 2.0*(N*(double)N*N - n*(double)n*n)/3.0/(time > 0.0 ? time : 1e-6)/1e9;
@@ -190,16 +194,58 @@ void HPL_pdgesvK2
 
       if( mycol == icurcol )
       {
+         rocblas_set_stream(handle, dataStream);
+
          nn = HPL_numrocI( jb, j, nb, nb, mycol, 0, npcol );
-         for( k = 0; k < depth; k++ )   /* partial updates 0..depth-1 */
+         for( k = 0; k < depth; k++ )  { /* partial updates 0..depth-1 */
+            hipMemcpy2DAsync(panel[k]->dL1, panel[k]->jb*sizeof(double),
+                             panel[k]->L1,  panel[k]->jb*sizeof(double),
+                             panel[k]->jb*sizeof(double), panel[k]->jb,
+                             hipMemcpyHostToDevice, dataStream);
             (void) HPL_pdupdate( NULL, NULL, panel[k], nn );
+         }
+         hipEventRecord(panelUpdate, dataStream);
+         hipMemcpy2DAsync(panel[depth]->A,  panel[depth]->lda*sizeof(double),
+                          panel[depth]->dA, panel[depth]->dlda*sizeof(double),
+                          panel[depth]->mp*sizeof(double), panel[depth]->jb,
+                          hipMemcpyDeviceToHost, dataStream);
+         hipEventRecord(panelCopy, 0);
+
+         rocblas_set_stream(handle, computeStream);
+         hipStreamWaitEvent(computeStream,panelUpdate,0);
+
+         /* Queue up finishing the latest update */
+         HPL_pdupdate( NULL, NULL, panel[0], nq-nn );
+
+
+         //while computing, factor the current panel
+         hipEventSynchronize(panelCopy);
          HPL_pdfact(       panel[depth] );    /* factor current panel */
+         (void) HPL_binit(   panel[depth] );
+         do
+         { (void) HPL_bcast( panel[depth], &test ); }
+         while( test != HPL_SUCCESS );
+         (void) HPL_bwait(   panel[depth] );
       }
-      else { nn = 0; }
-          /* Finish the latest update and broadcast the current panel */
-      (void) HPL_binit( panel[depth] );
-      HPL_pdupdate( panel[depth], &test, panel[0], nq-nn );
-      (void) HPL_bwait( panel[depth] );
+      else {
+         nn = 0;
+
+         hipMemcpy2DAsync(panel[0]->dL1, panel[0]->jb*sizeof(double),
+                          panel[0]->L1,  panel[0]->jb*sizeof(double),
+                          panel[0]->jb*sizeof(double), panel[0]->jb,
+                          hipMemcpyHostToDevice, computeStream);
+
+         /* Queue up finishing the latest update */
+         HPL_pdupdate( NULL, NULL, panel[0], nq-nn );
+
+         /* broadcast current panel */
+         (void) HPL_binit(   panel[depth] );
+         do
+         { (void) HPL_bcast( panel[depth], &test ); }
+         while( test != HPL_SUCCESS );
+         (void) HPL_bwait(   panel[depth] );
+      }
+      hipDeviceSynchronize();
 /*
  * Circular  of the panel pointers:
  * xtmp = x[0]; for( k=0; k < depth; k++ ) x[k] = x[k+1]; x[d] = xtmp;

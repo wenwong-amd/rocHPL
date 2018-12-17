@@ -228,15 +228,15 @@ void HPL_pdrpanrlN
  */
       if( curr != 0 )
       {
-#ifdef ROCM
-         hipMemcpy2D( Mptr( A, 0, ioff, lda ), lda*sizeof(double),
-                      Mptr( L1, 0, ioff, n0 ), n0*sizeof(double),
-                     ioff*sizeof(double), jb,
-                     hipMemcpyDeviceToDevice);
-#else
+// #ifdef ROCM
+//          hipMemcpy2D( Mptr( A, 0, ioff, lda ), lda*sizeof(double),
+//                       Mptr( L1, 0, ioff, n0 ), n0*sizeof(double),
+//                      ioff*sizeof(double), jb,
+//                      hipMemcpyDeviceToDevice);
+// #else
          HPL_dlacpy( ioff, jb, Mptr( L1, 0, ioff, n0 ), n0,
                      Mptr( A, 0, ioff, lda ), lda );
-#endif
+// #endif
       }
       jj += jb; jb = Mmin( n, nb );
 

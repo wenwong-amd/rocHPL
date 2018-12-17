@@ -116,7 +116,14 @@ void HPL_pdupdateNN
 #ifdef HPL_DETAILED_TIMING
    HPL_ptimer( HPL_TIMING_UPDATE );
 #endif
-   nb = PANEL->nb; jb = PANEL->jb; n = PANEL->nq; lda = PANEL->lda;
+   nb = PANEL->nb; jb = PANEL->jb; n = PANEL->nq;
+
+#ifdef ROCM
+   lda = PANEL->lda;
+#else
+   lda = PANEL->dlda;
+#endif
+
    if( NN >= 0 ) n = Mmin( NN, n );
 /*
  * There is nothing to update, enforce the panel broadcast.
@@ -142,7 +149,16 @@ void HPL_pdupdateNN
  */
    if( PANEL->grid->nprow == 1 )
    {
-      Aptr = PANEL->A;       L2ptr = PANEL->L2;   L1ptr = PANEL->L1;
+#ifdef ROCM
+      Aptr = PANEL->dA;
+      L1ptr = PANEL->dL1;
+      L2ptr = PANEL->dL2;
+#else
+      Aptr = PANEL->A;
+      L1ptr = PANEL->L1;
+      L2ptr = PANEL->L2;
+#endif
+
       ldl2 = PANEL->ldl2;    dpiv  = PANEL->DPIV; ipiv  = PANEL->IWORK;
       mp   = PANEL->mp - jb; iroff = PANEL->ii;   nq0   = 0;
 #ifdef HPL_CALL_VSIPL
@@ -180,8 +196,15 @@ void HPL_pdupdateNN
 #else
          HPL_dlaswp00N( jb, nn, Aptr, lda, ipiv );
 #endif
+#ifdef ROCM
+        const double one = 1.0;
+        rocblas_dtrsm(handle, rocblas_side_left, rocblas_fill_lower,
+                      rocblas_operation_none, rocblas_diagonal_unit,
+                      jb, nn, &one, L1ptr, jb, Aptr, lda);
+#else
          HPL_dtrsm( HplColumnMajor, HplLeft, HplLower, HplNoTrans,
                     HplUnit, jb, nn, HPL_rone, L1ptr, jb, Aptr, lda );
+#endif
 #ifdef HPL_CALL_VSIPL
 /*
  * Create the matrix subviews
@@ -197,9 +220,19 @@ void HPL_pdupdateNN
          (void) vsip_mdestroy_d( Av1 );
          (void) vsip_mdestroy_d( Uv1 );
 #else
+
+#ifdef ROCM
+       const double mone = -1.0;
+       rocblas_dgemm(handle, rocblas_operation_none, rocblas_operation_none,
+                     mp, nn, jb, &mone,
+                     L2ptr, ldl2, Aptr, lda, &one,
+                     Mptr( Aptr, jb, 0, lda ), lda );
+#else
          HPL_dgemm( HplColumnMajor, HplNoTrans, HplNoTrans, mp, nn,
                     jb, -HPL_rone, L2ptr, ldl2, Aptr, lda, HPL_rone,
                     Mptr( Aptr, jb, 0, lda ), lda );
+#endif
+
 #endif
          Aptr = Mptr( Aptr, 0, nn, lda ); nq0 += nn;
 
@@ -217,8 +250,17 @@ void HPL_pdupdateNN
 #else
          HPL_dlaswp00N( jb, nn, Aptr, lda, ipiv );
 #endif
+
+#ifdef ROCM
+        const double one = 1.0;
+        rocblas_dtrsm(handle, rocblas_side_left, rocblas_fill_lower,
+                      rocblas_operation_none, rocblas_diagonal_unit,
+                      jb, nn, &one, L1ptr, jb, Aptr, lda);
+#else
          HPL_dtrsm( HplColumnMajor, HplLeft, HplLower, HplNoTrans,
                     HplUnit, jb, nn, HPL_rone, L1ptr, jb, Aptr, lda );
+#endif
+
 #ifdef HPL_CALL_VSIPL
 /*
  * Create the matrix subviews
@@ -234,9 +276,19 @@ void HPL_pdupdateNN
          (void) vsip_mdestroy_d( Av1 );
          (void) vsip_mdestroy_d( Uv1 );
 #else
+
+#ifdef ROCM
+       const double mone = -1.0;
+       rocblas_dgemm(handle, rocblas_operation_none, rocblas_operation_none,
+                     mp, nn, jb, &mone,
+                     L2ptr, ldl2, Aptr, lda, &one,
+                     Mptr( Aptr, jb, 0, lda ), lda );
+#else
          HPL_dgemm( HplColumnMajor, HplNoTrans, HplNoTrans, mp, nn,
                     jb, -HPL_rone, L2ptr, ldl2, Aptr, lda, HPL_rone,
                     Mptr( Aptr, jb, 0, lda ), lda );
+#endif
+
 #endif
       }
 #ifdef HPL_CALL_VSIPL
@@ -427,12 +479,15 @@ void HPL_pdupdateNN
 #endif
    }
 
+#ifdef ROCM
+   PANEL->dA = Mptr( PANEL->dA, 0, n, lda ); PANEL->nq -= n; PANEL->jj += n;
+#else
    PANEL->A = Mptr( PANEL->A, 0, n, lda ); PANEL->nq -= n; PANEL->jj += n;
+#endif
 /*
  * return the outcome of the probe  (should always be  HPL_SUCCESS,  the
  * panel broadcast is enforced in that routine).
  */
-   hipDeviceSynchronize();
    if( PBCST != NULL ) *IFLAG = test;
 #ifdef HPL_DETAILED_TIMING
    HPL_ptimer( HPL_TIMING_UPDATE );

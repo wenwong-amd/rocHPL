@@ -9,6 +9,9 @@ rocblas_handle handle;
 */
 hipStream_t computeStream, dataStream;
 
+hipEvent_t panelUpdate;
+hipEvent_t panelCopy;
+
 int stringCmp( const void *a, const void *b)
 {
   char *c_a = (char*) a;
@@ -72,6 +75,9 @@ void  HPL_InitGPU(){
 
   hipStreamCreate(&computeStream);
   hipStreamCreate(&dataStream);
+
+  hipEventCreate(&panelUpdate);
+  hipEventCreate(&panelCopy);
 }
 
 

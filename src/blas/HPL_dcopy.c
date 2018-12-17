@@ -104,10 +104,10 @@ void HPL_dcopy
  *
  * ---------------------------------------------------------------------
  */
-#ifdef ROCM
-  rocblas_dcopy(handle, N, X, INCX, Y, INCY);
-  return;
-#endif
+// #ifdef ROCM
+//   rocblas_dcopy(handle, N, X, INCX, Y, INCY);
+//   return;
+// #endif
 
 #ifdef HPL_CALL_CBLAS
    cblas_dcopy( N, X, INCX, Y, INCY );

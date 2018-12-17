@@ -92,10 +92,10 @@ void HPL_idamax
  *
  * ---------------------------------------------------------------------
  */
-#ifdef ROCM
-   rocblas_idamax(handle, N, X, INCX, result);
-   return;
-#endif
+// #ifdef ROCM
+//    rocblas_idamax(handle, N, X, INCX, result);
+//    return;
+// #endif
 
 #ifdef HPL_CALL_CBLAS
    *result = (cblas_idamax( N, X, INCX ));

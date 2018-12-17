@@ -69,6 +69,9 @@ typedef struct {
 extern rocblas_handle handle;
 extern hipStream_t computeStream;
 extern hipStream_t dataStream;
+
+extern hipEvent_t panelUpdate;
+extern hipEvent_t panelCopy;
 #endif
 
 #if __cplusplus

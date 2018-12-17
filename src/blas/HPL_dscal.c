@@ -99,10 +99,10 @@ void HPL_dscal
  *
  * ---------------------------------------------------------------------
  */
-#ifdef ROCM
-   rocblas_dscal(handle, N, &ALPHA, X, INCX);
-   return;
-#endif
+// #ifdef ROCM
+//    rocblas_dscal(handle, N, &ALPHA, X, INCX);
+//    return;
+// #endif
 
 #ifdef HPL_CALL_CBLAS
    cblas_dscal( N, ALPHA, X, INCX );

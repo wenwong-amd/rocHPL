@@ -856,28 +856,28 @@ void HPL_dtrsm
  *
  * ---------------------------------------------------------------------
  */
-#ifdef ROCM
-   rocblas_side side = ( SIDE  == HplLeft ? rocblas_side_left : rocblas_side_right );
-   rocblas_fill uplo;
-   rocblas_operation transA;
+// #ifdef ROCM
+//    rocblas_side side = ( SIDE  == HplLeft ? rocblas_side_left : rocblas_side_right );
+//    rocblas_fill uplo;
+//    rocblas_operation transA;
 
-   if( ORDER == HplColumnMajor )
-   {
-      uplo   = ( UPLO  == HplUpper   ? rocblas_fill_upper     : rocblas_fill_lower );
-      transA = ( TRANS == HplNoTrans ? rocblas_operation_none : rocblas_operation_transpose );
-   }
-   else
-   {
-      uplo   = ( UPLO  == HplUpper   ? rocblas_fill_lower          : rocblas_fill_upper     );
-      transA = ( TRANS == HplNoTrans ? rocblas_operation_transpose : rocblas_operation_none );
-   }
+//    if( ORDER == HplColumnMajor )
+//    {
+//       uplo   = ( UPLO  == HplUpper   ? rocblas_fill_upper     : rocblas_fill_lower );
+//       transA = ( TRANS == HplNoTrans ? rocblas_operation_none : rocblas_operation_transpose );
+//    }
+//    else
+//    {
+//       uplo   = ( UPLO  == HplUpper   ? rocblas_fill_lower          : rocblas_fill_upper     );
+//       transA = ( TRANS == HplNoTrans ? rocblas_operation_transpose : rocblas_operation_none );
+//    }
 
-   rocblas_diagonal diag = ( DIAG == HplNonUnit ? rocblas_diagonal_non_unit : rocblas_diagonal_unit );
+//    rocblas_diagonal diag = ( DIAG == HplNonUnit ? rocblas_diagonal_non_unit : rocblas_diagonal_unit );
 
-   rocblas_dtrsm(handle, side, uplo, transA, diag,
-                 M, N, &ALPHA, A, LDA, B, LDB);
-   return;
-#endif
+//    rocblas_dtrsm(handle, side, uplo, transA, diag,
+//                  M, N, &ALPHA, A, LDA, B, LDB);
+//    return;
+// #endif
 
 #ifdef HPL_CALL_CBLAS
    cblas_dtrsm( ORDER, SIDE, UPLO, TRANS, DIAG, M, N, ALPHA, A, LDA, B, LDB );

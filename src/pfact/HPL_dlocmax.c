@@ -131,11 +131,11 @@ void HPL_dlocmax
  * WORK[2] := corresponding global row index,
  * WORK[3] := coordinate of process owning this max.
  */
-#ifdef ROCM
-      hipMemcpy(WORK, A+ilindx, 1*sizeof(double), hipMemcpyDeviceToHost);
-#else
+// #ifdef ROCM
+//       hipMemcpy(WORK, A+ilindx, 1*sizeof(double), hipMemcpyDeviceToHost);
+// #else
       WORK[0] = A[ilindx];
-#endif
+// #endif
       WORK[1] = (double)(ilindx);
       WORK[2] = (double)(igindx);  WORK[3] = (double)(myrow);
    }

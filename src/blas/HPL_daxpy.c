@@ -111,10 +111,10 @@ void HPL_daxpy
  *
  * ---------------------------------------------------------------------
  */
-#ifdef ROCM
-   rocblas_daxpy(handle, N, &ALPHA, X, INCX, Y, INCY);
-   return;
-#endif
+// #ifdef ROCM
+//    rocblas_daxpy(handle, N, &ALPHA, X, INCX, Y, INCY);
+//    return;
+// #endif
 
 #ifdef HPL_CALL_CBLAS
    cblas_daxpy( N, ALPHA, X, INCX, Y, INCY );

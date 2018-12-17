@@ -224,21 +224,21 @@ void HPL_dgemv
  *
  * ---------------------------------------------------------------------
  */
-#ifdef ROCM
-   rocblas_operation transA;
+// #ifdef ROCM
+//    rocblas_operation transA;
 
-   if( ORDER == HplColumnMajor )
-   {
-      transA = ( TRANS == HplNoTrans ? rocblas_operation_none : rocblas_operation_transpose );
-   }
-   else
-   {
-      transA = ( TRANS == HplNoTrans ? rocblas_operation_transpose : rocblas_operation_none );
-   }
+//    if( ORDER == HplColumnMajor )
+//    {
+//       transA = ( TRANS == HplNoTrans ? rocblas_operation_none : rocblas_operation_transpose );
+//    }
+//    else
+//    {
+//       transA = ( TRANS == HplNoTrans ? rocblas_operation_transpose : rocblas_operation_none );
+//    }
 
-   rocblas_dgemv(handle, transA, M, N, &ALPHA, A, LDA, X, INCX, &BETA, Y, INCY );
-   return;
-#endif
+//    rocblas_dgemv(handle, transA, M, N, &ALPHA, A, LDA, X, INCX, &BETA, Y, INCY );
+//    return;
+// #endif
 
 #ifdef HPL_CALL_CBLAS
    cblas_dgemv( ORDER, TRANS, M, N, ALPHA, A, LDA, X, INCX, BETA, Y, INCY );
