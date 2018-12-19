@@ -122,7 +122,7 @@ void HPL_dlocmax
       myrow  = PANEL->grid->myrow;
       nprow  = PANEL->grid->nprow;
       nb     = PANEL->nb;
-      HPL_idamax( N, A, 1, &ilindx);
+      ilindx = HPL_idamax( N, A, 1);
       kk     = PANEL->ii + II + ( ilindx );
       Mindxl2g( igindx, kk, nb, nb, myrow, 0, nprow );
 /*

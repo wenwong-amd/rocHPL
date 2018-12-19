@@ -133,6 +133,7 @@ void HPL_pdtest
                               BnormI, resid0, resid1;
    double                     * Bptr;
    void                       * vptr = NULL;
+   void                       * dvptr = NULL;
    static int                 first=1;
    int                        ii, ip2, mycol, myrow, npcol, nprow, nq;
    char                       ctop, cpfact, crfact;
@@ -170,7 +171,8 @@ void HPL_pdtest
    size_t numbytes = (((size_t)( (size_t)(ALGO->align) +
                                  (size_t)(mat.ld+1) * (size_t)(mat.nq) ) *
                                   sizeof(double)+(size_t)4095)/(size_t)4096)*(size_t)4096;
-   info[0] = (hipMalloc(&vptr, numbytes)!=HIP_SUCCESS);
+   info[0] = (hipMalloc(&dvptr, numbytes)!=HIP_SUCCESS) ||
+             (hipHostMalloc(&vptr, numbytes,0)!=HIP_SUCCESS);
    info[1] = myrow; info[2] = mycol;
    (void) HPL_all_reduce( (void *)(info), 3, HPL_INT, HPL_max,
                           GRID->all_comm );
@@ -197,14 +199,27 @@ void HPL_pdtest
       (TEST->kskip)++;
       return;
    }
+   dvptr = vptr;
 #endif
+
 /*
  * generate matrix and right-hand-side, [ A | b ] which is N by N+1.
  */
    mat.A  = (double *)HPL_PTR( vptr,
                                ((size_t)(ALGO->align) * sizeof(double) ) );
    mat.X  = Mptr( mat.A, 0, mat.nq, mat.ld );
+
+   mat.dA  = (double *)HPL_PTR( dvptr,
+                               ((size_t)(ALGO->align) * sizeof(double) ) );
+   mat.dX  = Mptr( mat.dA, 0, mat.nq, mat.ld );
+
+#ifdef ROCM
+   HPL_pdmatgen( GRID, N, N+1, NB, mat.dA, mat.ld, HPL_ISEED );
+   // hipMemcpy(mat.dA, mat.A, (N+1)*mat.ld*sizeof(double), hipMemcpyHostToDevice);
+#else
    HPL_pdmatgen( GRID, N, N+1, NB, mat.A, mat.ld, HPL_ISEED );
+#endif
+
 #ifdef HPL_CALL_VSIPL
    mat.block = vsip_blockbind_d( (vsip_scalar_d *)(mat.A),
                                  (vsip_length)(mat.ld * mat.nq),
@@ -218,6 +233,11 @@ void HPL_pdtest
    HPL_ptimer( 0 );
    HPL_pdgesv( GRID, ALGO, &mat );
    HPL_ptimer( 0 );
+
+   // hipMemcpy(mat.X, mat.dX, N*sizeof(double), hipMemcpyDeviceToHost);
+   // for (i=0;i<N;i++)
+   //  printf("X[%d] = %f\n", i, mat.X[i]);
+
    time( &current_time_end );
 #ifdef HPL_CALL_VSIPL
    (void) vsip_blockrelease_d( mat.block, VSIP_TRUE );
@@ -357,30 +377,33 @@ void HPL_pdtest
  * Check computation, re-generate [ A | b ], compute norm 1 and inf of A and x,
  * and norm inf of b - A x. Display residual checks.
  */
+#ifdef ROCM
+   HPL_pdmatgen( GRID, N, N+1, NB, mat.dA, mat.ld, HPL_ISEED );
+   hipMemcpy(mat.A, mat.dA, (N*mat.ld+N)*sizeof(double), hipMemcpyDeviceToHost);
+   hipMemcpy(mat.X, mat.dX, N*sizeof(double), hipMemcpyDeviceToHost);
+#else
    HPL_pdmatgen( GRID, N, N+1, NB, mat.A, mat.ld, HPL_ISEED );
-   // Anorm1 = HPL_pdlange( GRID, HPL_NORM_1, N, N, NB, mat.A, mat.ld );
-   // AnormI = HPL_pdlange( GRID, HPL_NORM_I, N, N, NB, mat.A, mat.ld );
-   AnormI = 1.0;
+#endif
+
+   Anorm1 = HPL_pdlange( GRID, HPL_NORM_1, N, N, NB, mat.A, mat.ld );
+   AnormI = HPL_pdlange( GRID, HPL_NORM_I, N, N, NB, mat.A, mat.ld );
 /*
  * Because x is distributed in process rows, switch the norms
  */
-   // XnormI = HPL_pdlange( GRID, HPL_NORM_1, 1, N, NB, mat.X, 1 );
-   // Xnorm1 = HPL_pdlange( GRID, HPL_NORM_I, 1, N, NB, mat.X, 1 );
-   Xnorm1 = 1.0;
+   XnormI = HPL_pdlange( GRID, HPL_NORM_1, 1, N, NB, mat.X, 1 );
+   Xnorm1 = HPL_pdlange( GRID, HPL_NORM_I, 1, N, NB, mat.X, 1 );
 /*
  * If I am in the col that owns b, (1) compute local BnormI, (2) all_reduce to
  * find the max (in the col). Then (3) broadcast along the rows so that every
  * process has BnormI. Note that since we use a uniform distribution in [-0.5,0.5]
  * for the entries of B, it is very likely that BnormI (<=,~) 0.5.
  */
+
    Bptr = Mptr( mat.A, 0, nq, mat.ld );
    if( mycol == HPL_indxg2p( N, NB, NB, 0, npcol ) ){
       if( mat.mp > 0 )
       {
-         int id;
-         HPL_idamax( mat.mp, Bptr, 1 , &id);
-         // BnormI = Bptr[id];
-         BnormI = 1.0;
+         BnormI = Bptr[HPL_idamax( mat.mp, Bptr, 1)];
          BnormI = Mabs( BnormI );
       }
       else
@@ -396,27 +419,27 @@ void HPL_pdtest
 /*
  * If I own b, compute ( b - A x ) and ( - A x ) otherwise
  */
-//    if( mycol == HPL_indxg2p( N, NB, NB, 0, npcol ) )
-//    {
-//       HPL_dgemv( HplColumnMajor, HplNoTrans, mat.mp, nq, -HPL_rone,
-//                  mat.A, mat.ld, mat.X, 1, HPL_rone, Bptr, 1 );
-//    }
-//    else if( nq > 0 )
-//    {
-//       HPL_dgemv( HplColumnMajor, HplNoTrans, mat.mp, nq, -HPL_rone,
-//                  mat.A, mat.ld, mat.X, 1, HPL_rzero, Bptr, 1 );
-//    }
-//    else { for( ii = 0; ii < mat.mp; ii++ ) Bptr[ii] = HPL_rzero; }
-// /*
-//  * Reduce the distributed residual in process column 0
-//  */
-//    if( mat.mp > 0 )
-//       (void) HPL_reduce( Bptr, mat.mp, HPL_DOUBLE, HPL_sum, 0,
-//                          GRID->row_comm );
-// /*
-//  * Compute || b - A x ||_oo
-//  */
-//    resid0 = HPL_pdlange( GRID, HPL_NORM_I, N, 1, NB, Bptr, mat.ld );
+   if( mycol == HPL_indxg2p( N, NB, NB, 0, npcol ) )
+   {
+      HPL_dgemv( HplColumnMajor, HplNoTrans, mat.mp, nq, -HPL_rone,
+                 mat.A, mat.ld, mat.X, 1, HPL_rone, Bptr, 1 );
+   }
+   else if( nq > 0 )
+   {
+      HPL_dgemv( HplColumnMajor, HplNoTrans, mat.mp, nq, -HPL_rone,
+                 mat.A, mat.ld, mat.X, 1, HPL_rzero, Bptr, 1 );
+   }
+   else { for( ii = 0; ii < mat.mp; ii++ ) Bptr[ii] = HPL_rzero; }
+/*
+ * Reduce the distributed residual in process column 0
+ */
+   if( mat.mp > 0 )
+      (void) HPL_reduce( Bptr, mat.mp, HPL_DOUBLE, HPL_sum, 0,
+                         GRID->row_comm );
+/*
+ * Compute || b - A x ||_oo
+ */
+   resid0 = HPL_pdlange( GRID, HPL_NORM_I, N, 1, NB, Bptr, mat.ld );
 /*
  * Computes and displays norms, residuals ...
  */
@@ -459,7 +482,8 @@ void HPL_pdtest
    }
 
 #ifdef ROCM
-   if( vptr ) hipFree( vptr );
+   if( dvptr ) hipFree( dvptr );
+   if( vptr ) hipHostFree( vptr );
 #else
    if( vptr ) free( vptr );
 #endif

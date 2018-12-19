@@ -56,16 +56,14 @@ void HPL_idamax
 (
    const int                        N,
    const double *                   X,
-   const int                        INCX,
-         int *                      result
+   const int                        INCX
 )
 #else
 void HPL_idamax
 ( N, X, INCX )
    const int                        N;
    const double *                   X;
-   const int                        INCX
-         int *                      result;
+   const int                        INCX;
 #endif
 {
 /*
@@ -98,8 +96,7 @@ void HPL_idamax
 // #endif
 
 #ifdef HPL_CALL_CBLAS
-   *result = (cblas_idamax( N, X, INCX ));
-   return;
+   return cblas_idamax( N, X, INCX );
 #endif
 #ifdef HPL_CALL_VSIPL
    register double           absxi, smax = HPL_rzero, x0, x1, x2, x3,

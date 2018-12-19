@@ -149,7 +149,7 @@ LAlib        = $(HIPlib) -L$(ROCMlib) -lrocblas -L$(ROCMdir)/rocrand/lib -lrocra
 #                       Cray  fcd  (fortran  character  descriptor)  for
 #                       interoperation.
 #
-F2CDEFS      = -DROCM -DHPL_DETAILED_TIMING -DHPL_PROGRESS_REPORT
+F2CDEFS      = -DROCM -DHPL_DETAILED_TIMING -DHPL_PROGRESS_REPORT -DHPL_CALL_CBLAS
 #
 # ----------------------------------------------------------------------
 # - HPL includes / libraries / specifics -------------------------------

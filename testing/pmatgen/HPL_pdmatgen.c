@@ -176,6 +176,7 @@ void HPL_pdmatgen
 
 #ifdef ROCM
 
+   mp = (mp<LDA) ? LDA : mp;
    unsigned long long pos1 = myrow*nq + mycol*mp*M;
 
    rocrand_generator generator;
@@ -184,13 +185,10 @@ void HPL_pdmatgen
    rocrand_set_offset(generator, pos1);
 
    rocrand_generate_uniform_double(generator,A, mp*nq);
-   rocrand_destroy_generator(generator);
+   // rocrand_generate_normal_double(generator, A, mp*nq, 0.0, 0.25);
+   hipDeviceSynchronize();
 
-   // for (int j=0;j<nq;j++) {
-   //    for (int i=0;i<mp;i++) {
-   //       A[i+j*LDA] -= 0.5;
-   //    }
-   // }
+   rocrand_destroy_generator(generator);
 #else
 
    for( jblk = 0; jblk < nblks; jblk++ )

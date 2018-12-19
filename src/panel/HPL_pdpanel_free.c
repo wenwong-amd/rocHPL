@@ -105,9 +105,7 @@ int HPL_pdpanel_free
      {
        hipFree( PANEL->dWORK);
        hipHostFree( PANEL->WORK);
-       hipHostFree( PANEL->A);
        PANEL->max_work_size = 0;
-       PANEL->max_A_size = 0;
      }
    }
 #else

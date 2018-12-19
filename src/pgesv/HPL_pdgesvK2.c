@@ -151,10 +151,10 @@ void HPL_pdgesvK2
 /*
  * Factor and broadcast k-th panel
  */
-      hipMemcpy2D(panel[k]->A,  panel[k]->lda*sizeof(double),
-                       panel[k]->dA, panel[k]->dlda*sizeof(double),
-                       panel[k]->mp*sizeof(double), panel[k]->jb,
-                       hipMemcpyDeviceToHost);
+      // hipMemcpy2D(panel[k]->A,  panel[k]->lda*sizeof(double),
+      //            panel[k]->dA, panel[k]->dlda*sizeof(double),
+      //            panel[k]->mp*sizeof(double), panel[k]->jb,
+      //            hipMemcpyDeviceToHost);
       HPL_pdfact(         panel[k] );
       (void) HPL_binit(   panel[k] );
       do
@@ -194,32 +194,32 @@ void HPL_pdgesvK2
 
       if( mycol == icurcol )
       {
-         rocblas_set_stream(handle, dataStream);
+         // rocblas_set_stream(handle, dataStream);
 
          nn = HPL_numrocI( jb, j, nb, nb, mycol, 0, npcol );
          for( k = 0; k < depth; k++ )  { /* partial updates 0..depth-1 */
-            hipMemcpy2DAsync(panel[k]->dL1, panel[k]->jb*sizeof(double),
-                             panel[k]->L1,  panel[k]->jb*sizeof(double),
-                             panel[k]->jb*sizeof(double), panel[k]->jb,
-                             hipMemcpyHostToDevice, dataStream);
+            // hipMemcpy2DAsync(panel[k]->dL1, panel[k]->jb*sizeof(double),
+            //                  panel[k]->L1,  panel[k]->jb*sizeof(double),
+            //                  panel[k]->jb*sizeof(double), panel[k]->jb,
+            //                  hipMemcpyHostToDevice, dataStream);
             (void) HPL_pdupdate( NULL, NULL, panel[k], nn );
          }
-         hipEventRecord(panelUpdate, dataStream);
-         hipMemcpy2DAsync(panel[depth]->A,  panel[depth]->lda*sizeof(double),
-                          panel[depth]->dA, panel[depth]->dlda*sizeof(double),
-                          panel[depth]->mp*sizeof(double), panel[depth]->jb,
-                          hipMemcpyDeviceToHost, dataStream);
-         hipEventRecord(panelCopy, 0);
+         // hipEventRecord(panelUpdate, dataStream);
+         // hipMemcpy2DAsync(panel[depth]->A,  panel[depth]->lda*sizeof(double),
+         //                  panel[depth]->dA, panel[depth]->dlda*sizeof(double),
+         //                  panel[depth]->mp*sizeof(double), panel[depth]->jb,
+         //                  hipMemcpyDeviceToHost, dataStream);
+         // hipEventRecord(panelCopy, 0);
 
-         rocblas_set_stream(handle, computeStream);
-         hipStreamWaitEvent(computeStream,panelUpdate,0);
+         // rocblas_set_stream(handle, computeStream);
+         // hipStreamWaitEvent(computeStream,panelUpdate,0);
 
          /* Queue up finishing the latest update */
          HPL_pdupdate( NULL, NULL, panel[0], nq-nn );
 
 
          //while computing, factor the current panel
-         hipEventSynchronize(panelCopy);
+         // hipEventSynchronize(panelCopy);
          HPL_pdfact(       panel[depth] );    /* factor current panel */
          (void) HPL_binit(   panel[depth] );
          do
@@ -230,10 +230,10 @@ void HPL_pdgesvK2
       else {
          nn = 0;
 
-         hipMemcpy2DAsync(panel[0]->dL1, panel[0]->jb*sizeof(double),
-                          panel[0]->L1,  panel[0]->jb*sizeof(double),
-                          panel[0]->jb*sizeof(double), panel[0]->jb,
-                          hipMemcpyHostToDevice, computeStream);
+         // hipMemcpy2DAsync(panel[0]->dL1, panel[0]->jb*sizeof(double),
+         //                  panel[0]->L1,  panel[0]->jb*sizeof(double),
+         //                  panel[0]->jb*sizeof(double), panel[0]->jb,
+         //                  hipMemcpyHostToDevice, computeStream);
 
          /* Queue up finishing the latest update */
          HPL_pdupdate( NULL, NULL, panel[0], nq-nn );
@@ -245,7 +245,7 @@ void HPL_pdgesvK2
          while( test != HPL_SUCCESS );
          (void) HPL_bwait(   panel[depth] );
       }
-      hipDeviceSynchronize();
+      // hipDeviceSynchronize();
 /*
  * Circular  of the panel pointers:
  * xtmp = x[0]; for( k=0; k < depth; k++ ) x[k] = x[k+1]; x[d] = xtmp;

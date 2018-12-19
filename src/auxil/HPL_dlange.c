@@ -148,9 +148,7 @@ double HPL_dlange
 /*
  * Find maximum sum of columns for 1-norm
  */
-         int id;
-         HPL_idamax( N, work, 1, &id );
-         v0 = work[id]; v0 = Mabs( v0 );
+         v0 = work[HPL_idamax( N, work, 1)]; v0 = Mabs( v0 );
          if( work ) free( work );
       }
    }
@@ -174,9 +172,7 @@ double HPL_dlange
 /*
  * Find maximum sum of rows for inf-norm
  */
-         int id;
-         HPL_idamax( M, work, 1, &id );
-         v0 = work[id]; v0 = Mabs( v0 );
+         v0 = work[HPL_idamax( M, work, 1)]; v0 = Mabs( v0 );
          if( work ) free( work );
       }
    }

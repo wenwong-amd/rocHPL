@@ -126,12 +126,50 @@ void HPL_pdfact
 /*
  * Factor the panel - Update the panel pointers
  */
+#ifdef ROCM
+   hipMemcpy2D(PANEL->A,  PANEL->lda*sizeof(double),
+               PANEL->dA, PANEL->lda*sizeof(double),
+               PANEL->mp*sizeof(double), jb,
+               hipMemcpyDeviceToHost);
+#endif
+
    PANEL->algo->rffun( PANEL, PANEL->mp, jb, 0, (double *)HPL_PTR( vptr,
                        ((size_t)(align) * sizeof(double) ) ) );
    if( vptr ) free( vptr );
 
-   // PANEL->A   = Mptr( PANEL->A, 0, jb, PANEL->lda );
-   // PANEL->nq -= jb; PANEL->jj += jb;
+#ifdef ROCM
+   hipMemcpy2D(PANEL->dA, PANEL->lda*sizeof(double),
+               PANEL->A,  PANEL->lda*sizeof(double),
+               PANEL->mp*sizeof(double), jb,
+               hipMemcpyHostToDevice);
+
+   hipMemcpy2D(PANEL->dL1, jb*sizeof(double),
+               PANEL->L1,  jb*sizeof(double),
+               jb*sizeof(double), jb,
+               hipMemcpyHostToDevice);
+   // hipMemcpy2D(PANEL->dL2, PANEL->lda*sizeof(double),
+   //             PANEL->L2,  PANEL->lda*sizeof(double),
+   //             PANEL->mp*sizeof(double), jb,
+   //             hipMemcpyHostToDevice);
+
+   double *dpiv;
+   int *ipiv;
+   int iroff, i;
+
+   //apply factorization on device
+   // dpiv  = PANEL->DPIV; ipiv  = PANEL->IWORK; iroff = PANEL->ii;
+   // for( i = 0; i < jb; i++ ) { ipiv[i] = (int)(dpiv[i]) - iroff; }
+   // HPL_dlaswp00N( jb, jb, PANEL->dA, PANEL->lda, ipiv );
+   // const double one = 1.0;
+   // rocblas_dtrsm(handle, rocblas_side_left, rocblas_fill_lower,
+   //               rocblas_operation_none, rocblas_diagonal_unit,
+   //               jb, jb, &one, PANEL->dL1, jb, PANEL->dA, PANEL->lda);
+   // hipDeviceSynchronize();
+#endif
+
+   PANEL->A   = Mptr( PANEL->A, 0, jb, PANEL->lda );
+   PANEL->dA  = Mptr( PANEL->dA, 0, jb, PANEL->lda );
+   PANEL->nq -= jb; PANEL->jj += jb;
 #ifdef HPL_DETAILED_TIMING
    HPL_ptimer( HPL_TIMING_RPFACT );
 #endif

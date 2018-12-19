@@ -1,6 +1,6 @@
 #include "hpl.h"
 
-
+#ifdef ROCM
 rocblas_handle handle;
 
 /*
@@ -11,6 +11,7 @@ hipStream_t computeStream, dataStream;
 
 hipEvent_t panelUpdate;
 hipEvent_t panelCopy;
+#endif
 
 int stringCmp( const void *a, const void *b)
 {
@@ -27,7 +28,7 @@ static char     host_name[MPI_MAX_PROCESSOR_NAME];
   This function needs to be called by all the MPI processes.
 */
 void  HPL_InitGPU(){
-
+#ifdef ROCM
   char (*host_names)[MPI_MAX_PROCESSOR_NAME];
 
   int i, n, namelen, color, rank, nprocs;
@@ -72,19 +73,22 @@ void  HPL_InitGPU(){
   hipSetDevice(dev);
 
   rocblas_create_handle(&handle);
+  rocblas_set_pointer_mode(handle, rocblas_pointer_mode_host);
 
   hipStreamCreate(&computeStream);
   hipStreamCreate(&dataStream);
 
   hipEventCreate(&panelUpdate);
   hipEventCreate(&panelCopy);
+#endif
 }
 
 
 void  Free_gpu(){
-
+#ifdef ROCM
   rocblas_destroy_handle(handle);
 
   hipStreamDestroy(computeStream);
   hipStreamDestroy(dataStream);
+#endif
 }

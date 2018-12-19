@@ -161,23 +161,22 @@ void HPL_pdpanel_init
    mp = HPL_numrocI( M, IA, nb, nb, myrow, 0, nprow );
    nq = HPL_numrocI( N, JA, nb, nb, mycol, 0, npcol );
                                          /* ptr to trailing part of A */
-#ifdef ROCM
-   PANEL->dA      = Mptr( (double *)(A->A), ii, jj, A->ld );
-#else
+
    PANEL->A       = Mptr( (double *)(A->A), ii, jj, A->ld );
-#endif
+   PANEL->dA      = Mptr( (double *)(A->dA), ii, jj, A->ld );
+
 /*
  * Workspace pointers are initialized to NULL.
  */
    // PANEL->WORK    = NULL;
    PANEL->L2      = NULL;
-   PANEL->dL2      = NULL;
+   PANEL->dL2     = NULL;
    PANEL->L1      = NULL;
    PANEL->dL1     = NULL;
    PANEL->DPIV    = NULL;
    PANEL->DINFO   = NULL;
    PANEL->U       = NULL;
-   PANEL->dU       = NULL;
+   PANEL->dU      = NULL;
    PANEL->IWORK   = NULL;
 /*
  * Local lengths, indexes process coordinates
@@ -192,12 +191,7 @@ void HPL_pdpanel_init
    PANEL->nq      = nq;      /* local # of cols of trailing part of A */
    PANEL->ii      = ii;      /* local row index of trailing part of A */
    PANEL->jj      = jj;      /* local col index of trailing part of A */
-#ifdef ROCM
-   PANEL->dlda    = A->ld;            /* local leading dim of array A */
    PANEL->lda     = A->ld;            /* local leading dim of array A */
-#else
-   PANEL->lda     = A->ld;            /* local leading dim of array A */
-#endif
    PANEL->prow    = icurrow; /* proc row owning 1st row of trailing A */
    PANEL->pcol    = icurcol; /* proc col owning 1st col of trailing A */
    PANEL->msgid   = TAG;     /* message id to be used for panel bcast */
@@ -249,22 +243,6 @@ void HPL_pdpanel_init
         }
         PANEL->max_work_size = (size_t)(lwork) * sizeof( double );
       }
-      if(PANEL->max_A_size<(size_t)(JB*PANEL->lda) * sizeof( double ))
-      {
-        if( PANEL->A  )
-        {
-          hipHostFree( PANEL->A);
-        }
-        // size_t numbytes = (((size_t)((size_t)(lwork) * sizeof( double )) + (size_t)4095)/(size_t)4096)*(size_t)4096;
-        size_t numbytes = (size_t)(JB*PANEL->lda) *sizeof( double );
-
-        if(hipHostMalloc((void**)&(PANEL->A),numbytes, hipHostMallocDefault)!=HIP_SUCCESS)
-        {
-            HPL_pabort( __LINE__, "HPL_pdpanel_init",
-                        "Memory allocation failed" );
-        }
-        PANEL->max_A_size = (size_t)(JB*PANEL->lda) * sizeof( double );
-      }
 #else
       if( !( PANEL->WORK = (void *)malloc( (size_t)(lwork) *
                                            sizeof( double ) ) ) )
@@ -272,22 +250,22 @@ void HPL_pdpanel_init
          HPL_pabort( __LINE__, "HPL_pdpanel_init",
                      "Memory allocation failed" );
       }
+      PANEL->dWORK = PANEL->WORK;
 #endif
 /*
  * Initialize the pointers of the panel structure  -  Always re-use A in
  * the only process column
  */
       PANEL->ldl2  = A->ld;
-#ifdef ROCM
-      PANEL->dL2    = PANEL->dA + ( myrow == icurrow ? JB : 0 );
-      PANEL->dL1    = (double *)HPL_PTR( PANEL->dWORK, dalign );
-#endif
+      PANEL->dL2   = PANEL->dA + ( myrow == icurrow ? JB : 0 );
       PANEL->L2    = PANEL->A + ( myrow == icurrow ? JB : 0 );
+      PANEL->dL1   = (double *)HPL_PTR( PANEL->dWORK, dalign );
       PANEL->L1    = (double *)HPL_PTR( PANEL->WORK, dalign );
       PANEL->DPIV  = (double *)HPL_PTR( PANEL->WORK, dalign ) + JB * JB;
       PANEL->DINFO = PANEL->DPIV + JB;
       *(PANEL->DINFO) = 0.0;
       PANEL->U     = ( nprow > 1 ? PANEL->DINFO + 1: NULL );
+      PANEL->dU    = (double *)HPL_PTR( PANEL->WORK, dalign ) + JB * JB;
    }
    else
    {                                        /* space for L2, L1, DPIV */
@@ -323,22 +301,6 @@ void HPL_pdpanel_init
         }
         PANEL->max_work_size = (size_t)(lwork) * sizeof( double );
       }
-      if(PANEL->max_A_size<(size_t)(JB*PANEL->lda) * sizeof( double ))
-      {
-        if( PANEL->A  )
-        {
-          hipHostFree( PANEL->A);
-        }
-        // size_t numbytes = (((size_t)((size_t)(lwork) * sizeof( double )) + (size_t)4095)/(size_t)4096)*(size_t)4096;
-        size_t numbytes = (size_t)(JB*PANEL->lda) *sizeof( double );
-
-        if(hipHostMalloc((void**)&(PANEL->A),numbytes, hipHostMallocDefault)!=HIP_SUCCESS)
-        {
-            HPL_pabort( __LINE__, "HPL_pdpanel_init",
-                        "Memory allocation failed" );
-        }
-        PANEL->max_A_size = (size_t)(JB*PANEL->lda) * sizeof( double );
-      }
 #else
       if( !( PANEL->WORK = (void *)malloc( (size_t)(lwork) *
                                            sizeof( double ) ) ) )
@@ -352,40 +314,35 @@ void HPL_pdpanel_init
  * rent process column when HPL_COPY_L is not defined.
  */
 #ifdef HPL_COPY_L
-
-#ifdef ROCM
-      PANEL->dL2    = (double *)HPL_PTR( PANEL->dWORK, dalign );
-      PANEL->dL1    = PANEL->dL2 + ml2 * JB;
-#endif
-
+      PANEL->dL2   = (double *)HPL_PTR( PANEL->dWORK, dalign );
+      PANEL->dL1   = PANEL->dL2 + ml2 * JB;
       PANEL->L2    = (double *)HPL_PTR( PANEL->WORK, dalign );
-      PANEL->ldl2  = Mmax( 1, ml2 );
       PANEL->L1    = PANEL->L2 + ml2 * JB;
+      PANEL->ldl2  = Mmax( 1, ml2 );
 #else
       if( mycol == icurcol )
       {
          PANEL->L2   = PANEL->A + ( myrow == icurrow ? JB : 0 );
+         PANEL->dL2  = PANEL->dA + ( myrow == icurrow ? JB : 0 );
          PANEL->ldl2 = A->ld;
          PANEL->L1   = (double *)HPL_PTR( PANEL->WORK, dalign );
-#ifdef ROCM
          PANEL->dL1   = (double *)HPL_PTR( PANEL->dWORK, dalign );
-#endif
       }
       else
       {
-#ifdef ROCM
          PANEL->dL2   = (double *)HPL_PTR( PANEL->dWORK, dalign );
          PANEL->dL1   = PANEL->dL2 + ml2 * JB;
-#endif
+
          PANEL->L2   = (double *)HPL_PTR( PANEL->WORK, dalign );
-         PANEL->ldl2 = Mmax( 1, ml2 );
          PANEL->L1   = PANEL->L2 + ml2 * JB;
+         PANEL->ldl2 = Mmax( 1, ml2 );
       }
 #endif
       PANEL->DPIV  = PANEL->L1   + JB * JB;
       PANEL->DINFO = PANEL->DPIV + JB;
       *(PANEL->DINFO) = 0.0;
       PANEL->U     = ( nprow > 1 ? PANEL->DINFO + 1 : NULL );
+      PANEL->dU    = PANEL->dL1   + JB * JB;;
    }
 #ifdef HPL_CALL_VSIPL
    PANEL->Ablock  = A->block;

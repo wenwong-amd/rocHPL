@@ -183,9 +183,7 @@ double HPL_pdlange
  */
          if( myrow == 0 )
          {
-            int id;
-            HPL_idamax( nq, work, 1, &id );
-            v0 = work[id]; v0 = Mabs( v0 );
+            v0 = work[HPL_idamax( nq, work, 1)]; v0 = Mabs( v0 );
          }
          if( work ) free( work );
       }
@@ -225,9 +223,7 @@ double HPL_pdlange
  */
          if( mycol == 0 )
          {
-            int id;
-            HPL_idamax( mp, work, 1, &id );
-            v0 = work[id]; v0 = Mabs( v0 );
+            v0 = work[HPL_idamax( mp, work, 1)]; v0 = Mabs( v0 );
          }
          if( work ) free( work );
       }

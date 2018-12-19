@@ -118,11 +118,7 @@ void HPL_pdupdateNN
 #endif
    nb = PANEL->nb; jb = PANEL->jb; n = PANEL->nq;
 
-#ifdef ROCM
    lda = PANEL->lda;
-#else
-   lda = PANEL->dlda;
-#endif
 
    if( NN >= 0 ) n = Mmin( NN, n );
 /*
@@ -479,11 +475,9 @@ void HPL_pdupdateNN
 #endif
    }
 
-#ifdef ROCM
    PANEL->dA = Mptr( PANEL->dA, 0, n, lda ); PANEL->nq -= n; PANEL->jj += n;
-#else
    PANEL->A = Mptr( PANEL->A, 0, n, lda ); PANEL->nq -= n; PANEL->jj += n;
-#endif
+
 /*
  * return the outcome of the probe  (should always be  HPL_SUCCESS,  the
  * panel broadcast is enforced in that routine).
