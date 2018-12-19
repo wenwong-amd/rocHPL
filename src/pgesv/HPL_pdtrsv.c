@@ -110,6 +110,9 @@ void HPL_pdtrsv
    double                     * A=NULL, * Aprev=NULL, * Aptr, * XC=NULL,
                               * XR=NULL, * Xd=NULL, * Xdprev=NULL,
                               * W=NULL;
+   double                     * dA=NULL, * dAprev=NULL, * dAptr, * dXC=NULL,
+                              * dXR=NULL, * dXd=NULL, * dXdprev=NULL,
+                              * dW=NULL;
    int                        Alcol, Alrow, Anpprev, Anp, Anq, Bcol,
                               Cmsgid, GridIsNotPx1, GridIsNot1xQ, Rmsgid,
                               Wfr=0, colprev, kb, kbprev, lda, mycol,
@@ -124,11 +127,13 @@ void HPL_pdtrsv
    if( ( n = AMAT->n ) <= 0 ) return;
    nb = AMAT->nb; lda = AMAT->ld;
 
+   A = AMAT->A; XR = AMAT->X;
 #ifdef ROCM
-   hipMemcpy(AMAT->A, AMAT->dA, (AMAT->n+1)*AMAT->ld*sizeof(double), hipMemcpyDeviceToHost);
-   A = AMAT->A; XR = AMAT->X;
+   rocblas_set_stream(handle, 0);
+   dA = AMAT->dA; dXR = AMAT->dX;
+   // hipMemcpy(AMAT->A, AMAT->dA, (AMAT->n+1)*AMAT->ld*sizeof(double), hipMemcpyDeviceToHost);
 #else
-   A = AMAT->A; XR = AMAT->X;
+   dA = AMAT->A; dXR = AMAT->X;
 #endif
 
    (void) HPL_grid_info( GRID, &nprow, &npcol, &myrow, &mycol );
@@ -147,32 +152,57 @@ void HPL_pdtrsv
    kb    = n    - tmp1 * nb;
 
    Aptr = (double *)(A); XC = Mptr( Aptr, 0, Anq, lda );
+   dAptr = (double *)(dA); dXC = Mptr( dAptr, 0, Anq, lda );
    Mindxg2p( n, nb, nb, Bcol, 0, npcol );
 
    if( ( Anp > 0 ) && ( Alcol != Bcol ) )
    {
       if( mycol == Bcol  )
-      { (void) HPL_send( XC, Anp, Alcol, Rmsgid, Rcomm ); }
+      {
+#ifdef ROCM
+         hipMemcpy(XC, dXC, Anp*sizeof(double), hipMemcpyDeviceToHost);
+#endif
+         (void) HPL_send( XC, Anp, Alcol, Rmsgid, Rcomm );
+      }
       else if( mycol == Alcol )
-      { (void) HPL_recv( XC, Anp, Bcol,  Rmsgid, Rcomm ); }
+      {
+         (void) HPL_recv( XC, Anp, Bcol,  Rmsgid, Rcomm );
+#ifdef ROCM
+         hipMemcpy(dXC, XC, Anp*sizeof(double), hipMemcpyHostToDevice);
+#endif
+      }
    }
    Rmsgid = ( Rmsgid + 2 >
               MSGID_END_PTRSV ? MSGID_BEGIN_PTRSV : Rmsgid + 2 );
-   if( mycol != Alcol )
-   { for( tmp1=0; tmp1 < Anp; tmp1++ ) XC[tmp1] = HPL_rzero; }
+   if( mycol != Alcol ) {
+#ifdef ROCM
+      hipMemset(dXC, 0, Anp*sizeof(double));
+#endif
+      for( tmp1=0; tmp1 < Anp; tmp1++ )
+         XC[tmp1] = HPL_rzero;
+   }
 /*
  * Set up lookahead
  */
    n1 = ( npcol - 1 ) * nb; n1 = Mmax( n1, nb );
    if( Anp > 0 )
    {
+#ifdef ROCM
+      hipHostMalloc((void**)&W, (size_t)(Mmin( n1, Anp )) * sizeof( double ), 0);
+      hipMalloc((void**)&dW, (size_t)(Mmin( n1, Anp )) * sizeof( double ));
+#else
       W = (double*)malloc( (size_t)(Mmin( n1, Anp )) * sizeof( double ) );
-      if( W == NULL )
+      dW = W;
+#endif
+
+      if( W == NULL || dW == NULL)
       { HPL_pabort( __LINE__, "HPL_pdtrsv", "Memory allocation failed" ); }
       Wfr = 1;
    }
 
-   Anpprev = Anp; Xdprev = XR; Aprev = Aptr = Mptr( Aptr, 0, Anq, lda );
+   Anpprev = Anp;
+   Xdprev = XR; Aprev = Aptr = Mptr( Aptr, 0, Anq, lda );
+   dXdprev = dXR; dAprev = dAptr = Mptr( dAptr, 0, Anq, lda );
    tmp1    = n - kb; tmp1 -= ( tmp2 = Mmin( tmp1, n1 ) );
    MnumrocI( n1pprev, tmp2, Mmax( 0, tmp1 ), nb, nb, myrow, 0, nprow );
 
@@ -180,21 +210,20 @@ void HPL_pdtrsv
    if( mycol == Alcol )
    {
       Aprev = ( Aptr -= lda * kb ); Anq -= kb; Xdprev = ( Xd = XR + Anq );
+      dAprev = ( dAptr -= lda * kb ); dXdprev = ( dXd = dXR + Anq );
       if( myrow == Alrow )
       {
-// #ifdef ROCM
-//          const double one = 1.0;
-//          rocblas_dtrsm(handle, rocblas_side_left, rocblas_fill_upper,
-//                       rocblas_operation_none, rocblas_diagonal_non_unit,
-//                        kb, 1, &one, Aptr+Anp, lda, XC+Anp, 1);
-//          hipDeviceSynchronize();
-//          rocblas_dcopy(handle, kb, XC+Anp, 1, Xd, 1 );
-//          hipDeviceSynchronize();
-// #else
+#ifdef ROCM
+         const double one = 1.0;
+         rocblas_dtrsm(handle, rocblas_side_left, rocblas_fill_upper,
+                      rocblas_operation_none, rocblas_diagonal_non_unit,
+                       kb, 1, &one, dAptr+Anp, lda, dXC+Anp, kb);
+         rocblas_dcopy(handle, kb, dXC+Anp, 1, dXd, 1 );
+#else
          HPL_dtrsv( HplColumnMajor, HplUpper, HplNoTrans, HplNonUnit,
                     kb, Aptr+Anp, lda, XC+Anp, 1 );
          HPL_dcopy( kb, XC+Anp, 1, Xd, 1 );
-// #endif
+#endif
       }
    }
 
@@ -208,7 +237,10 @@ void HPL_pdtrsv
  */
    while( n > 0 )
    {
-      if( mycol == Alcol ) { Aptr -= lda * kb; Anq -= kb; Xd = XR + Anq; }
+      if( mycol == Alcol ) {
+         Aptr -= lda * kb; Anq -= kb; Xd = XR + Anq;
+         dAptr -= lda * kb; dXd = dXR + Anq;
+      }
       if( myrow == Alrow ) { Anp -= kb; }
 /*
  * Broadcast  (decreasing-ring)  of  previous solution block in previous
@@ -222,14 +254,21 @@ void HPL_pdtrsv
  */
          if( myrow == rowprev )
          {
-            if( GridIsNot1xQ )
+            if( GridIsNot1xQ ) {
+#ifdef ROCM
+               hipMemcpy(Xdprev, dXdprev, kbprev*sizeof(double), hipMemcpyDeviceToHost);
+#endif
                (void) HPL_send( Xdprev, kbprev, MModSub1( myrow, nprow ),
                                 Cmsgid, Ccomm );
+            }
          }
          else
          {
             (void) HPL_recv( Xdprev, kbprev, MModAdd1( myrow, nprow ),
                              Cmsgid, Ccomm );
+#ifdef ROCM
+            hipMemcpy(dXdprev, Xdprev, kbprev*sizeof(double), hipMemcpyHostToDevice);
+#endif
          }
 /*
  * Compute partial update of previous solution block and send it to cur-
@@ -238,29 +277,36 @@ void HPL_pdtrsv
          if( n1pprev > 0 )
          {
             tmp1 = Anpprev - n1pprev;
-// #ifdef ROCM
-//             const double one =  1.0;
-//             const double mone = -1.0;
-//             rocblas_dgemv(handle, rocblas_operation_none, n1pprev, kbprev,
-//                          &mone, Aprev+tmp1, lda, Xdprev, 1, &one,
-//                        XC+tmp1, 1 );
-//             hipDeviceSynchronize();
-// #else
+#ifdef ROCM
+            const double one =  1.0;
+            const double mone = -1.0;
+            rocblas_dgemv(handle, rocblas_operation_none, n1pprev, kbprev,
+                         &mone, dAprev+tmp1, lda, dXdprev, 1, &one,
+                         dXC+tmp1, 1 );
+#else
             HPL_dgemv( HplColumnMajor, HplNoTrans, n1pprev, kbprev,
                        -HPL_rone, Aprev+tmp1, lda, Xdprev, 1, HPL_rone,
                        XC+tmp1, 1 );
-// #endif
-            if( GridIsNotPx1 )
+#endif
+            if( GridIsNotPx1 ) {
+#ifdef ROCM
+               hipMemcpy(XC+tmp1, dXC+tmp1, n1pprev*sizeof(double), hipMemcpyDeviceToHost);
+#endif
                (void) HPL_send( XC+tmp1, n1pprev, Alcol, Rmsgid, Rcomm );
+            }
          }
 /*
  * Finish  the (decreasing-ring) broadcast of the solution block in pre-
  * vious process column
  */
          if( ( myrow != rowprev ) &&
-             ( myrow != MModAdd1( rowprev, nprow ) ) )
+             ( myrow != MModAdd1( rowprev, nprow ) ) ) {
+#ifdef ROCM
+            hipMemcpy(Xdprev, dXdprev, kbprev*sizeof(double), hipMemcpyDeviceToHost);
+#endif
             (void) HPL_send( Xdprev, kbprev, MModSub1( myrow, nprow ),
                              Cmsgid, Ccomm );
+         }
       }
       else if( mycol == Alcol )
       {
@@ -271,13 +317,13 @@ void HPL_pdtrsv
          if( n1pprev > 0 )
          {
             (void) HPL_recv( W, n1pprev, colprev, Rmsgid, Rcomm );
-// #ifdef ROCM
-//             const double one = 1.0;
-//             rocblas_daxpy(handle, n1pprev, &one, W, 1, XC+Anpprev-n1pprev, 1);
-//             hipDeviceSynchronize();
-// #else
+#ifdef ROCM
+            hipMemcpy(dW, W, n1pprev*sizeof(double), hipMemcpyHostToDevice);
+            const double one = 1.0;
+            rocblas_daxpy(handle, n1pprev, &one, dW, 1, dXC+Anpprev-n1pprev, 1);
+#else
             HPL_daxpy( n1pprev, HPL_rone, W, 1, XC+Anpprev-n1pprev, 1 );
-// #endif
+#endif
          }
       }
 /*
@@ -285,38 +331,42 @@ void HPL_pdtrsv
  */
       if( ( mycol == Alcol ) && ( myrow == Alrow ) )
       {
-// #ifdef ROCM
-//          const double one = 1.0;
-//          rocblas_dtrsm(handle, rocblas_side_left, rocblas_fill_upper,
-//                       rocblas_operation_none, rocblas_diagonal_non_unit,
-//                        kb, 1, &one, Aptr+Anp, lda, XC+Anp, 1);
-//          rocblas_dcopy(handle, kb, XC+Anp, 1, XR+Anq, 1 );
-// #else
+#ifdef ROCM
+         const double one = 1.0;
+         rocblas_dtrsm(handle, rocblas_side_left, rocblas_fill_upper,
+                      rocblas_operation_none, rocblas_diagonal_non_unit,
+                       kb, 1, &one, dAptr+Anp, lda, dXC+Anp, kb);
+         rocblas_dcopy(handle, kb, dXC+Anp, 1, dXR+Anq, 1 );
+#else
          HPL_dtrsv( HplColumnMajor, HplUpper, HplNoTrans, HplNonUnit,
                     kb, Aptr+Anp, lda, XC+Anp, 1 );
          HPL_dcopy( kb, XC+Anp, 1, XR+Anq, 1 );
-// #endif
+#endif
       }
 /*
 *  Finish previous update
 */
       if( ( mycol == colprev ) && ( ( tmp1 = Anpprev - n1pprev ) > 0 ) ) {
-// #ifdef ROCM
-//          const double one =  1.0;
-//          const double mone = -1.0;
-//          rocblas_dgemv(handle, rocblas_operation_none, tmp1, kbprev,
-//                       &mone, Aprev, lda, Xdprev, 1, &one,
-//                     XC, 1 );
-// #else
+#ifdef ROCM
+         const double one =  1.0;
+         const double mone = -1.0;
+         rocblas_dgemv(handle, rocblas_operation_none, tmp1, kbprev,
+                      &mone, dAprev, lda, dXdprev, 1, &one,
+                      dXC, 1 );
+#else
          HPL_dgemv( HplColumnMajor, HplNoTrans, tmp1, kbprev, -HPL_rone,
                     Aprev, lda, Xdprev, 1, HPL_rone, XC, 1 );
-// #endif
+#endif
       }
 /*
 *  Save info of current step and update info for the next step
 */
-      if( mycol == Alcol ) { Xdprev   = Xd; Aprev = Aptr; }
+      if( mycol == Alcol ) {
+         Xdprev   = Xd; Aprev = Aptr;
+         dXdprev   = dXd; dAprev = dAptr;
+      }
       if( myrow == Alrow ) { Anpprev -= kb; }
+
       rowprev = Alrow; colprev = Alcol;
       n1pprev = n1p;   kbprev  = kb; n -= kb;
       Alrow = MModSub1( Alrow, nprow ); Alcol = MModSub1( Alcol, npcol );
@@ -331,16 +381,29 @@ void HPL_pdtrsv
 /*
  * Replicate last solution block
  */
-   if( mycol == colprev )
+   if( mycol == colprev ) {
+#ifdef ROCM
+      hipMemcpy(XR, dXR, kbprev*sizeof(double), hipMemcpyDeviceToHost);
+#endif
       (void) HPL_broadcast( (void *)(XR), kbprev, HPL_DOUBLE, rowprev,
                             Ccomm );
+#ifdef ROCM
+      hipMemcpy(dXR, XR, kbprev*sizeof(double), hipMemcpyHostToDevice);
+#endif
+   }
 
-   if( Wfr  ) free( W  );
 
 #ifdef ROCM
-   hipMemcpy(AMAT->dX, AMAT->X, (AMAT->n)*sizeof(double), hipMemcpyHostToDevice);
    hipDeviceSynchronize();
+   if( Wfr  ) {
+      hipHostFree( W  );
+      hipFree( dW  );
+   }
+   // hipMemcpy(AMAT->dX, AMAT->X, (AMAT->n)*sizeof(double), hipMemcpyHostToDevice);
+#else
+   if( Wfr  ) free( W  );
 #endif
+
 #ifdef HPL_DETAILED_TIMING
    HPL_ptimer( HPL_TIMING_PTRSV );
 #endif

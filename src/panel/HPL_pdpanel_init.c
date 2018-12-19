@@ -412,7 +412,8 @@ void HPL_pdpanel_init
    if( PANEL->IWORK == NULL )
    { HPL_pabort( __LINE__, "HPL_pdpanel_init", "Memory allocation failed" ); }
                        /* Initialize the first entry of the workarray */
-   *(PANEL->IWORK) = -1;
+   if (lwork)
+    *(PANEL->IWORK) = -1;
 /*
  * End of HPL_pdpanel_init
  */
