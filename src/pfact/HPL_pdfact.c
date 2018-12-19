@@ -127,10 +127,12 @@ void HPL_pdfact
  * Factor the panel - Update the panel pointers
  */
 #ifdef ROCM
-   hipMemcpy2D(PANEL->A,  PANEL->lda*sizeof(double),
-               PANEL->dA, PANEL->lda*sizeof(double),
-               PANEL->mp*sizeof(double), jb,
-               hipMemcpyDeviceToHost);
+   hipMemcpy2DAsync(PANEL->A,  PANEL->lda*sizeof(double),
+                    PANEL->dA, PANEL->lda*sizeof(double),
+                    PANEL->mp*sizeof(double), jb,
+                    hipMemcpyDeviceToHost, dataStream);
+   hipEventRecord(panelCopy, dataStream);
+   hipEventSynchronize(panelCopy);
 #endif
 
    PANEL->algo->rffun( PANEL, PANEL->mp, jb, 0, (double *)HPL_PTR( vptr,
@@ -138,23 +140,23 @@ void HPL_pdfact
    if( vptr ) free( vptr );
 
 #ifdef ROCM
-   hipMemcpy2D(PANEL->dA, PANEL->lda*sizeof(double),
-               PANEL->A,  PANEL->lda*sizeof(double),
-               PANEL->mp*sizeof(double), jb,
-               hipMemcpyHostToDevice);
+   hipMemcpy2DAsync(PANEL->dA, PANEL->lda*sizeof(double),
+                     PANEL->A,  PANEL->lda*sizeof(double),
+                     PANEL->mp*sizeof(double), jb,
+                     hipMemcpyHostToDevice, dataStream);
 
-   hipMemcpy2D(PANEL->dL1, jb*sizeof(double),
-               PANEL->L1,  jb*sizeof(double),
-               jb*sizeof(double), jb,
-               hipMemcpyHostToDevice);
+   hipMemcpy2DAsync(PANEL->dL1, jb*sizeof(double),
+                   PANEL->L1,  jb*sizeof(double),
+                   jb*sizeof(double), jb,
+                   hipMemcpyHostToDevice, dataStream);
    // hipMemcpy2D(PANEL->dL2, PANEL->lda*sizeof(double),
    //             PANEL->L2,  PANEL->lda*sizeof(double),
    //             PANEL->mp*sizeof(double), jb,
    //             hipMemcpyHostToDevice);
 
-   double *dpiv;
-   int *ipiv;
-   int iroff, i;
+   // double *dpiv;
+   // int *ipiv;
+   // int iroff, i;
 
    //apply factorization on device
    // dpiv  = PANEL->DPIV; ipiv  = PANEL->IWORK; iroff = PANEL->ii;

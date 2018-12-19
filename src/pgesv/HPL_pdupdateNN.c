@@ -475,7 +475,7 @@ void HPL_pdupdateNN
 #endif
    }
 
-   PANEL->dA = Mptr( PANEL->dA, 0, n, lda ); PANEL->nq -= n; PANEL->jj += n;
+   PANEL->dA = Mptr( PANEL->dA, 0, n, lda );
    PANEL->A = Mptr( PANEL->A, 0, n, lda ); PANEL->nq -= n; PANEL->jj += n;
 
 /*
