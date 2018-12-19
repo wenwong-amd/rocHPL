@@ -51,15 +51,27 @@
 
 #ifndef HPL_idamax
 
+typedef struct {
+   int id;
+   double val;
+} entry_t;
+
+entry_t arg_max2(entry_t a, entry_t b) {
+    return Mabs(a.val) < Mabs(b.val) ? b : a;
+}
+
+#pragma omp declare reduction(arg_max:entry_t:omp_out=arg_max2(omp_out, omp_in))\
+    initializer(omp_priv={0, 0.0})
+
 #ifdef STDC_HEADERS
-void HPL_idamax
+int HPL_idamax
 (
    const int                        N,
    const double *                   X,
    const int                        INCX
 )
 #else
-void HPL_idamax
+int HPL_idamax
 ( N, X, INCX )
    const int                        N;
    const double *                   X;
@@ -95,9 +107,23 @@ void HPL_idamax
 //    return;
 // #endif
 
-#ifdef HPL_CALL_CBLAS
-   return cblas_idamax( N, X, INCX );
-#endif
+// #ifdef HPL_CALL_CBLAS
+//    return cblas_idamax( N, X, INCX );
+// #endif
+
+   if (N<1) return 0;
+
+   int i;
+
+   entry_t value = {0, 0.0};
+   #pragma omp parallel for reduction(arg_max:value)
+   for (i = 0; i < N; ++i) {
+       entry_t new_value = {i, X[i*INCX]};
+       value = arg_max2(value, new_value);
+   }
+
+   return value.id;
+
 #ifdef HPL_CALL_VSIPL
    register double           absxi, smax = HPL_rzero, x0, x1, x2, x3,
                              x4, x5, x6, x7;
