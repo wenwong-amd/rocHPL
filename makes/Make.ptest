@@ -70,7 +70,8 @@ all     : dexe
 dexe    : dexe.grd
 #
 $(BINdir)/HPL.dat : ../HPL.dat
-	( $(CP) ../HPL.dat $(BINdir) )
+	( $(CP) ../HPL.dat $(BINdir)/../../ )
+	( $(CP) ../runHPL.sh $(BINdir)/../../ )
 #
 dexe.grd: $(HPL_pteobj) $(HPLlib)
 	$(LINKER) $(LINKFLAGS) -o $(xhpl) $(HPL_pteobj) $(HPL_LIBS)

@@ -161,6 +161,7 @@ clean_arch_all   :
 	- $(MAKE) -f Make.top clean_arch_src arch=$(arch)
 	- $(MAKE) -f Make.top clean_arch_tst arch=$(arch)
 	- $(RM) -r bin/$(arch) include/$(arch) lib/$(arch)
+	- $(RM) HPL.dat HPL.out runHPL.sh
 #
 ## clean_guard #########################################################
 #

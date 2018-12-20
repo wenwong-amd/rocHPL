@@ -189,8 +189,8 @@ STDC_ARGS(
 #define    HPL_dswap           cblas_dswap
 #define    HPL_dcopy           cblas_dcopy
 #define    HPL_daxpy           cblas_daxpy
-// #define    HPL_dscal           cblas_dscal
-// #define    HPL_idamax          cblas_idamax
+#define    HPL_dscal           cblas_dscal
+#define    HPL_idamax          cblas_idamax
 
 #define    HPL_dgemv           cblas_dgemv
 #define    HPL_dtrsv           cblas_dtrsv
@@ -505,6 +505,7 @@ STDC_ARGS(
  * HPL BLAS Function prototypes
  * ---------------------------------------------------------------------
  */
+#ifndef HPL_CALL_CBLAS
 int                              HPL_idamax
 STDC_ARGS( (
    const int,
@@ -519,7 +520,6 @@ STDC_ARGS( (
    const int
 ) );
 
-#ifndef HPL_CALL_CBLAS
 
 void                             HPL_daxpy
 STDC_ARGS( (
