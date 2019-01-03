@@ -106,9 +106,12 @@ HIPlib         = -L$(ROCM_DIR)/hip/lib/ -lhip_hcc
 # header files,  LAlib  is defined  to be the name of  the library to be
 # used. The variable LAdir is only used for defining LAinc and LAlib.
 #
+#LAdir        = /home/research/openblas
+#BLASlib      = -L$(LAdir) -lopenblas
 LAdir        =
+BLASlib      = -lblas
 LAinc        = -I$(ROCMdir)/hip/include -I$(ROCMdir)/rocrand/include -I$(ROCMdir)/rocblas/include $(HIPinc)
-LAlib        = $(HIPlib) -L$(ROCMlib) -lrocblas -L$(ROCMdir)/rocrand/lib -lrocrand -lblas
+LAlib        = $(HIPlib) -L$(ROCMlib) -lrocblas -L$(ROCMdir)/rocrand/lib -lrocrand $(BLASlib)
 #
 # ----------------------------------------------------------------------
 # - F77 / C interface --------------------------------------------------

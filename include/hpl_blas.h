@@ -506,14 +506,21 @@ STDC_ARGS(
  * ---------------------------------------------------------------------
  */
 #ifndef HPL_CALL_CBLAS
-
-void                              HPL_idamax
+int                              HPL_idamax
 STDC_ARGS( (
    const int,
    const double *,
-   const int,
-         int *
+   const int
 ) );
+void                             HPL_dscal
+STDC_ARGS( (
+   const int,
+   const double,
+   double *,
+   const int
+) );
+
+
 void                             HPL_daxpy
 STDC_ARGS( (
    const int,
@@ -528,13 +535,6 @@ STDC_ARGS( (
    const int,
    const double *,
    const int,
-   double *,
-   const int
-) );
-void                             HPL_dscal
-STDC_ARGS( (
-   const int,
-   const double,
    double *,
    const int
 ) );
