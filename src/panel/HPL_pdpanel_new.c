@@ -145,6 +145,7 @@ void HPL_pdpanel_new
    }
 
    p->max_work_size = 0;
+   p->max_iwork_size = 0;
    p->free_work_now = 0;
    p->WORK = NULL;
    HPL_pdpanel_init( GRID, ALGO, M, N, JB, A, IA, JA, TAG, p );

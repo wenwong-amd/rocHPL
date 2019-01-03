@@ -155,7 +155,9 @@ void HPL_pdupdateNN
       L2ptr = PANEL->L2;
 #endif
 
-      ldl2 = PANEL->ldl2;    dpiv  = PANEL->DPIV; ipiv  = PANEL->IWORK;
+      ldl2 = PANEL->ldl2;
+      dpiv  = PANEL->DPIV;
+      ipiv  = PANEL->IWORK;
       mp   = PANEL->mp - jb; iroff = PANEL->ii;   nq0   = 0;
 #ifdef HPL_CALL_VSIPL
 /*
@@ -173,7 +175,12 @@ void HPL_pdupdateNN
  */
       Lv1 = vsip_msubview_d( Lv0, 0, 0, mp, jb );
 #endif
+
+#ifdef ROCM
+      ipiv = PANEL->dIWORK; //already updated and sent to device
+#else
       for( i = 0; i < jb; i++ ) { ipiv[i] = (int)(dpiv[i]) - iroff; }
+#endif
 /*
  * So far we have not updated anything -  test availability of the panel
  * to be forwarded - If detected forward it and finish the update in one

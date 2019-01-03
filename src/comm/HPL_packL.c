@@ -1,36 +1,36 @@
-/* 
- * -- High Performance Computing Linpack Benchmark (HPL)                
- *    HPL - 2.2 - February 24, 2016                          
- *    Antoine P. Petitet                                                
- *    University of Tennessee, Knoxville                                
- *    Innovative Computing Laboratory                                 
- *    (C) Copyright 2000-2008 All Rights Reserved                       
- *                                                                      
- * -- Copyright notice and Licensing terms:                             
- *                                                                      
+/*
+ * -- High Performance Computing Linpack Benchmark (HPL)
+ *    HPL - 2.2 - February 24, 2016
+ *    Antoine P. Petitet
+ *    University of Tennessee, Knoxville
+ *    Innovative Computing Laboratory
+ *    (C) Copyright 2000-2008 All Rights Reserved
+ *
+ * -- Copyright notice and Licensing terms:
+ *
  * Redistribution  and  use in  source and binary forms, with or without
  * modification, are  permitted provided  that the following  conditions
- * are met:                                                             
- *                                                                      
+ * are met:
+ *
  * 1. Redistributions  of  source  code  must retain the above copyright
- * notice, this list of conditions and the following disclaimer.        
- *                                                                      
+ * notice, this list of conditions and the following disclaimer.
+ *
  * 2. Redistributions in binary form must reproduce  the above copyright
  * notice, this list of conditions,  and the following disclaimer in the
- * documentation and/or other materials provided with the distribution. 
- *                                                                      
+ * documentation and/or other materials provided with the distribution.
+ *
  * 3. All  advertising  materials  mentioning  features  or  use of this
- * software must display the following acknowledgement:                 
+ * software must display the following acknowledgement:
  * This  product  includes  software  developed  at  the  University  of
- * Tennessee, Knoxville, Innovative Computing Laboratory.             
- *                                                                      
+ * Tennessee, Knoxville, Innovative Computing Laboratory.
+ *
  * 4. The name of the  University,  the name of the  Laboratory,  or the
  * names  of  its  contributors  may  not  be used to endorse or promote
  * products  derived   from   this  software  without  specific  written
- * permission.                                                          
- *                                                                      
- * -- Disclaimer:                                                       
- *                                                                      
+ * permission.
+ *
+ * -- Disclaimer:
+ *
  * THIS  SOFTWARE  IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES,  INCLUDING,  BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -41,9 +41,9 @@
  * DATA OR PROFITS; OR BUSINESS INTERRUPTION)  HOWEVER CAUSED AND ON ANY
  * THEORY OF LIABILITY, WHETHER IN CONTRACT,  STRICT LIABILITY,  OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * ---------------------------------------------------------------------
- */ 
+ */
 /*
  * Include files
  */
@@ -66,7 +66,7 @@ int HPL_packL
    const int                        IBUF;
 #endif
 {
-/* 
+/*
  * Purpose
  * =======
  *
@@ -93,14 +93,14 @@ int HPL_packL
  *         that should be initialized.
  *
  * ---------------------------------------------------------------------
- */ 
+ */
 #ifdef HPL_USE_MPI_DATATYPE
 /*
  * .. Local Variables ..
  */
 #ifndef HPL_COPY_L
    MPI_Datatype               * type = NULL;
-   void                       * * * bufs = NULL;
+   void                       * * bufs = NULL;
    double                     * A;
    int                        * blen = NULL;
    MPI_Aint                   * disp = NULL;
@@ -134,19 +134,19 @@ int HPL_packL
 /*
  * Temporaries to create the type struct.
  */
-   bufs = (void     * * *)malloc( jbp1 * sizeof( void * *     ) );
+   bufs = (void     * *)malloc( jbp1 * sizeof( void *     ) );
    blen = (int          *)malloc( jbp1 * sizeof( int          ) );
    disp = (MPI_Aint     *)malloc( jbp1 * sizeof( MPI_Aint     ) );
    type = (MPI_Datatype *)malloc( jbp1 * sizeof( MPI_Datatype ) );
- 
+
    if( ( bufs != NULL ) && ( blen != NULL ) &&
        ( disp != NULL ) && ( type != NULL ) )
    {
       m = PANEL->mp; curr = (int)( PANEL->grid->myrow == PANEL->prow );
       if( curr != 0 ) m -= jb;
- 
+
       len = LEN; ibuf = INDEX; nbufs = 0; jbm = jb * m;
- 
+
       if( ( m > 0 ) && ( ibuf < jbm ) )
       {
 /*
@@ -164,13 +164,13 @@ int HPL_packL
  */
          m1 = m - ( i1 = ibuf - ( j1 = ibuf / m ) * m );
          m1 = Mmin( len, m1 );
- 
+
          bufs[nbufs] = (void *)(Mptr( A, i1, j1, lda ));
          type[nbufs] = MPI_DOUBLE;
          blen[nbufs] = m1;
          if( ierr == MPI_SUCCESS )
             ierr =   MPI_Address( bufs[nbufs], &disp[nbufs] );
- 
+
          nbufs++; len -= m1; j1++; ibuf += m1;
 /*
  * Pack the remaining columns of L
@@ -178,13 +178,13 @@ int HPL_packL
          while( ( len > 0 ) && ( j1 < jb ) )
          {
             m1 = Mmin( len, m );
- 
+
             bufs[nbufs] = (void*)(Mptr( A, 0, j1, lda ));
             type[nbufs] = MPI_DOUBLE;
             blen[nbufs] = m1;
             if( ierr == MPI_SUCCESS )
                ierr =   MPI_Address( bufs[nbufs], &disp[nbufs] );
- 
+
             nbufs++; len -= m1; j1++; ibuf += m1;
          }
       }
@@ -200,12 +200,12 @@ int HPL_packL
             ierr =   MPI_Address( bufs[nbufs], &disp[nbufs] );
          nbufs++;
       }
- 
+
       for( i = 1; i < nbufs; i++ ) disp[i] -= disp[0]; disp[0] = 0;
- 
+
       PANEL->buffers[IBUF] = (void *)(bufs[0]); PANEL->counts [IBUF] = 1;
 /*
- * construct the struct type 
+ * construct the struct type
  */
       if( ierr == MPI_SUCCESS )
          ierr =   MPI_Type_struct( nbufs, blen, disp, type,
@@ -218,7 +218,7 @@ int HPL_packL
       if( disp ) free( disp );
       if( type ) free( type );
 /*
- * commit the type 
+ * commit the type
  */
       if( ierr == MPI_SUCCESS )
          ierr =   MPI_Type_commit( &PANEL->dtypes[IBUF] );
@@ -237,7 +237,7 @@ int HPL_packL
 #else
           /* HPL_USE_MPI_DATATYPE not defined - Oops, there is a bug
              somewhere, so, just in case  and until I find it ... */
-   return( MPI_SUCCESS );   
+   return( MPI_SUCCESS );
 #endif
 /*
  * End of HPL_packL

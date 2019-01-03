@@ -107,11 +107,17 @@ int HPL_pdpanel_free
        hipHostFree( PANEL->WORK);
        PANEL->max_work_size = 0;
      }
+     if( PANEL->IWORK  )
+     {
+       hipFree( PANEL->dIWORK);
+       hipHostFree( PANEL->IWORK);
+       PANEL->max_iwork_size = 0;
+     }
    }
 #else
    if( PANEL->WORK  ) free( PANEL->WORK  );
-#endif
    if( PANEL->IWORK ) free( PANEL->IWORK );
+#endif
 
    return( MPI_SUCCESS );
 /*

@@ -177,7 +177,7 @@ void HPL_pdpanel_init
    PANEL->DINFO   = NULL;
    PANEL->U       = NULL;
    PANEL->dU      = NULL;
-   PANEL->IWORK   = NULL;
+   // PANEL->IWORK   = NULL;
 /*
  * Local lengths, indexes process coordinates
  */
@@ -260,6 +260,7 @@ void HPL_pdpanel_init
       PANEL->dL2   = PANEL->dA + ( myrow == icurrow ? JB : 0 );
       PANEL->L2    = PANEL->A + ( myrow == icurrow ? JB : 0 );
       PANEL->dL1   = (double *)HPL_PTR( PANEL->dWORK, dalign );
+      PANEL->dDPIV = (double *)HPL_PTR( PANEL->dWORK, dalign ) + JB * JB;
       PANEL->L1    = (double *)HPL_PTR( PANEL->WORK, dalign );
       PANEL->DPIV  = (double *)HPL_PTR( PANEL->WORK, dalign ) + JB * JB;
       PANEL->DINFO = PANEL->DPIV + JB;
@@ -339,6 +340,7 @@ void HPL_pdpanel_init
       }
 #endif
       PANEL->DPIV  = PANEL->L1   + JB * JB;
+      PANEL->dDPIV  = PANEL->dL1   + JB * JB;
       PANEL->DINFO = PANEL->DPIV + JB;
       *(PANEL->DINFO) = 0.0;
       PANEL->U     = ( nprow > 1 ? PANEL->DINFO + 1 : NULL );
@@ -407,11 +409,34 @@ void HPL_pdpanel_init
       lwork = 4 + (9 * JB) + (3 * nprow) + itmp1;
    }
 
+#ifdef ROCM
+    if(PANEL->max_iwork_size<(size_t)(lwork) * sizeof( int ))
+    {
+      if( PANEL->IWORK  )
+      {
+        hipFree( PANEL->dIWORK);
+        hipHostFree( PANEL->IWORK);
+      }
+      // size_t numbytes = (((size_t)((size_t)(lwork) * sizeof( double )) + (size_t)4095)/(size_t)4096)*(size_t)4096;
+      size_t numbytes = (size_t)(lwork) *sizeof( int );
+
+      if(hipMalloc((void**)&(PANEL->dIWORK),numbytes)!=HIP_SUCCESS ||
+         hipHostMalloc((void**)&(PANEL->IWORK),numbytes, hipHostMallocDefault)!=HIP_SUCCESS)
+      {
+          HPL_pabort( __LINE__, "HPL_pdpanel_init",
+                      "Memory allocation failed" );
+      }
+      PANEL->max_iwork_size = (size_t)(lwork) * sizeof( int );
+    }
+#else
+
    PANEL->IWORK = (int *)malloc( (size_t)(lwork) * sizeof( int ) );
 
    if( PANEL->IWORK == NULL )
    { HPL_pabort( __LINE__, "HPL_pdpanel_init", "Memory allocation failed" ); }
                        /* Initialize the first entry of the workarray */
+#endif
+
    if (lwork)
     *(PANEL->IWORK) = -1;
 /*

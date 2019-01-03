@@ -53,16 +53,16 @@
 #include "hpl_misc.h"
 
 #ifdef ROCM
-//this is dirty
-typedef struct {
-   float x;
-   float y;
-} float2;
+// //this is dirty
+// typedef struct {
+//    float x;
+//    float y;
+// } float2;
 
-typedef struct {
-   double x;
-   double y;
-} double2;
+// typedef struct {
+//    double x;
+//    double y;
+// } double2;
 
 #include <rocblas.h>
 

@@ -180,9 +180,10 @@ HPL_DEFS     = $(F2CDEFS) $(HPL_OPTS) $(HPL_INCLUDES)
 # - Compilers / linkers - Optimization flags ---------------------------
 # ----------------------------------------------------------------------
 #
-CC           = mpicc
+CC           = mpic++
+HIPCC        = ${ROCMdir}/bin/hipcc
 CCNOOPT      = $(HPL_DEFS)
-CCFLAGS      = $(HPL_DEFS) -O3 -g
+CCFLAGS      = $(HPL_DEFS) -O3 -g -std=c++11
 #
 LINKER       = $(ROCMdir)/bin/hipcc
 LINKFLAGS    = $(CCFLAGS) -I$(MPinc)

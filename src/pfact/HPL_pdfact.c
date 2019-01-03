@@ -107,7 +107,7 @@ void HPL_pdfact
  * .. Local Variables ..
  */
    void                       * vptr = NULL;
-   int                        align, jb;
+   int                        align, jb, i;
 /* ..
  * .. Executable Statements ..
  */
@@ -140,6 +140,10 @@ void HPL_pdfact
    if( vptr ) free( vptr );
 
 #ifdef ROCM
+   int *ipiv  = PANEL->IWORK;
+   int *dipiv  = PANEL->dIWORK;
+   for( i = 0; i < jb; i++ ) { ipiv[i] = (int)(PANEL->DPIV[i]) - PANEL->ii; }
+
    hipMemcpy2DAsync(PANEL->dA, PANEL->lda*sizeof(double),
                      PANEL->A,  PANEL->lda*sizeof(double),
                      PANEL->mp*sizeof(double), jb,
@@ -148,6 +152,10 @@ void HPL_pdfact
    hipMemcpy2DAsync(PANEL->dL1, jb*sizeof(double),
                    PANEL->L1,  jb*sizeof(double),
                    jb*sizeof(double), jb,
+                   hipMemcpyHostToDevice, dataStream);
+   hipMemcpy2DAsync(dipiv, 1*sizeof(int),
+                   ipiv,  1*sizeof(int),
+                   jb*sizeof(int), 1,
                    hipMemcpyHostToDevice, dataStream);
    // hipMemcpy2D(PANEL->dL2, PANEL->lda*sizeof(double),
    //             PANEL->L2,  PANEL->lda*sizeof(double),

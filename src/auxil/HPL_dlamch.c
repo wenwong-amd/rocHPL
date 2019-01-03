@@ -1,36 +1,36 @@
-/* 
- * -- High Performance Computing Linpack Benchmark (HPL)                
- *    HPL - 2.2 - February 24, 2016                          
- *    Antoine P. Petitet                                                
- *    University of Tennessee, Knoxville                                
- *    Innovative Computing Laboratory                                 
- *    (C) Copyright 2000-2008 All Rights Reserved                       
- *                                                                      
- * -- Copyright notice and Licensing terms:                             
- *                                                                      
+/*
+ * -- High Performance Computing Linpack Benchmark (HPL)
+ *    HPL - 2.2 - February 24, 2016
+ *    Antoine P. Petitet
+ *    University of Tennessee, Knoxville
+ *    Innovative Computing Laboratory
+ *    (C) Copyright 2000-2008 All Rights Reserved
+ *
+ * -- Copyright notice and Licensing terms:
+ *
  * Redistribution  and  use in  source and binary forms, with or without
  * modification, are  permitted provided  that the following  conditions
- * are met:                                                             
- *                                                                      
+ * are met:
+ *
  * 1. Redistributions  of  source  code  must retain the above copyright
- * notice, this list of conditions and the following disclaimer.        
- *                                                                      
+ * notice, this list of conditions and the following disclaimer.
+ *
  * 2. Redistributions in binary form must reproduce  the above copyright
  * notice, this list of conditions,  and the following disclaimer in the
- * documentation and/or other materials provided with the distribution. 
- *                                                                      
+ * documentation and/or other materials provided with the distribution.
+ *
  * 3. All  advertising  materials  mentioning  features  or  use of this
- * software must display the following acknowledgement:                 
+ * software must display the following acknowledgement:
  * This  product  includes  software  developed  at  the  University  of
- * Tennessee, Knoxville, Innovative Computing Laboratory.             
- *                                                                      
+ * Tennessee, Knoxville, Innovative Computing Laboratory.
+ *
  * 4. The name of the  University,  the name of the  Laboratory,  or the
  * names  of  its  contributors  may  not  be used to endorse or promote
  * products  derived   from   this  software  without  specific  written
- * permission.                                                          
- *                                                                      
- * -- Disclaimer:                                                       
- *                                                                      
+ * permission.
+ *
+ * -- Disclaimer:
+ *
  * THIS  SOFTWARE  IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES,  INCLUDING,  BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -41,9 +41,9 @@
  * DATA OR PROFITS; OR BUSINESS INTERRUPTION)  HOWEVER CAUSED AND ON ANY
  * THEORY OF LIABILITY, WHETHER IN CONTRACT,  STRICT LIABILITY,  OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * ---------------------------------------------------------------------
- */ 
+ */
 /*
  * Include files
  */
@@ -85,7 +85,7 @@ double HPL_dlamch
    const HPL_T_MACH                 CMACH;
 #endif
 {
-/* 
+/*
  * Purpose
  * =======
  *
@@ -100,50 +100,50 @@ double HPL_dlamch
  *
  * Notes
  * =====
- * 
+ *
  * This function has been manually translated from the Fortran 77 LAPACK
  * auxiliary function dlamch.f  (version 2.0 -- 1992), that  was  itself
  * based on the function ENVRON  by Malcolm and incorporated suggestions
- * by Gentleman and Marovich. See                                       
- *  
+ * by Gentleman and Marovich. See
+ *
  * Malcolm M. A.,  Algorithms  to  reveal  properties  of floating-point
- * arithmetic.,  Comms. of the ACM, 15, 949-951 (1972).                 
- *  
+ * arithmetic.,  Comms. of the ACM, 15, 949-951 (1972).
+ *
  * Gentleman W. M. and Marovich S. B.,  More  on algorithms  that reveal
  * properties of  floating point arithmetic units.,  Comms. of  the ACM,
  * 17, 276-277 (1974).
- * 
+ *
  * Arguments
  * =========
  *
  * CMACH   (local input)                 const HPL_T_MACH
- *         Specifies the value to be returned by HPL_dlamch             
- *            = HPL_MACH_EPS,   HPL_dlamch := eps (default)             
- *            = HPL_MACH_SFMIN, HPL_dlamch := sfmin                     
- *            = HPL_MACH_BASE,  HPL_dlamch := base                      
- *            = HPL_MACH_PREC,  HPL_dlamch := eps*base                  
- *            = HPL_MACH_MLEN,  HPL_dlamch := t                         
- *            = HPL_MACH_RND,   HPL_dlamch := rnd                       
- *            = HPL_MACH_EMIN,  HPL_dlamch := emin                      
- *            = HPL_MACH_RMIN,  HPL_dlamch := rmin                      
- *            = HPL_MACH_EMAX,  HPL_dlamch := emax                      
- *            = HPL_MACH_RMAX,  HPL_dlamch := rmax                      
- *          
- *         where                                                        
- *          
- *            eps   = relative machine precision,                       
- *            sfmin = safe minimum,                                     
- *            base  = base of the machine,                              
- *            prec  = eps*base,                                         
- *            t     = number of digits in the mantissa,                 
- *            rnd   = 1.0 if rounding occurs in addition,               
- *            emin  = minimum exponent before underflow,                
- *            rmin  = underflow threshold,                              
- *            emax  = largest exponent before overflow,                 
+ *         Specifies the value to be returned by HPL_dlamch
+ *            = HPL_MACH_EPS,   HPL_dlamch := eps (default)
+ *            = HPL_MACH_SFMIN, HPL_dlamch := sfmin
+ *            = HPL_MACH_BASE,  HPL_dlamch := base
+ *            = HPL_MACH_PREC,  HPL_dlamch := eps*base
+ *            = HPL_MACH_MLEN,  HPL_dlamch := t
+ *            = HPL_MACH_RND,   HPL_dlamch := rnd
+ *            = HPL_MACH_EMIN,  HPL_dlamch := emin
+ *            = HPL_MACH_RMIN,  HPL_dlamch := rmin
+ *            = HPL_MACH_EMAX,  HPL_dlamch := emax
+ *            = HPL_MACH_RMAX,  HPL_dlamch := rmax
+ *
+ *         where
+ *
+ *            eps   = relative machine precision,
+ *            sfmin = safe minimum,
+ *            base  = base of the machine,
+ *            prec  = eps*base,
+ *            t     = number of digits in the mantissa,
+ *            rnd   = 1.0 if rounding occurs in addition,
+ *            emin  = minimum exponent before underflow,
+ *            rmin  = underflow threshold,
+ *            emax  = largest exponent before overflow,
  *            rmax  = overflow threshold.
  *
  * ---------------------------------------------------------------------
- */ 
+ */
 /*
  * .. Local Variables ..
  */
@@ -323,12 +323,12 @@ static void HPL_dlamc1
    }
 
    *BETA  = lbeta; *T = lt; *RND = lrnd; *IEEE1 = lieee1;
-} 
+}
 
 #ifdef STDC_HEADERS
 static void HPL_dlamc2
 (
-   int                        * BETA, 
+   int                        * BETA,
    int                        * T,
    int                        * RND,
    double                     * EPS,
@@ -432,7 +432,7 @@ static void HPL_dlamc2( BETA, T, RND, EPS, EMIN, RMIN, EMAX, RMAX )
 /*
  * Try some tricks to see whether or not this is the correct  EPS.
  */
-      b     = two / 3.0; 
+      b     = two / 3.0;
       half  = one / HPL_rtwo;
       sixth = HPL_dlamc3( b, -half );
       third = HPL_dlamc3( sixth, sixth );
@@ -571,7 +571,7 @@ static void HPL_dlamc2( BETA, T, RND, EPS, EMIN, RMIN, EMAX, RMAX )
    }
    *BETA = lbeta; *T    = lt;    *RND  = lrnd;  *EPS  = leps;
    *EMIN = lemin; *RMIN = lrmin; *EMAX = lemax; *RMAX = lrmax;
-} 
+}
 
 #ifdef STDC_HEADERS
 static double HPL_dlamc3( const double A, const double B )
@@ -609,7 +609,7 @@ static double HPL_dlamc3( A, B )
  * .. Executable Statements ..
  */
    return( A + B );
-} 
+}
 
 #ifdef STDC_HEADERS
 static void HPL_dlamc4
@@ -678,13 +678,13 @@ static void HPL_dlamc4( EMIN, START, BASE )
       c2 = HPL_dlamc3( b2 / rbase, zero );
       d2 = zero; for( i = 0; i < BASE; i++ ) d2 = d2 + b2;
    } while( ( c1 == a ) && ( c2 == a ) &&  ( d1 == a ) && ( d2 == a ) );
-} 
+}
 
 #ifdef STDC_HEADERS
 static void HPL_dlamc5
 (
    const int                  BETA,
-   const int                  P, 
+   const int                  P,
    const int                  EMIN,
    const int                  IEEE,
    int                        * EMAX,
@@ -695,7 +695,7 @@ static void HPL_dlamc5( BETA, P, EMIN, IEEE, EMAX, RMAX )
 /*
  * .. Scalar Arguments ..
  */
-   const int                  BETA, EMIN, IEEE, P; 
+   const int                  BETA, EMIN, IEEE, P;
    int                        * EMAX;
    double                     * RMAX;
 #endif
@@ -741,12 +741,12 @@ static void HPL_dlamc5( BETA, P, EMIN, IEEE, EMAX, RMAX )
  *         The largest machine floating-point number.
  *
  * ---------------------------------------------------------------------
- */ 
+ */
 /*
  * .. Local Variables ..
  */
    double                     oldy=HPL_rzero, recbas, y, z;
-   int                        exbits=1, expsum, i, lexp=1, nbits, try,
+   int                        exbits=1, expsum, i, lexp=1, nbits, ttry,
                               uexp;
 /* ..
  * .. Executable Statements ..
@@ -758,10 +758,10 @@ static void HPL_dlamc5( BETA, P, EMIN, IEEE, EMAX, RMAX )
  * required number RMAX).
  */
 l_10:
-   try = (int)( (unsigned int)(lexp) << 1 );
-   if( try <= ( -EMIN ) ) { lexp = try; exbits++; goto l_10; }
+   ttry = (int)( (unsigned int)(lexp) << 1 );
+   if( ttry <= ( -EMIN ) ) { lexp = ttry; exbits++; goto l_10; }
 
-   if( lexp == -EMIN ) { uexp = lexp; } else { uexp = try; exbits++; }
+   if( lexp == -EMIN ) { uexp = lexp; } else { uexp = ttry; exbits++; }
 /*
  * Now -lexp is less than or equal to EMIN, and -uexp is greater than or
  * equal to EMIN. exbits is the number of bits needed to store the expo-
@@ -826,7 +826,7 @@ l_10:
 /*
  * End of HPL_dlamch
  */
-} 
+}
 
 #ifdef STDC_HEADERS
 static double HPL_dipow
@@ -870,7 +870,7 @@ static double HPL_dipow( X, N )
  */
    if( X == HPL_rzero ) return( HPL_rzero );
    if( N < 0 ) { n = -N; r = HPL_rone / X; } else { n = N; r = X; }
-   for( k = 0; k < n; k++ ) y *= r; 
+   for( k = 0; k < n; k++ ) y *= r;
 
    return( y );
 }

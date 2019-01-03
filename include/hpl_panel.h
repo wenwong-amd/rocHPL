@@ -75,11 +75,13 @@ typedef struct HPL_S_panel
    double              * dL2;                              /* ptr to L */
    double              * dL1;       /* ptr to jb x jb upper block of A */
    double              * DPIV;    /* ptr to replicated jb pivot array */
+   double              * dDPIV;   /* ptr to replicated jb pivot array */
    double              * DINFO;      /* ptr to replicated scalar info */
    double              * U;                               /* ptr to U */
    double              * dU;                               /* ptr to U */
    int                 * IWORK;     /* integer workspace for swapping */
-   void                * * * buffers[2];   /* buffers for panel bcast */
+   int                 * dIWORK;    /* integer workspace for swapping */
+   void                * buffers[2];   /* buffers for panel bcast */
    int                 counts [2];          /* counts for panel bcast */
    MPI_Datatype        dtypes [2];      /* data types for panel bcast */
    MPI_Request         request[1];        /* requests for panel bcast */
@@ -101,6 +103,7 @@ typedef struct HPL_S_panel
    int                 ldl2;         /* local leading dim of array L2 */
    int                 len;      /* length of the buffer to broadcast */
    unsigned int        max_work_size;   /* largest size of WORK space */
+   unsigned int        max_iwork_size; /* largest size of IWORK space */
    unsigned int        free_work_now;         /* should we deallocate */
 #ifdef HPL_CALL_VSIPL
    vsip_block_d        * Ablock;                           /* A block */
