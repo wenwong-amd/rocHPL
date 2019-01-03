@@ -65,11 +65,11 @@ __global__ void dlaswp00N(const int N, const int M,
 
    const int n = threadIdx.x + blockDim.x*blockIdx.x;
 
-   if (n <N)  {
+   if (n<N)  {
       for(int i = 0; i < M; i++ ) {
-         int ip;
+         int ip = IPIV[i];
 
-         if(i != ( ip = IPIV[i] ) ) {
+         if(i != ip) { //swap
             const double r = A[i+n*LDA];
             A[i+n*LDA] = A[ip+n*LDA];
             A[ip+n*LDA] = r;
@@ -154,8 +154,11 @@ void HPL_dlaswp00N
    if( ( M <= 0 ) || ( N <= 0 ) ) return;
 
 #ifdef ROCM
+   hipStream_t stream;
+   rocblas_get_stream(handle, &stream);
+
    int grid_size = (N+BLOCK_SIZE-1)/BLOCK_SIZE;
-   hipLaunchKernelGGL((dlaswp00N), dim3(grid_size), dim3(BLOCK_SIZE), 0, 0,
+   hipLaunchKernelGGL((dlaswp00N), dim3(grid_size), dim3(BLOCK_SIZE), 0, stream,
                                       N, M, A, LDA, IPIV);
 
    // for( i = 0; i < M; i++ )

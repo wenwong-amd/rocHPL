@@ -153,8 +153,8 @@ void HPL_pdfact
                    PANEL->L1,  jb*sizeof(double),
                    jb*sizeof(double), jb,
                    hipMemcpyHostToDevice, dataStream);
-   hipMemcpy2DAsync(dipiv, 1*sizeof(int),
-                   ipiv,  1*sizeof(int),
+   hipMemcpy2DAsync(dipiv, jb*sizeof(int),
+                   ipiv,  jb*sizeof(int),
                    jb*sizeof(int), 1,
                    hipMemcpyHostToDevice, dataStream);
    // hipMemcpy2D(PANEL->dL2, PANEL->lda*sizeof(double),
