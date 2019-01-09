@@ -72,6 +72,10 @@ extern hipStream_t dataStream;
 
 extern hipEvent_t panelUpdate;
 extern hipEvent_t panelCopy;
+
+extern hipEvent_t dlaswpStart, dlaswpStop;
+extern hipEvent_t dtrsmStart, dtrsmStop;
+extern hipEvent_t dgemmStart, dgemmStop;
 #endif
 
 #if __cplusplus

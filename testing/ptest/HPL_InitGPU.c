@@ -11,6 +11,10 @@ hipStream_t computeStream, dataStream;
 
 hipEvent_t panelUpdate;
 hipEvent_t panelCopy;
+
+hipEvent_t dlaswpStart, dlaswpStop;
+hipEvent_t dtrsmStart, dtrsmStop;
+hipEvent_t dgemmStart, dgemmStop;
 #endif
 
 int stringCmp( const void *a, const void *b)
@@ -80,6 +84,12 @@ void  HPL_InitGPU(){
 
   hipEventCreate(&panelUpdate);
   hipEventCreate(&panelCopy);
+  hipEventCreate(&dlaswpStart);
+  hipEventCreate(&dlaswpStop);
+  hipEventCreate(&dtrsmStart);
+  hipEventCreate(&dtrsmStop);
+  hipEventCreate(&dgemmStart);
+  hipEventCreate(&dgemmStop);
 #endif
 }
 

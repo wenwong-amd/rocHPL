@@ -152,7 +152,13 @@ void HPL_pdgesvK2
  * Factor and broadcast k-th panel
  */
       HPL_pdfact(         panel[k] );
+#ifdef HPL_DETAILED_TIMING
+      HPL_ptimer( HPL_TIMING_RPFACT );
       hipDeviceSynchronize();
+      HPL_ptimer( HPL_TIMING_RPFACT );
+#else
+      hipDeviceSynchronize();
+#endif
       (void) HPL_binit(   panel[k] );
       do
       { (void) HPL_bcast( panel[k], &test ); }
@@ -165,24 +171,25 @@ void HPL_pdgesvK2
       {
          nn = HPL_numrocI( jstart-j, j, nb, nb, mycol, 0, npcol );
          HPL_pdupdate( NULL, NULL, panel[k], nn );
+#ifdef HPL_DETAILED_TIMING
+         HPL_ptimer( HPL_TIMING_UPDATE );
          hipDeviceSynchronize();
+         HPL_ptimer( HPL_TIMING_UPDATE );
+#else
+         hipDeviceSynchronize();
+#endif
       }
    }
 /*
  * Main loop over the remaining columns of A
  */
+   float smallDgemmTime, largeDgemmTime;
+   double smallDgemmGflops, largeDgemmGflops;
+
    for( j = jstart; j < N; j += nb )
    {
       n = N - j; jb = Mmin( n, nb );
-#ifdef HPL_PROGRESS_REPORT
-      /* if this is process 0,0 and not the first panel */
-      if ( GRID->myrow == 0 && mycol == 0 && j > 0 )
-      {
-          time = HPL_timer_walltime() - start_time;
-          gflops = 2.0*(N*(double)N*N - n*(double)n*n)/3.0/(time > 0.0 ? time : 1e-6)/1e9;
-          HPL_fprintf( stdout, "Column=%09d Fraction=%4.1f%% Gflops=%9.3e\n", j, j*100.0/N, gflops);
-      }
-#endif
+
 /*
  * Initialize current panel - Finish latest update, Factor and broadcast
  * current panel
@@ -198,7 +205,17 @@ void HPL_pdgesvK2
          for( k = 0; k < depth; k++ )  { /* partial updates 0..depth-1 */
             (void) HPL_pdupdate( NULL, NULL, panel[k], nn );
          }
+#ifdef HPL_DETAILED_TIMING
+         HPL_ptimer( HPL_TIMING_UPDATE );
          hipDeviceSynchronize();
+         HPL_ptimer( HPL_TIMING_UPDATE );
+
+         hipEventElapsedTime(&smallDgemmTime,
+                              dgemmStart, dgemmStop);
+         smallDgemmGflops = (2.0*(panel[k]->mp-jb)*jb*nn)/(1000.0*1000.0*smallDgemmTime);
+#else
+         hipDeviceSynchronize();
+#endif
 
          /* Queue up finishing the latest update */
          HPL_pdupdate( NULL, NULL, panel[0], nq-nn );
@@ -206,7 +223,14 @@ void HPL_pdgesvK2
          //while computing, factor the current panel
          HPL_pdfact(       panel[depth] );    /* factor current panel */
          hipEventRecord(panelUpdate, dataStream);
+
+#ifdef HPL_DETAILED_TIMING
+         HPL_ptimer( HPL_TIMING_RPFACT );
          hipEventSynchronize(panelUpdate);
+         HPL_ptimer( HPL_TIMING_RPFACT );
+#else
+         hipEventSynchronize(panelUpdate);
+#endif
 
          (void) HPL_binit(   panel[depth] );
          do
@@ -227,7 +251,19 @@ void HPL_pdgesvK2
          while( test != HPL_SUCCESS );
          (void) HPL_bwait(   panel[depth] );
       }
+
+#ifdef HPL_DETAILED_TIMING
+      HPL_ptimer( HPL_TIMING_UPDATE );
       hipDeviceSynchronize();
+      HPL_ptimer( HPL_TIMING_UPDATE );
+
+      hipEventElapsedTime(&largeDgemmTime,
+                           dgemmStart, dgemmStop);
+      largeDgemmGflops = (2.0*(panel[k]->mp-jb)*jb*(nq-nn))/(1000.0*1000.0*largeDgemmTime);
+#else
+      hipDeviceSynchronize();
+#endif
+
 /*
  * Circular  of the panel pointers:
  * xtmp = x[0]; for( k=0; k < depth; k++ ) x[k] = x[k+1]; x[d] = xtmp;
@@ -240,6 +276,20 @@ void HPL_pdgesvK2
       if( mycol == icurcol ) { jj += jb; nq -= jb; }
       icurcol = MModAdd1( icurcol, npcol );
       tag     = MNxtMgid( tag, MSGID_BEGIN_FACT, MSGID_END_FACT );
+
+#ifdef HPL_PROGRESS_REPORT
+      /* if this is process 0,0 and not the first panel */
+      if ( GRID->myrow == 0 && mycol == 0 && j > 0 )
+      {
+          time = HPL_timer_walltime() - start_time;
+          gflops = 2.0*(N*(double)N*N - n*(double)n*n)/3.0/(time > 0.0 ? time : 1e-6)/1e9;
+#ifdef ROCM
+          HPL_fprintf( stdout, "Column=%09d Fraction=%4.1f%% Small DGEMM Gflops=%9.3e large DGEMM Gflops=%9.3e Overall Gflops=%9.3e\n", j, j*100.0/N, smallDgemmGflops, largeDgemmGflops, gflops);
+#else
+          HPL_fprintf( stdout, "Column=%09d Fraction=%4.1f%% Gflops=%9.3e\n", j, j*100.0/N, gflops);
+#endif
+      }
+#endif
    }
 /*
  * Clean-up: Finish updates - release panels and panel list

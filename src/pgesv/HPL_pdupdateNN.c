@@ -247,18 +247,29 @@ void HPL_pdupdateNN
       if( ( nn = n - nq0 ) > 0 )
       {
 #ifdef HPL_DETAILED_TIMING
+         hipStream_t stream;
+         rocblas_get_stream(handle, &stream);
+         hipEventRecord(dlaswpStart, stream);
          HPL_ptimer( HPL_TIMING_LASWP );
          HPL_dlaswp00N( jb, nn, Aptr, lda, ipiv );
+
+         hipEventRecord(dlaswpStop, stream);
          HPL_ptimer( HPL_TIMING_LASWP );
 #else
          HPL_dlaswp00N( jb, nn, Aptr, lda, ipiv );
 #endif
 
 #ifdef ROCM
+#ifdef HPL_DETAILED_TIMING
+        hipEventRecord(dtrsmStart, stream);
+#endif
         const double one = 1.0;
         rocblas_dtrsm(handle, rocblas_side_left, rocblas_fill_lower,
                       rocblas_operation_none, rocblas_diagonal_unit,
                       jb, nn, &one, L1ptr, jb, Aptr, lda);
+#ifdef HPL_DETAILED_TIMING
+        hipEventRecord(dtrsmStop, stream);
+#endif
 #else
          HPL_dtrsm( HplColumnMajor, HplLeft, HplLower, HplNoTrans,
                     HplUnit, jb, nn, HPL_rone, L1ptr, jb, Aptr, lda );
@@ -281,11 +292,17 @@ void HPL_pdupdateNN
 #else
 
 #ifdef ROCM
+#ifdef HPL_DETAILED_TIMING
+       hipEventRecord(dgemmStart, stream);
+#endif
        const double mone = -1.0;
        rocblas_dgemm(handle, rocblas_operation_none, rocblas_operation_none,
                      mp, nn, jb, &mone,
                      L2ptr, ldl2, Aptr, lda, &one,
                      Mptr( Aptr, jb, 0, lda ), lda );
+#ifdef HPL_DETAILED_TIMING
+       hipEventRecord(dgemmStop, stream);
+#endif
 #else
          HPL_dgemm( HplColumnMajor, HplNoTrans, HplNoTrans, mp, nn,
                     jb, -HPL_rone, L2ptr, ldl2, Aptr, lda, HPL_rone,
