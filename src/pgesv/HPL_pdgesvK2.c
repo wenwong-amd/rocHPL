@@ -199,8 +199,6 @@ void HPL_pdgesvK2
 
       if( mycol == icurcol )
       {
-         rocblas_set_stream(handle, computeStream);
-
          nn = HPL_numrocI( jb, j, nb, nb, mycol, 0, npcol );
          for( k = 0; k < depth; k++ )  { /* partial updates 0..depth-1 */
             (void) HPL_pdupdate( NULL, NULL, panel[k], nn );
@@ -212,7 +210,7 @@ void HPL_pdgesvK2
 
          hipEventElapsedTime(&smallDgemmTime,
                               dgemmStart, dgemmStop);
-         smallDgemmGflops = (2.0*(panel[k]->mp-jb)*jb*nn)/(1000.0*1000.0*smallDgemmTime);
+         smallDgemmGflops = (2.0*(panel[k]->mp)*jb*nn)/(1000.0*1000.0*smallDgemmTime);
 #else
          hipDeviceSynchronize();
 #endif
@@ -259,7 +257,7 @@ void HPL_pdgesvK2
 
       hipEventElapsedTime(&largeDgemmTime,
                            dgemmStart, dgemmStop);
-      largeDgemmGflops = (2.0*(panel[k]->mp-jb)*jb*(nq-nn))/(1000.0*1000.0*largeDgemmTime);
+      largeDgemmGflops = (2.0*(panel[k]->mp)*jb*(nq-nn))/(1000.0*1000.0*largeDgemmTime);
 #else
       hipDeviceSynchronize();
 #endif

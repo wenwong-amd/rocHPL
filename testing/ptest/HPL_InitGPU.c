@@ -82,6 +82,8 @@ void  HPL_InitGPU(){
   hipStreamCreate(&computeStream);
   hipStreamCreate(&dataStream);
 
+  rocblas_set_stream(handle, computeStream);
+
   hipEventCreate(&panelUpdate);
   hipEventCreate(&panelCopy);
   hipEventCreate(&dlaswpStart);
