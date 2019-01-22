@@ -184,7 +184,7 @@ void HPL_pdmatgen
    rocrand_set_seed(generator, ISEED);
    rocrand_set_offset(generator, pos1);
 
-   rocrand_generate_uniform_double(generator,A, mp*nq);
+   rocrand_generate_uniform_double(generator,A, ((size_t)mp)*nq);
    // rocrand_generate_normal_double(generator, A, mp*nq, 0.0, 0.25);
    hipDeviceSynchronize();
 

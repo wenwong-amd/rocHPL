@@ -171,18 +171,32 @@ void HPL_pdtest
    size_t numbytes = (((size_t)( (size_t)(ALGO->align) +
                                  (size_t)(mat.ld+1) * (size_t)(mat.nq) ) *
                                   sizeof(double)+(size_t)4095)/(size_t)4096)*(size_t)4096;
-   info[0] = (hipMalloc(&dvptr, numbytes)!=HIP_SUCCESS) ||
-             (hipHostMalloc(&vptr, numbytes,0)!=HIP_SUCCESS);
+   hipHostMalloc(&vptr, numbytes,0);
+   info[0] = (vptr==NULL);
    info[1] = myrow; info[2] = mycol;
    (void) HPL_all_reduce( (void *)(info), 3, HPL_INT, HPL_max,
                           GRID->all_comm );
    if( info[0] != 0 ) {
      HPL_pwarn( TEST->outfp, __LINE__, "HPL_pdtest",
                   "[%d,%d] %s", info[1], info[2],
-                  "Memory allocation failed for A, x and b. Skip." );
+                  "Pinned Host memory allocation failed for A, x and b. Skip." );
      (TEST->kskip)++;
      return;
    }
+
+   hipMalloc(&dvptr, numbytes);
+   info[0] = (dvptr==NULL);
+   info[1] = myrow; info[2] = mycol;
+   (void) HPL_all_reduce( (void *)(info), 3, HPL_INT, HPL_max,
+                          GRID->all_comm );
+   if( info[0] != 0 ) {
+     HPL_pwarn( TEST->outfp, __LINE__, "HPL_pdtest",
+                  "[%d,%d] %s", info[1], info[2],
+                  "Device memory allocation failed for A, x and b. Skip." );
+     (TEST->kskip)++;
+     return;
+   }
+
 #else
    vptr = (void*)malloc( ( (size_t)(ALGO->align) +
                            (size_t)(mat.ld+1) * (size_t)(mat.nq) ) *
@@ -379,7 +393,7 @@ void HPL_pdtest
  */
 #ifdef ROCM
    HPL_pdmatgen( GRID, N, N+1, NB, mat.dA, mat.ld, HPL_ISEED );
-   hipMemcpy(mat.A, mat.dA, (N*mat.ld+N)*sizeof(double), hipMemcpyDeviceToHost);
+   hipMemcpy(mat.A, mat.dA, (N*((size_t)mat.ld)+N)*sizeof(double), hipMemcpyDeviceToHost);
    hipMemcpy(mat.X, mat.dX, N*sizeof(double), hipMemcpyDeviceToHost);
 #else
    HPL_pdmatgen( GRID, N, N+1, NB, mat.A, mat.ld, HPL_ISEED );

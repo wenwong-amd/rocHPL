@@ -95,7 +95,7 @@ __global__ void dlaswp00N(const int N, const int M,
 
    //read in block column
    for (int i=m;i<M;i+=blockDim.x)
-      s_An_init[i] = A[i+n*LDA];
+      s_An_init[i] = A[i+n*((size_t)LDA)];
 
    __syncthreads();
 
@@ -106,7 +106,7 @@ __global__ void dlaswp00N(const int N, const int M,
       if (ip<M) { //local swap
          s_An_ipiv[i] = s_An_init[ip];
       } else { //non local swap
-         s_An_ipiv[i] = A[ip+n*LDA];
+         s_An_ipiv[i] = A[ip+n*((size_t)LDA)];
       }
    }
 
@@ -118,17 +118,17 @@ __global__ void dlaswp00N(const int N, const int M,
       if (ip_init==ip_ipiv) break;
 
       if (ip_ipiv<M) { //local swap
-         A[ip_init+n*LDA] = s_An_init[ip_ipiv];
+         A[ip_init+n*((size_t)LDA)] = s_An_init[ip_ipiv];
       } else { //non local swap
-         const double r = A[ip_init+n*LDA];
-         A[ip_init+n*LDA] = A[ip_ipiv+n*LDA];
-         A[ip_ipiv+n*LDA] = r;
+         const double r = A[ip_init+n*((size_t)LDA)];
+         A[ip_init+n*((size_t)LDA)] = A[ip_ipiv+n*((size_t)LDA)];
+         A[ip_ipiv+n*((size_t)LDA)] = r;
       }
    }
 
    //write out local block
    for (int i=m;i<M;i+=blockDim.x)
-      A[i+n*LDA] = s_An_ipiv[i];
+      A[i+n*((size_t)LDA)] = s_An_ipiv[i];
 }
 
 #endif
