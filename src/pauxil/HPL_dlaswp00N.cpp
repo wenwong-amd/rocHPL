@@ -56,8 +56,9 @@
 
 #include <hip/hip_runtime.h>
 
-#define BLOCK_SIZE 64
 
+#if 0
+#define BLOCK_SIZE 64
 __global__ void dlaswp00N(const int N, const int M,
                      double* __restrict__ A,
                      const int LDA,
@@ -76,6 +77,58 @@ __global__ void dlaswp00N(const int N, const int M,
          }
       }
    }
+}
+#endif
+
+#define BLOCK_SIZE 512
+
+__global__ void dlaswp00N(const int N, const int M,
+                     double* __restrict__ A,
+                     const int LDA,
+                     const int* __restrict__ IPIV) {
+
+   __shared__ double s_An_init[2048];
+   __shared__ double s_An_ipiv[2048];
+
+   const int m = threadIdx.x;
+   const int n = blockIdx.x;
+
+   //read in block column
+   for (int i=m;i<M;i+=blockDim.x)
+      s_An_init[i] = A[i+n*LDA];
+
+   __syncthreads();
+
+   //local block
+   for (int i=m;i<M;i+=blockDim.x) {
+      const int ip = IPIV[i];
+
+      if (ip<M) { //local swap
+         s_An_ipiv[i] = s_An_init[ip];
+      } else { //non local swap
+         s_An_ipiv[i] = A[ip+n*LDA];
+      }
+   }
+
+   //remaining swaps in column
+   for (int i=m;i<M;i+=blockDim.x) {
+      const int ip_init = IPIV[i+M];
+      const int ip_ipiv = IPIV[i+2*M];
+
+      if (ip_init==ip_ipiv) break;
+
+      if (ip_ipiv<M) { //local swap
+         A[ip_init+n*LDA] = s_An_init[ip_ipiv];
+      } else { //non local swap
+         const double r = A[ip_init+n*LDA];
+         A[ip_init+n*LDA] = A[ip_ipiv+n*LDA];
+         A[ip_ipiv+n*LDA] = r;
+      }
+   }
+
+   //write out local block
+   for (int i=m;i<M;i+=blockDim.x)
+      A[i+n*LDA] = s_An_ipiv[i];
 }
 
 #endif
@@ -157,7 +210,7 @@ void HPL_dlaswp00N
    hipStream_t stream;
    rocblas_get_stream(handle, &stream);
 
-   int grid_size = (N+BLOCK_SIZE-1)/BLOCK_SIZE;
+   int grid_size = N;
    hipLaunchKernelGGL((dlaswp00N), dim3(grid_size), dim3(BLOCK_SIZE), 0, stream,
                                       N, M, A, LDA, IPIV);
 

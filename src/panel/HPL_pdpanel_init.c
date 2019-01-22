@@ -402,10 +402,10 @@ void HPL_pdpanel_init
  *    IWORK[0] =  1: HPL_pdlaswp01 already computed those arrays;
  * This allows to save some redundant and useless computations.
  */
-   if( nprow == 1 ) { lwork = JB; }
+   if( nprow == 1 ) { lwork = 3*JB; }
    else
    {
-      itmp1 = (JB << 1); lwork = nprow + 1; itmp1 = Mmax( itmp1, lwork );
+      itmp1 = (JB << 2); lwork = nprow + 1; itmp1 = Mmax( itmp1, lwork );
       lwork = 4 + (9 * JB) + (3 * nprow) + itmp1;
    }
 
@@ -427,6 +427,11 @@ void HPL_pdpanel_init
                       "Memory allocation failed" );
       }
       PANEL->max_iwork_size = (size_t)(lwork) * sizeof( int );
+
+      if (PANEL->IWORK2)
+        free(PANEL->IWORK2);
+
+      PANEL->IWORK2 = (int *)malloc( (size_t)(mp) * sizeof( int ) );
     }
 #else
 

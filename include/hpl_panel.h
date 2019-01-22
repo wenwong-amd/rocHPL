@@ -80,6 +80,7 @@ typedef struct HPL_S_panel
    double              * U;                               /* ptr to U */
    double              * dU;                               /* ptr to U */
    int                 * IWORK;     /* integer workspace for swapping */
+   int                 * IWORK2;     /* integer workspace for swapping */
    int                 * dIWORK;    /* integer workspace for swapping */
    void                * buffers[2];   /* buffers for panel bcast */
    int                 counts [2];          /* counts for panel bcast */

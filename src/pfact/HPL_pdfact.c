@@ -140,10 +140,6 @@ void HPL_pdfact
    if( vptr ) free( vptr );
 
 #ifdef ROCM
-   int *ipiv  = PANEL->IWORK;
-   int *dipiv  = PANEL->dIWORK;
-   for( i = 0; i < jb; i++ ) { ipiv[i] = (int)(PANEL->DPIV[i]) - PANEL->ii; }
-
    hipMemcpy2DAsync(PANEL->dA, PANEL->lda*sizeof(double),
                      PANEL->A,  PANEL->lda*sizeof(double),
                      PANEL->mp*sizeof(double), jb,
@@ -153,28 +149,46 @@ void HPL_pdfact
                    PANEL->L1,  jb*sizeof(double),
                    jb*sizeof(double), jb,
                    hipMemcpyHostToDevice, dataStream);
+
+   //unroll pivoting and send to device
+   int *ipiv       = PANEL->IWORK;
+   int *ipiv_init  = PANEL->IWORK+jb;
+   int *ipiv_ipiv  = PANEL->IWORK+2*jb;
+   int *dipiv      = PANEL->dIWORK;
+   int *dipiv_init = PANEL->dIWORK+jb;
+   int *dipiv_ipiv = PANEL->dIWORK+2*jb;
+   int *upiv = PANEL->IWORK2;
+   for( i = 0; i < jb; i++ ) { ipiv[i] = (int)(PANEL->DPIV[i]) - PANEL->ii; } //shift
+   for( i = 0; i < PANEL->mp; i++ ) { upiv[i] = i; } //initialize ids
+   for( i = 0; i < jb; i++ ) { //swap ids
+      int id = upiv[i];
+      upiv[i] = upiv[ipiv[i]];
+      upiv[ipiv[i]] = id;
+   }
+   int cnt=0;
+   for( i = jb; i < PANEL->mp; i++ ) { //find swapped ids outside of panel
+      if (upiv[i]!=i) {
+         ipiv_init[cnt] = i;
+         ipiv_ipiv[cnt] = upiv[i];
+         cnt++;
+      }
+   }
+   for( i = cnt; i < jb; i++ ) {
+      ipiv_init[i] = ipiv_ipiv[i] = 0; //end
+   }
+
    hipMemcpy2DAsync(dipiv, jb*sizeof(int),
-                   ipiv,  jb*sizeof(int),
-                   jb*sizeof(int), 1,
-                   hipMemcpyHostToDevice, dataStream);
-   // hipMemcpy2D(PANEL->dL2, PANEL->lda*sizeof(double),
-   //             PANEL->L2,  PANEL->lda*sizeof(double),
-   //             PANEL->mp*sizeof(double), jb,
-   //             hipMemcpyHostToDevice);
-
-   // double *dpiv;
-   // int *ipiv;
-   // int iroff, i;
-
-   //apply factorization on device
-   // dpiv  = PANEL->DPIV; ipiv  = PANEL->IWORK; iroff = PANEL->ii;
-   // for( i = 0; i < jb; i++ ) { ipiv[i] = (int)(dpiv[i]) - iroff; }
-   // HPL_dlaswp00N( jb, jb, PANEL->dA, PANEL->lda, ipiv );
-   // const double one = 1.0;
-   // rocblas_dtrsm(handle, rocblas_side_left, rocblas_fill_lower,
-   //               rocblas_operation_none, rocblas_diagonal_unit,
-   //               jb, jb, &one, PANEL->dL1, jb, PANEL->dA, PANEL->lda);
-   // hipDeviceSynchronize();
+                    upiv,  jb*sizeof(int),
+                    jb*sizeof(int), 1,
+                    hipMemcpyHostToDevice, dataStream);
+   hipMemcpy2DAsync(dipiv_init, jb*sizeof(int),
+                    ipiv_init,  jb*sizeof(int),
+                    jb*sizeof(int), 1,
+                    hipMemcpyHostToDevice, dataStream);
+   hipMemcpy2DAsync(dipiv_ipiv, jb*sizeof(int),
+                    ipiv_ipiv,  jb*sizeof(int),
+                    jb*sizeof(int), 1,
+                    hipMemcpyHostToDevice, dataStream);
 #endif
 
    PANEL->A   = Mptr( PANEL->A, 0, jb, PANEL->lda );
