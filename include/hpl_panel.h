@@ -155,6 +155,14 @@ int                              HPL_pdpanel_free
 STDC_ARGS( (
    HPL_T_panel *
 ) );
+void                              HPL_pdpanel_SendToHost
+STDC_ARGS( (
+   HPL_T_panel *
+) );
+void                              HPL_pdpanel_SendToDevice
+STDC_ARGS( (
+   HPL_T_panel *
+) );
 
 #if __cplusplus
 }

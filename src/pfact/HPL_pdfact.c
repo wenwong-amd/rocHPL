@@ -126,70 +126,9 @@ void HPL_pdfact
 /*
  * Factor the panel - Update the panel pointers
  */
-#ifdef ROCM
-   hipMemcpy2DAsync(PANEL->A,  PANEL->lda*sizeof(double),
-                    PANEL->dA, PANEL->lda*sizeof(double),
-                    PANEL->mp*sizeof(double), jb,
-                    hipMemcpyDeviceToHost, dataStream);
-   hipEventRecord(panelCopy, dataStream);
-   hipEventSynchronize(panelCopy);
-#endif
-
    PANEL->algo->rffun( PANEL, PANEL->mp, jb, 0, (double *)HPL_PTR( vptr,
                        ((size_t)(align) * sizeof(double) ) ) );
    if( vptr ) free( vptr );
-
-#ifdef ROCM
-   hipMemcpy2DAsync(PANEL->dA, PANEL->lda*sizeof(double),
-                     PANEL->A,  PANEL->lda*sizeof(double),
-                     PANEL->mp*sizeof(double), jb,
-                     hipMemcpyHostToDevice, dataStream);
-
-   hipMemcpy2DAsync(PANEL->dL1, jb*sizeof(double),
-                   PANEL->L1,  jb*sizeof(double),
-                   jb*sizeof(double), jb,
-                   hipMemcpyHostToDevice, dataStream);
-
-   //unroll pivoting and send to device
-   int *ipiv       = PANEL->IWORK;
-   int *ipiv_init  = PANEL->IWORK+jb;
-   int *ipiv_ipiv  = PANEL->IWORK+2*jb;
-   int *dipiv      = PANEL->dIWORK;
-   int *dipiv_init = PANEL->dIWORK+jb;
-   int *dipiv_ipiv = PANEL->dIWORK+2*jb;
-   int *upiv = PANEL->IWORK2;
-   for( i = 0; i < jb; i++ ) { ipiv[i] = (int)(PANEL->DPIV[i]) - PANEL->ii; } //shift
-   for( i = 0; i < PANEL->mp; i++ ) { upiv[i] = i; } //initialize ids
-   for( i = 0; i < jb; i++ ) { //swap ids
-      int id = upiv[i];
-      upiv[i] = upiv[ipiv[i]];
-      upiv[ipiv[i]] = id;
-   }
-   int cnt=0;
-   for( i = jb; i < PANEL->mp; i++ ) { //find swapped ids outside of panel
-      if (upiv[i]!=i) {
-         ipiv_init[cnt] = i;
-         ipiv_ipiv[cnt] = upiv[i];
-         cnt++;
-      }
-   }
-   for( i = cnt; i < jb; i++ ) {
-      ipiv_init[i] = ipiv_ipiv[i] = 0; //end
-   }
-
-   hipMemcpy2DAsync(dipiv, jb*sizeof(int),
-                    upiv,  jb*sizeof(int),
-                    jb*sizeof(int), 1,
-                    hipMemcpyHostToDevice, dataStream);
-   hipMemcpy2DAsync(dipiv_init, jb*sizeof(int),
-                    ipiv_init,  jb*sizeof(int),
-                    jb*sizeof(int), 1,
-                    hipMemcpyHostToDevice, dataStream);
-   hipMemcpy2DAsync(dipiv_ipiv, jb*sizeof(int),
-                    ipiv_ipiv,  jb*sizeof(int),
-                    jb*sizeof(int), 1,
-                    hipMemcpyHostToDevice, dataStream);
-#endif
 
    PANEL->A   = Mptr( PANEL->A, 0, jb, PANEL->lda );
    PANEL->dA  = Mptr( PANEL->dA, 0, jb, PANEL->lda );

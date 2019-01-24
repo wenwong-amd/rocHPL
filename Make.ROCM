@@ -81,7 +81,7 @@ HPLlib       = $(LIBdir)/libhpl.a
 # header files,  MPlib  is defined  to be the name of  the library to be
 # used. The variable MPdir is only used for defining MPinc and MPlib.
 #
-MPdir        = /usr/lib/openmpi
+MPdir        = /usr/lib/x86_64-linux-gnu/openmpi
 MPinc        = $(MPdir)/include
 MPlib        = $(shell mpic++ --showme:link)
 #
@@ -106,10 +106,10 @@ HIPlib         = -L$(ROCM_DIR)/hip/lib/ -lhip_hcc
 # header files,  LAlib  is defined  to be the name of  the library to be
 # used. The variable LAdir is only used for defining LAinc and LAlib.
 #
-#LAdir        = /home/research/openblas
-#BLASlib      = -L$(LAdir) -lopenblas
-LAdir        =
-BLASlib      = -lblas
+LAdir        = /home/research/openblas
+BLASlib      = -L$(LAdir) -lopenblas
+#LAdir        =
+#BLASlib      = -lblas
 LAinc        = -I$(ROCMdir)/hip/include -I$(ROCMdir)/rocrand/include -I$(ROCMdir)/rocblas/include $(HIPinc)
 LAlib        = $(HIPlib) -L$(ROCMlib) -lrocblas -L$(ROCMdir)/rocrand/lib -lrocrand $(BLASlib)
 #
@@ -184,9 +184,9 @@ HPL_DEFS     = $(F2CDEFS) $(HPL_OPTS) $(HPL_INCLUDES)
 # ----------------------------------------------------------------------
 #
 CC           = mpic++
-HIPCC        = ${ROCMdir}/bin/hipcc
+HIPCC        = ${ROCMdir}/bin/hipcc -I$(MPinc)
 CCNOOPT      = $(HPL_DEFS)
-CCFLAGS      = $(HPL_DEFS) -O3 -g -std=c++11
+CCFLAGS      = $(HPL_DEFS) -O3 -g -std=c++11 -fopenmp
 #
 LINKER       = $(ROCMdir)/bin/hipcc
 LINKFLAGS    = $(CCFLAGS) -I$(MPinc)
