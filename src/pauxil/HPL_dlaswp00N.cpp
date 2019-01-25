@@ -108,23 +108,20 @@ __global__ void dlaswp00N(const int N, const int M,
          s_An_ipiv[i] = A[ip+n*((size_t)LDA)];
       }
    }
-
-   //remaining swaps in column
-   for (int i=m;i<M;i+=blockDim.x) {
-      const int ip_init = IPIV[i+M];
-      const int ip_ipiv = IPIV[i+2*M];
-
-      if (ip_init==ip_ipiv) break;
-
-      //local swap
-      A[ip_init+n*((size_t)LDA)] = s_An_init[ip_ipiv];
-   }
-
    __syncthreads();
 
    //write out local block
    for (int i=m;i<M;i+=blockDim.x)
       A[i+n*((size_t)LDA)] = s_An_ipiv[i];
+
+   //remaining swaps in column
+   for (int i=m;i<M;i+=blockDim.x) {
+      const int ip_ex = IPIV[i+M];
+
+      if (ip_ex>-1) {
+         A[ip_ex+n*((size_t)LDA)] = s_An_init[i];
+      }
+   }
 }
 #endif
 #endif
