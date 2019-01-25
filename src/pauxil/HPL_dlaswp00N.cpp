@@ -78,8 +78,7 @@ __global__ void dlaswp00N(const int N, const int M,
       }
    }
 }
-#endif
-
+#else
 #define BLOCK_SIZE 512
 
 __global__ void dlaswp00N(const int N, const int M,
@@ -117,20 +116,17 @@ __global__ void dlaswp00N(const int N, const int M,
 
       if (ip_init==ip_ipiv) break;
 
-      if (ip_ipiv<M) { //local swap
-         A[ip_init+n*((size_t)LDA)] = s_An_init[ip_ipiv];
-      } else { //non local swap
-         const double r = A[ip_init+n*((size_t)LDA)];
-         A[ip_init+n*((size_t)LDA)] = A[ip_ipiv+n*((size_t)LDA)];
-         A[ip_ipiv+n*((size_t)LDA)] = r;
-      }
+      //local swap
+      A[ip_init+n*((size_t)LDA)] = s_An_init[ip_ipiv];
    }
+
+   __syncthreads();
 
    //write out local block
    for (int i=m;i<M;i+=blockDim.x)
       A[i+n*((size_t)LDA)] = s_An_ipiv[i];
 }
-
+#endif
 #endif
 
 
@@ -211,6 +207,7 @@ void HPL_dlaswp00N
    rocblas_get_stream(handle, &stream);
 
    int grid_size = N;
+   // int grid_size = (N+BLOCK_SIZE-1)/BLOCK_SIZE;
    hipLaunchKernelGGL((dlaswp00N), dim3(grid_size), dim3(BLOCK_SIZE), 0, stream,
                                       N, M, A, LDA, IPIV);
 

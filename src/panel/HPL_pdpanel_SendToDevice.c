@@ -106,6 +106,7 @@ void HPL_pdpanel_SendToDevice
    int *dipiv_init = PANEL->dIWORK+jb;
    int *dipiv_ipiv = PANEL->dIWORK+2*jb;
    int *upiv = PANEL->IWORK2;
+
    for( i = 0; i < jb; i++ ) { ipiv[i] = (int)(PANEL->DPIV[i]) - PANEL->ii; } //shift
    for( i = 0; i < PANEL->mp; i++ ) { upiv[i] = i; } //initialize ids
    for( i = 0; i < jb; i++ ) { //swap ids
@@ -137,6 +138,13 @@ void HPL_pdpanel_SendToDevice
                     ipiv_ipiv,  jb*sizeof(int),
                     jb*sizeof(int), 1,
                     hipMemcpyHostToDevice, dataStream);
+
+
+   // for( i = 0; i < jb; i++ ) { ipiv[i] = (int)(PANEL->DPIV[i]) - PANEL->ii; }
+   // hipMemcpy2DAsync(dipiv, jb*sizeof(int),
+   //                  ipiv,  jb*sizeof(int),
+   //                  jb*sizeof(int), 1,
+   //                  hipMemcpyHostToDevice, dataStream);
 #endif
 
 /*
