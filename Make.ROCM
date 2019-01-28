@@ -106,10 +106,8 @@ HIPlib         = -L$(ROCM_DIR)/hip/lib/ -lhip_hcc
 # header files,  LAlib  is defined  to be the name of  the library to be
 # used. The variable LAdir is only used for defining LAinc and LAlib.
 #
-LAdir        = /home/research/openblas
+LAdir        = ../../../openblas
 BLASlib      = -L$(LAdir) -lopenblas
-#LAdir        =
-#BLASlib      = -lblas
 LAinc        = -I$(ROCMdir)/hip/include -I$(ROCMdir)/rocrand/include -I$(ROCMdir)/rocblas/include $(HIPinc)
 LAlib        = $(HIPlib) -L$(ROCMlib) -lrocblas -L$(ROCMdir)/rocrand/lib -lrocrand $(BLASlib)
 #
@@ -173,7 +171,7 @@ HPL_LIBS     = $(HPLlib) $(LAlib) $(MPlib)
 #    *) call the BLAS Fortran 77 interface,
 #    *) not display detailed timing information.
 #
-HPL_OPTS     =
+HPL_OPTS     = -DVERBOSE_PRINT
 #
 # ----------------------------------------------------------------------
 #
@@ -186,7 +184,7 @@ HPL_DEFS     = $(F2CDEFS) $(HPL_OPTS) $(HPL_INCLUDES)
 CC           = mpic++
 HIPCC        = ${ROCMdir}/bin/hipcc -I$(MPinc)
 CCNOOPT      = $(HPL_DEFS)
-CCFLAGS      = $(HPL_DEFS) -O3 -g -std=c++11 -fopenmp
+CCFLAGS      = $(HPL_DEFS) -O3 -g -std=c++11
 #
 LINKER       = $(ROCMdir)/bin/hipcc
 LINKFLAGS    = $(CCFLAGS) -I$(MPinc)

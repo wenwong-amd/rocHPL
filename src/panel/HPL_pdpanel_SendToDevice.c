@@ -83,12 +83,12 @@ void HPL_pdpanel_SendToDevice
 
    } else {
       ml2 = ( PANEL->grid->myrow == PANEL->prow ? PANEL->mp - jb : PANEL->mp );
-      ml2 = Mmax( 0, ml2 );
 
-      hipMemcpy2DAsync(PANEL->dL2, PANEL->ldl2*sizeof(double),
-                        PANEL->L2,  PANEL->ldl2*sizeof(double),
-                        ml2*sizeof(double), jb,
-                        hipMemcpyHostToDevice, dataStream);
+      if (ml2>0)
+        hipMemcpy2DAsync(PANEL->dL2, PANEL->ldl2*sizeof(double),
+                         PANEL->L2,  PANEL->ldl2*sizeof(double),
+                         ml2*sizeof(double), jb,
+                         hipMemcpyHostToDevice, dataStream);
    }
 #endif
 

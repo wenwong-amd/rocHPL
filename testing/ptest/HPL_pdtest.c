@@ -171,6 +171,11 @@ void HPL_pdtest
    size_t numbytes = (((size_t)( (size_t)(ALGO->align) +
                                  (size_t)(mat.ld+1) * (size_t)(mat.nq) ) *
                                   sizeof(double)+(size_t)4095)/(size_t)4096)*(size_t)4096;
+#ifdef VERBOSE_PRINT
+   if( ( myrow == 0 ) && ( mycol == 0 ) )
+     {printf("Allocating %g GBs of storage on GPU...",((double) numbytes)/(1024*1024*1024)); fflush(stdout);}
+#endif
+
    hipHostMalloc(&vptr, numbytes,0);
    info[0] = (vptr==NULL);
    info[1] = myrow; info[2] = mycol;
@@ -183,6 +188,11 @@ void HPL_pdtest
      (TEST->kskip)++;
      return;
    }
+#ifdef VERBOSE_PRINT
+   if( ( myrow == 0 ) && ( mycol == 0 ) )
+     {printf("done.\n");
+      printf("Allocating %g GBs of storage on CPU...", ((double) numbytes)/(1024*1024*1024)); fflush(stdout);}
+#endif
 
    hipMalloc(&dvptr, numbytes);
    info[0] = (dvptr==NULL);
@@ -196,6 +206,10 @@ void HPL_pdtest
      (TEST->kskip)++;
      return;
    }
+#ifdef VERBOSE_PRINT
+   if( ( myrow == 0 ) && ( mycol == 0 ) )
+     printf("done.\n");
+#endif
 
 #else
    vptr = (void*)malloc( ( (size_t)(ALGO->align) +
@@ -247,12 +261,8 @@ void HPL_pdtest
    HPL_ptimer( 0 );
    HPL_pdgesv( GRID, ALGO, &mat );
    HPL_ptimer( 0 );
-
-   // hipMemcpy(mat.X, mat.dX, N*sizeof(double), hipMemcpyDeviceToHost);
-   // for (i=0;i<N;i++)
-   //  printf("X[%d] = %f\n", i, mat.X[i]);
-
    time( &current_time_end );
+
 #ifdef HPL_CALL_VSIPL
    (void) vsip_blockrelease_d( mat.block, VSIP_TRUE );
    vsip_blockdestroy_d( mat.block );
