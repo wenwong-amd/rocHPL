@@ -393,8 +393,9 @@ void HPL_pdtest
  */
 #ifdef ROCM
    HPL_pdmatgen( GRID, N, N+1, NB, mat.dA, mat.ld, HPL_ISEED );
-   hipMemcpy(mat.A, mat.dA, (N*((size_t)mat.ld)+N)*sizeof(double), hipMemcpyDeviceToHost);
-   hipMemcpy(mat.X, mat.dX, N*sizeof(double), hipMemcpyDeviceToHost);
+   // hipMemcpy(mat.A, mat.dA, (N*((size_t)mat.ld)+N)*sizeof(double), hipMemcpyDeviceToHost);
+   // hipMemcpy(mat.X, mat.dX, N*sizeof(double), hipMemcpyDeviceToHost);
+   hipMemcpy(vptr, dvptr, numbytes, hipMemcpyDeviceToHost);
 #else
    HPL_pdmatgen( GRID, N, N+1, NB, mat.A, mat.ld, HPL_ISEED );
 #endif
