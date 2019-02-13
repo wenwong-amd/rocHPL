@@ -1,36 +1,36 @@
-/* 
- * -- High Performance Computing Linpack Benchmark (HPL)                
- *    HPL - 2.2 - February 24, 2016                          
- *    Antoine P. Petitet                                                
- *    University of Tennessee, Knoxville                                
- *    Innovative Computing Laboratory                                 
- *    (C) Copyright 2000-2008 All Rights Reserved                       
- *                                                                      
- * -- Copyright notice and Licensing terms:                             
- *                                                                      
+/*
+ * -- High Performance Computing Linpack Benchmark (HPL)
+ *    HPL - 2.2 - February 24, 2016
+ *    Antoine P. Petitet
+ *    University of Tennessee, Knoxville
+ *    Innovative Computing Laboratory
+ *    (C) Copyright 2000-2008 All Rights Reserved
+ *
+ * -- Copyright notice and Licensing terms:
+ *
  * Redistribution  and  use in  source and binary forms, with or without
  * modification, are  permitted provided  that the following  conditions
- * are met:                                                             
- *                                                                      
+ * are met:
+ *
  * 1. Redistributions  of  source  code  must retain the above copyright
- * notice, this list of conditions and the following disclaimer.        
- *                                                                      
+ * notice, this list of conditions and the following disclaimer.
+ *
  * 2. Redistributions in binary form must reproduce  the above copyright
  * notice, this list of conditions,  and the following disclaimer in the
- * documentation and/or other materials provided with the distribution. 
- *                                                                      
+ * documentation and/or other materials provided with the distribution.
+ *
  * 3. All  advertising  materials  mentioning  features  or  use of this
- * software must display the following acknowledgement:                 
+ * software must display the following acknowledgement:
  * This  product  includes  software  developed  at  the  University  of
- * Tennessee, Knoxville, Innovative Computing Laboratory.             
- *                                                                      
+ * Tennessee, Knoxville, Innovative Computing Laboratory.
+ *
  * 4. The name of the  University,  the name of the  Laboratory,  or the
  * names  of  its  contributors  may  not  be used to endorse or promote
  * products  derived   from   this  software  without  specific  written
- * permission.                                                          
- *                                                                      
- * -- Disclaimer:                                                       
- *                                                                      
+ * permission.
+ *
+ * -- Disclaimer:
+ *
  * THIS  SOFTWARE  IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES,  INCLUDING,  BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -41,9 +41,9 @@
  * DATA OR PROFITS; OR BUSINESS INTERRUPTION)  HOWEVER CAUSED AND ON ANY
  * THEORY OF LIABILITY, WHETHER IN CONTRACT,  STRICT LIABILITY,  OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * ---------------------------------------------------------------------
- */ 
+ */
 /*
  * Include files
  */
@@ -66,21 +66,21 @@ void HPL_pdlaswp00N
    const int                        NN;
 #endif
 {
-/* 
+/*
  * Purpose
  * =======
  *
  * HPL_pdlaswp00N applies the  NB  row interchanges to  NN columns of the
  * trailing submatrix and broadcast a column panel.
- *  
+ *
  * Bi-directional  exchange  is used to perform the  swap :: broadcast of
  * the row  panel U at once, resulting in a lower number of messages than
  * usual as well as a lower communication volume. With P process rows and
  * assuming  bi-directional links,  the running time of this function can
  * be approximated by:
- *  
+ *
  *    log_2(P) * (lat + NB*LocQ(N) / bdwth)
- *  
+ *
  * where  NB  is the number of rows of the row panel U,  N is the global
  * number of columns being updated,  lat and bdwth  are the latency  and
  * bandwidth  of  the  network  for  double  precision real words.  Mono
@@ -108,7 +108,7 @@ void HPL_pdlaswp00N
  *         the current position. NN must be at least zero.
  *
  * ---------------------------------------------------------------------
- */ 
+ */
 /*
  * .. Local Variables ..
  */
@@ -149,7 +149,7 @@ void HPL_pdlaswp00N
 /*
  * Allocate space for temporary W (ldW * jb)
  */
-   vptr = (void*)malloc( 
+   vptr = (void*)malloc(
       ((size_t)(align) + ((size_t)(jb) * (size_t)(ldW))) * sizeof(double) );
    if( vptr == NULL )
    { HPL_pabort( __LINE__, "HPL_pdlaswp00N", "Memory allocation failed" ); }
@@ -188,16 +188,16 @@ void HPL_pdlaswp00N
  * entry of each column packed in workspace is in fact the row or column
  * offset in U where it should go to.
  */
-   if( myrow == icurrow ) 
+   if( myrow == icurrow )
    {
-      HPL_dlaswp01N( ipA, n, A, lda, U, LDU, lindxA, lindxAU );
+      HPL_dlaswp01N( ipA, n, jb, A, lda, U, LDU, lindxA, lindxAU );
    }
    else
    {
       HPL_dlaswp02N( ipA, n, A, lda, W, W+1, ldW, lindxA, lindxAU );
    }
 /*
- * Probe for column panel - forward it when available 
+ * Probe for column panel - forward it when available
  */
    if( *IFLAG == HPL_KEEP_TESTING ) (void) HPL_bcast( PBCST, IFLAG );
 /*
@@ -211,7 +211,7 @@ void HPL_pdlaswp00N
  * If I am receiving from a process that  has the data from  icurrow,  I
  * will be receiving in  U, copy the data of  U  that stays into  A, and
  * then the columns I have in workspace into U; otherwise  I will be re-
- * ceiving in the remaining workspace.  If I am one  of  those processes 
+ * ceiving in the remaining workspace.  If I am one  of  those processes
  * that already has the data from icurrow, I will be immediately copying
  * the data I have in my workspace into U.
  *
@@ -224,14 +224,14 @@ void HPL_pdlaswp00N
  * those lindx arrays,  and  I  will  always be sending a buffer of size
  * jb x n, or n x jb, that is, U.
  *
- * At  every  step  of  the algorithm, it is necesary to update the list 
+ * At  every  step  of  the algorithm, it is necesary to update the list
  * llen,  so that I can figure out how large the next messages I will be
  * sending/receiving are.  It is  obvious when I am sending U. It is not
  * otherwise.
  *
  * We  choose  icurrow  to be the source of the bi-directional exchange.
  * This allows the processes in the non-power 2 part to receive U at the
- * first exchange,  and  then  broadcast internally this U so that those 
+ * first exchange,  and  then  broadcast internally this U so that those
  * processes can grab their piece of A.
  */
    if( myrow == icurrow ) { llen[myrow] = 0; ipA = 0; }
@@ -261,7 +261,7 @@ void HPL_pdlaswp00N
       }
       else               /* None of us is icurrow, we exchange our Ws */
       {
-         if( ( mydist & ip2 ) != 0 ) 
+         if( ( mydist & ip2 ) != 0 )
          {
             (void) HPL_send( W, llen[myrow]*ldW, partner, Cmsgid, comm );
          }
@@ -283,7 +283,7 @@ void HPL_pdlaswp00N
       llen[ iprow ] += llen[ partner ];
    }
 /*
- * Probe for column panel - forward it when available 
+ * Probe for column panel - forward it when available
  */
    if( *IFLAG == HPL_KEEP_TESTING ) (void) HPL_bcast( PBCST, IFLAG );
 /*
@@ -291,7 +291,7 @@ void HPL_pdlaswp00N
  * are working;  some of them  (mydist >> (k+1) == 0) either send or re-
  * ceive U.  At every step k, k is in [0 .. hdim),  of the algorithm,  a
  * process pair that exchanges  U  is such that  (mydist >> (k+1) == 0).
- * Among  those  processes,  the  ones  that are sending U are such that 
+ * Among  those  processes,  the  ones  that are sending U are such that
  * mydist >> k == 0.
  */
    if( mydist < ip2 )
@@ -354,7 +354,7 @@ void HPL_pdlaswp00N
 
          ipow <<= 1; k++;
 /*
- * Probe for column panel - forward it when available 
+ * Probe for column panel - forward it when available
  */
          if( *IFLAG == HPL_KEEP_TESTING ) (void) HPL_bcast( PBCST, IFLAG );
       }
@@ -392,7 +392,7 @@ void HPL_pdlaswp00N
             }
             ip2_ >>= 1;
 /*
- * Probe for column panel - forward it when available 
+ * Probe for column panel - forward it when available
  */
             if( *IFLAG == HPL_KEEP_TESTING ) (void) HPL_bcast( PBCST, IFLAG );
 
@@ -419,7 +419,7 @@ void HPL_pdlaswp00N
 
    if( vptr ) free( vptr );
 /*
- * Probe for column panel - forward it when available 
+ * Probe for column panel - forward it when available
  */
    if( *IFLAG == HPL_KEEP_TESTING ) (void) HPL_bcast( PBCST, IFLAG );
 

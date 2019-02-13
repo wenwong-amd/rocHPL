@@ -140,6 +140,9 @@ void HPL_pdupdateNN
  * Enable/disable the column panel probing mechanism
  */
    (void) HPL_bcast( PBCST, &test );
+
+   hipStream_t stream;
+   rocblas_get_stream(handle, &stream);
 /*
  * 1 x Q case
  */
@@ -247,8 +250,6 @@ void HPL_pdupdateNN
       if( ( nn = n - nq0 ) > 0 )
       {
 #ifdef HPL_DETAILED_TIMING
-         hipStream_t stream;
-         rocblas_get_stream(handle, &stream);
          hipEventRecord(dlaswpStart, stream);
          HPL_ptimer( HPL_TIMING_LASWP );
          HPL_dlaswp00N( jb, nn, Aptr, lda, ipiv );
@@ -336,17 +337,34 @@ void HPL_pdupdateNN
       if( fswap == HPL_NO_SWP )
       { fswap = PANEL->algo->fswap; tswap = PANEL->algo->fsthr; }
 
+#ifdef HPL_DETAILED_TIMING
+      hipEventRecord(dlaswpStart, stream);
+#endif
       if( (   fswap == HPL_SWAP01 ) ||
           ( ( fswap == HPL_SW_MIX ) && ( n > tswap ) ) )
       { HPL_pdlaswp01N( PBCST, &test, PANEL, n ); }
       else
       { HPL_pdlaswp00N( PBCST, &test, PANEL, n ); }
+#ifdef HPL_DETAILED_TIMING
+      hipEventRecord(dlaswpStop, stream);
+#endif
 /*
  * Compute redundantly row block of U and update trailing submatrix
  */
       nq0 = 0; curr = ( PANEL->grid->myrow == PANEL->prow ? 1 : 0 );
-      Aptr = PANEL->A; L2ptr = PANEL->L2;  L1ptr = PANEL->L1;
-      Uptr = PANEL->U; ldl2 = PANEL->ldl2;
+#ifdef ROCM
+      Aptr = PANEL->dA;
+      L2ptr = PANEL->dL2;
+      L1ptr = PANEL->dL1;
+      Uptr = PANEL->dU;
+#else
+      Aptr = PANEL->A;
+      L2ptr = PANEL->L2;
+      L1ptr = PANEL->L1;
+      Uptr = PANEL->U;
+#endif
+
+      ldl2 = PANEL->ldl2;
       mp   = PANEL->mp - ( curr != 0 ? jb : 0 );
 #ifdef HPL_CALL_VSIPL
 /*
@@ -430,8 +448,21 @@ void HPL_pdupdateNN
  */
       if( ( nn = n - nq0 ) > 0 )
       {
+#ifdef ROCM
+#ifdef HPL_DETAILED_TIMING
+         hipEventRecord(dtrsmStart, stream);
+#endif
+         const double one = 1.0;
+         rocblas_dtrsm(handle, rocblas_side_left, rocblas_fill_lower,
+                       rocblas_operation_none, rocblas_diagonal_unit,
+                       jb, nn, &one, L1ptr, jb, Uptr, LDU);
+#ifdef HPL_DETAILED_TIMING
+         hipEventRecord(dtrsmStop, stream);
+#endif
+#else
          HPL_dtrsm( HplColumnMajor, HplLeft,  HplLower, HplNoTrans,
                     HplUnit, jb, nn, HPL_rone, L1ptr, jb, Uptr, LDU );
+#endif
 
          if( curr != 0 )
          {
@@ -450,11 +481,31 @@ void HPL_pdupdateNN
             (void) vsip_mdestroy_d( Av1 );
             (void) vsip_mdestroy_d( Uv1 );
 #else
+
+#ifdef ROCM
+#ifdef HPL_DETAILED_TIMING
+            hipEventRecord(dgemmStart, stream);
+#endif
+            const double mone = -1.0;
+            rocblas_dgemm(handle, rocblas_operation_none, rocblas_operation_none,
+                          mp, nn, jb, &mone,
+                          L2ptr, ldl2, Uptr, LDU, &one,
+                          Mptr( Aptr, jb, 0, lda ), lda );
+#ifdef HPL_DETAILED_TIMING
+            hipEventRecord(dgemmStop, stream);
+#endif
+            if(nn)
+              hipMemcpy2DAsync(Aptr, lda*sizeof(double),
+                               Uptr, LDU*sizeof(double),
+                               jb*sizeof(double), nn,
+                               hipMemcpyDeviceToDevice, stream);
+#else
             HPL_dgemm( HplColumnMajor, HplNoTrans, HplNoTrans, mp, nn,
                        jb, -HPL_rone, L2ptr, ldl2, Uptr, LDU, HPL_rone,
                        Mptr( Aptr, jb, 0, lda ), lda );
-#endif
             HPL_dlacpy( jb, nn, Uptr, LDU, Aptr, lda );
+#endif
+#endif
          }
          else
          {
@@ -473,9 +524,24 @@ void HPL_pdupdateNN
             (void) vsip_mdestroy_d( Av1 );
             (void) vsip_mdestroy_d( Uv1 );
 #else
+
+#ifdef ROCM
+#ifdef HPL_DETAILED_TIMING
+            hipEventRecord(dgemmStart, stream);
+#endif
+            const double mone = -1.0;
+            rocblas_dgemm(handle, rocblas_operation_none, rocblas_operation_none,
+                          mp, nn, jb, &mone,
+                          L2ptr, ldl2, Uptr, LDU, &one,
+                          Aptr, lda );
+#ifdef HPL_DETAILED_TIMING
+            hipEventRecord(dgemmStop, stream);
+#endif
+#else
             HPL_dgemm( HplColumnMajor, HplNoTrans, HplNoTrans, mp, nn,
                        jb, -HPL_rone, L2ptr, ldl2, Uptr, LDU, HPL_rone,
                        Aptr, lda );
+#endif
 #endif
          }
       }

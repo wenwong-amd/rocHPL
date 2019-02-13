@@ -51,6 +51,10 @@
 /*
  * Define default value for unrolling factor
  */
+#ifndef HPL_LASWP00N_DEPTH
+#define    HPL_LASWP00N_DEPTH       32
+#define    HPL_LASWP00N_LOG2_DEPTH   5
+#endif
 
 #ifdef ROCM
 
@@ -127,10 +131,6 @@ __global__ void dlaswp00N(const int N, const int M,
 #endif
 
 
-#ifndef HPL_LASWP00N_DEPTH
-#define    HPL_LASWP00N_DEPTH       32
-#define    HPL_LASWP00N_LOG2_DEPTH   5
-#endif
 
 #ifdef STDC_HEADERS
 void HPL_dlaswp00N

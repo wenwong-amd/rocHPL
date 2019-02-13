@@ -199,11 +199,9 @@ void HPL_pdgesvK2
  */
    float smallDgemmTime, largeDgemmTime;
    double smallDgemmGflops, largeDgemmGflops;
-
    for( j = jstart; j < N; j += nb )
    {
       n = N - j; jb = Mmin( n, nb );
-
 /*
  * Initialize current panel - Finish latest update, Factor and broadcast
  * current panel
@@ -330,7 +328,6 @@ void HPL_pdgesvK2
       (void) HPL_pdpanel_disp(  &panel[k] );
    }
    (void) HPL_pdpanel_disp( &panel[depth] );
-
    if( panel ) free( panel );
 /*
  * End of HPL_pdgesvK2

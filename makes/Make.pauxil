@@ -96,8 +96,8 @@ HPL_dlaswp00N.o        : ../HPL_dlaswp00N.cpp        $(INCdep)
 	$(HIPCC) -o $@ -c $(CCFLAGS)  ../HPL_dlaswp00N.cpp
 HPL_dlaswp10N.o        : ../HPL_dlaswp10N.c        $(INCdep)
 	$(CC) -o $@ -c $(CCFLAGS)  ../HPL_dlaswp10N.c
-HPL_dlaswp01N.o        : ../HPL_dlaswp01N.c        $(INCdep)
-	$(CC) -o $@ -c $(CCFLAGS)  ../HPL_dlaswp01N.c
+HPL_dlaswp01N.o        : ../HPL_dlaswp01N.cpp        $(INCdep)
+	$(HIPCC) -o $@ -c $(CCFLAGS)  ../HPL_dlaswp01N.cpp
 HPL_dlaswp01T.o        : ../HPL_dlaswp01T.c        $(INCdep)
 	$(CC) -o $@ -c $(CCFLAGS)  ../HPL_dlaswp01T.c
 HPL_dlaswp02N.o        : ../HPL_dlaswp02N.c        $(INCdep)
@@ -114,8 +114,8 @@ HPL_dlaswp05N.o        : ../HPL_dlaswp05N.c        $(INCdep)
 	$(CC) -o $@ -c $(CCFLAGS)  ../HPL_dlaswp05N.c
 HPL_dlaswp05T.o        : ../HPL_dlaswp05T.c        $(INCdep)
 	$(CC) -o $@ -c $(CCFLAGS)  ../HPL_dlaswp05T.c
-HPL_dlaswp06N.o        : ../HPL_dlaswp06N.c        $(INCdep)
-	$(CC) -o $@ -c $(CCFLAGS)  ../HPL_dlaswp06N.c
+HPL_dlaswp06N.o        : ../HPL_dlaswp06N.cpp        $(INCdep)
+	$(HIPCC) -o $@ -c $(CCFLAGS)  ../HPL_dlaswp06N.cpp
 HPL_dlaswp06T.o        : ../HPL_dlaswp06T.c        $(INCdep)
 	$(CC) -o $@ -c $(CCFLAGS)  ../HPL_dlaswp06T.c
 HPL_pwarn.o            : ../HPL_pwarn.c            $(INCdep)

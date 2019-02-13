@@ -81,9 +81,9 @@ HPLlib       = $(LIBdir)/libhpl.a
 # header files,  MPlib  is defined  to be the name of  the library to be
 # used. The variable MPdir is only used for defining MPinc and MPlib.
 #
-MPdir        = /usr/lib/openmpi
+MPdir        = /usr/local/openmpi
 MPinc        = $(MPdir)/include
-MPlib        = $(shell mpic++ --showme:link)
+MPlib        = $(shell $(MPdir)/bin/mpic++ --showme:link)
 #
 # ----------------------------------------------------------------------
 # - Radeon Open Compute (ROCm)    --------------------------------------
@@ -181,7 +181,7 @@ HPL_DEFS     = $(F2CDEFS) $(HPL_OPTS) $(HPL_INCLUDES)
 # - Compilers / linkers - Optimization flags ---------------------------
 # ----------------------------------------------------------------------
 #
-CC           = mpic++
+CC           = $(MPdir)/bin/mpic++
 HIPCC        = ${ROCMdir}/bin/hipcc -I$(MPinc)
 CCNOOPT      = $(HPL_DEFS)
 CCFLAGS      = $(HPL_DEFS) -O3 -g -std=c++11

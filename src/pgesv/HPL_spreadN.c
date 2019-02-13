@@ -1,36 +1,36 @@
-/* 
- * -- High Performance Computing Linpack Benchmark (HPL)                
- *    HPL - 2.2 - February 24, 2016                          
- *    Antoine P. Petitet                                                
- *    University of Tennessee, Knoxville                                
- *    Innovative Computing Laboratory                                 
- *    (C) Copyright 2000-2008 All Rights Reserved                       
- *                                                                      
- * -- Copyright notice and Licensing terms:                             
- *                                                                      
+/*
+ * -- High Performance Computing Linpack Benchmark (HPL)
+ *    HPL - 2.2 - February 24, 2016
+ *    Antoine P. Petitet
+ *    University of Tennessee, Knoxville
+ *    Innovative Computing Laboratory
+ *    (C) Copyright 2000-2008 All Rights Reserved
+ *
+ * -- Copyright notice and Licensing terms:
+ *
  * Redistribution  and  use in  source and binary forms, with or without
  * modification, are  permitted provided  that the following  conditions
- * are met:                                                             
- *                                                                      
+ * are met:
+ *
  * 1. Redistributions  of  source  code  must retain the above copyright
- * notice, this list of conditions and the following disclaimer.        
- *                                                                      
+ * notice, this list of conditions and the following disclaimer.
+ *
  * 2. Redistributions in binary form must reproduce  the above copyright
  * notice, this list of conditions,  and the following disclaimer in the
- * documentation and/or other materials provided with the distribution. 
- *                                                                      
+ * documentation and/or other materials provided with the distribution.
+ *
  * 3. All  advertising  materials  mentioning  features  or  use of this
- * software must display the following acknowledgement:                 
+ * software must display the following acknowledgement:
  * This  product  includes  software  developed  at  the  University  of
- * Tennessee, Knoxville, Innovative Computing Laboratory.             
- *                                                                      
+ * Tennessee, Knoxville, Innovative Computing Laboratory.
+ *
  * 4. The name of the  University,  the name of the  Laboratory,  or the
  * names  of  its  contributors  may  not  be used to endorse or promote
  * products  derived   from   this  software  without  specific  written
- * permission.                                                          
- *                                                                      
- * -- Disclaimer:                                                       
- *                                                                      
+ * permission.
+ *
+ * -- Disclaimer:
+ *
  * THIS  SOFTWARE  IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES,  INCLUDING,  BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -41,9 +41,9 @@
  * DATA OR PROFITS; OR BUSINESS INTERRUPTION)  HOWEVER CAUSED AND ON ANY
  * THEORY OF LIABILITY, WHETHER IN CONTRACT,  STRICT LIABILITY,  OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * ---------------------------------------------------------------------
- */ 
+ */
 /*
  * Include files
  */
@@ -80,7 +80,7 @@ void HPL_spreadN
    const int *                      IPMAPM1;
 #endif
 {
-/* 
+/*
  * Purpose
  * =======
  *
@@ -149,7 +149,7 @@ void HPL_spreadN
  *         IPMAP: For i in [0.. NPROW) IPMAPM1[IPMAP[i]] = i.
  *
  * ---------------------------------------------------------------------
- */ 
+ */
 /*
  * .. Local Variables ..
  */
@@ -184,7 +184,7 @@ void HPL_spreadN
 
          if( ( mydist & mask ) == 0 )
          {
-            lbuf = IPLEN[il+1] - ( ibuf = IPLEN[il-Mmin(il, (int)(ip2))] ); 
+            lbuf = IPLEN[il+1] - ( ibuf = IPLEN[il-Mmin(il, (int)(ip2))] );
 
             if( lbuf > 0 )
             {
@@ -192,41 +192,41 @@ void HPL_spreadN
 
                if( mydist & ip2 )
                {
-                  if( ierr == MPI_SUCCESS )  
+                  if( ierr == MPI_SUCCESS )
                      ierr =   MPI_Type_vector( N, lbuf, LDU, MPI_DOUBLE,
                                                &type );
-                  if( ierr == MPI_SUCCESS )  
+                  if( ierr == MPI_SUCCESS )
                      ierr =   MPI_Type_commit( &type );
-                  if( ierr == MPI_SUCCESS )  
+                  if( ierr == MPI_SUCCESS )
                      ierr =   MPI_Recv( Mptr( U, ibuf, 0, LDU ), 1, type,
                                         IPMAP[npm1-partner], Cmsgid, comm,
                                         &status );
-                  if( ierr == MPI_SUCCESS )  
+                  if( ierr == MPI_SUCCESS )
                      ierr =   MPI_Type_free(   &type );
                }
                else if( partner < nprow )
                {
-                  if( ierr == MPI_SUCCESS )  
+                  if( ierr == MPI_SUCCESS )
                      ierr =   MPI_Type_vector( N, lbuf, LDU, MPI_DOUBLE,
                                                &type );
-                  if( ierr == MPI_SUCCESS )  
+                  if( ierr == MPI_SUCCESS )
                      ierr =   MPI_Type_commit( &type );
-                  if( ierr == MPI_SUCCESS )  
+                  if( ierr == MPI_SUCCESS )
                      ierr =   MPI_Send( Mptr( U, ibuf, 0, LDU ), 1, type,
                                         IPMAP[npm1-partner], Cmsgid, comm );
-                  if( ierr == MPI_SUCCESS )  
+                  if( ierr == MPI_SUCCESS )
                      ierr =   MPI_Type_free(   &type );
                }
             }
          }
- 
+
          if( mydist2 < ip2 ) {  ip2 >>= 1; il += ip2; }
          else { mydist2 -= ip2; ip2 >>= 1; il -= ip2; }
 /*
  * Probe for column panel - forward it when available
  */
          if( *IFLAG == HPL_KEEP_TESTING ) (void) HPL_bcast( PBCST, IFLAG );
- 
+
       } while( ip2 > 0 );
    }
    else
@@ -256,42 +256,42 @@ void HPL_spreadN
 
                if( mydist & ip2 )
                {
-                  if( ierr == MPI_SUCCESS )  
+                  if( ierr == MPI_SUCCESS )
                      ierr =   MPI_Type_vector( N, lbuf, LDU, MPI_DOUBLE,
                                                &type );
-                  if( ierr == MPI_SUCCESS )  
+                  if( ierr == MPI_SUCCESS )
                      ierr =   MPI_Type_commit( &type );
-                  if( ierr == MPI_SUCCESS )  
+                  if( ierr == MPI_SUCCESS )
                      ierr =   MPI_Recv( Mptr( U, ibuf, 0, LDU ), 1, type,
                                         IPMAP[SRCDIST+partner], Cmsgid,
                                         comm, &status );
-                  if( ierr == MPI_SUCCESS )  
+                  if( ierr == MPI_SUCCESS )
                      ierr =   MPI_Type_free(   &type );
                }
                else if( partner < nprow )
                {
-                  if( ierr == MPI_SUCCESS )  
+                  if( ierr == MPI_SUCCESS )
                      ierr =   MPI_Type_vector( N, lbuf, LDU, MPI_DOUBLE,
                                                &type );
-                  if( ierr == MPI_SUCCESS )  
+                  if( ierr == MPI_SUCCESS )
                      ierr =   MPI_Type_commit( &type );
-                  if( ierr == MPI_SUCCESS )  
+                  if( ierr == MPI_SUCCESS )
                      ierr =   MPI_Send( Mptr( U, ibuf, 0, LDU ), 1, type,
                                         IPMAP[SRCDIST+partner], Cmsgid,
                                         comm );
-                  if( ierr == MPI_SUCCESS )  
+                  if( ierr == MPI_SUCCESS )
                      ierr =   MPI_Type_free(   &type );
                }
             }
          }
- 
+
          if( mydist2 < ip2 ) {  ip2 >>= 1; il -= ip2; }
          else { mydist2 -= ip2; ip2 >>= 1; il += ip2; }
 /*
  * Probe for column panel - forward it when available
  */
          if( *IFLAG == HPL_KEEP_TESTING ) (void) HPL_bcast( PBCST, IFLAG );
- 
+
       } while( ip2 > 0 );
    }
 

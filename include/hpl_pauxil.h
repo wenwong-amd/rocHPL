@@ -337,6 +337,7 @@ void                             HPL_dlaswp01N
 STDC_ARGS( (
    const int,
    const int,
+   const int,
    double *,
    const int,
    double *,

@@ -102,17 +102,23 @@ int HPL_pdpanel_free
    if( PANEL->free_work_now == 1 )
    {
      if( PANEL->WORK  )
-     {
-       hipFree( PANEL->dWORK);
        hipHostFree( PANEL->WORK);
-       PANEL->max_work_size = 0;
-     }
+
+     if( PANEL->dWORK  )
+       hipFree( PANEL->dWORK);
+
+     PANEL->max_work_size = 0;
+
      if( PANEL->IWORK  )
-     {
-       hipFree( PANEL->dIWORK);
        hipHostFree( PANEL->IWORK);
-       PANEL->max_iwork_size = 0;
-     }
+
+     if( PANEL->dIWORK  )
+       hipFree( PANEL->dIWORK);
+
+     if( PANEL->IWORK2  )
+       hipHostFree( PANEL->IWORK2);
+
+     PANEL->max_iwork_size = 0;
    }
 #else
    if( PANEL->WORK  ) free( PANEL->WORK  );
