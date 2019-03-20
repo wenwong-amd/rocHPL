@@ -67,12 +67,8 @@ ARCH         = ROCM
 # - HPL Directory Structure / HPL library ------------------------------
 # ----------------------------------------------------------------------
 #
+HPL_ROOT    ?= $(HOME)/HPL-ROCm
 TOPdir       = $(HPL_ROOT)
-
-ifeq ($(HPL_ROOT),)
-TOPdir       = $(HOME)/HPL-ROCm
-endif
-
 INCdir       = $(TOPdir)/include
 BINdir       = $(TOPdir)/bin/$(ARCH)
 LIBdir       = $(TOPdir)/lib/$(ARCH)
