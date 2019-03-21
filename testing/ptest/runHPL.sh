@@ -8,4 +8,4 @@ export OMP_NUM_THREADS=${num_cpu_cores}
 export LD_LIBRARY_PATH=openblas:$LD_LIBRARY_PATH
 
 # ./xhpl
-HSA_ENABLE_SDMA=1 mpirun -np ${num_gpus} --map-by numa:PE=${num_cpu_cores} --bind-to core:overload-allowed --report-bindings ./bin/ROCM/xhpl
+HSA_ENABLE_SDMA=1 mpirun -np ${num_gpus} --map-by socket:PE=${num_cpu_cores} --bind-to core:overload-allowed --report-bindings ./bin/ROCM/xhpl
