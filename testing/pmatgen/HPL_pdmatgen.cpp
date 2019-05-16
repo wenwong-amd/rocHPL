@@ -51,6 +51,17 @@
 
 #ifdef ROCM
 #include "rocrand.h"
+
+#define BLOCK_SIZE 512
+
+__global__ void hpl_init_shift(double* __restrict__ A, const size_t n) {
+
+  const size_t id = threadIdx.x + blockIdx.x*BLOCK_SIZE;
+
+  if (id<n)
+    A[id] -= 0.5;
+}
+
 #endif
 
 #ifdef STDC_HEADERS
@@ -184,8 +195,15 @@ void HPL_pdmatgen
    rocrand_set_seed(generator, ISEED);
    rocrand_set_offset(generator, pos1);
 
+   //generate values between [0,1]
    rocrand_generate_uniform_double(generator,A, ((size_t)mp)*nq);
-   // rocrand_generate_normal_double(generator, A, mp*nq, 0.0, 0.25);
+   hipDeviceSynchronize();
+
+   //shift values to [-0.5,0.5]
+   size_t grid_size = (((size_t)mp)*nq+BLOCK_SIZE-1)/BLOCK_SIZE;
+   hipLaunchKernelGGL((hpl_init_shift), dim3(grid_size), dim3(BLOCK_SIZE), 0, 0,
+                                            A, ((size_t)mp)*nq);
+
    hipDeviceSynchronize();
 
    rocrand_destroy_generator(generator);

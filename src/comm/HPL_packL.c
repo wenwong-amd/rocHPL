@@ -155,10 +155,27 @@ int HPL_packL
          if( PANEL->grid->mycol == PANEL->pcol )
          {
             lda = PANEL->lda;
-            if( curr != 0 ) { A = Mptr( PANEL->A, jb, -jb, lda ); }
-            else            { A = Mptr( PANEL->A,  0, -jb, lda ); }
+            if( curr != 0 ) {
+#ifdef GPU_AWARE_MPI
+               A = Mptr( PANEL->dA, jb, -jb, lda );
+#else
+               A = Mptr( PANEL->A, jb, -jb, lda );
+#endif
+            } else {
+#ifdef GPU_AWARE_MPI
+               A = Mptr( PANEL->dA,  0, -jb, lda );
+#else
+               A = Mptr( PANEL->A,  0, -jb, lda );
+#endif
+            }
+         } else {
+            lda = PANEL->ldl2;
+#ifdef GPU_AWARE_MPI
+            A = PANEL->dL2;
+#else
+            A = PANEL->L2;
+#endif
          }
-         else { lda = PANEL->ldl2; A = PANEL->L2; }
 /*
  * Pack the first (partial) column of L
  */
@@ -169,7 +186,7 @@ int HPL_packL
          type[nbufs] = MPI_DOUBLE;
          blen[nbufs] = m1;
          if( ierr == MPI_SUCCESS )
-            ierr =   MPI_Address( bufs[nbufs], &disp[nbufs] );
+            ierr =   MPI_Get_address( bufs[nbufs], &disp[nbufs] );
 
          nbufs++; len -= m1; j1++; ibuf += m1;
 /*
@@ -183,7 +200,7 @@ int HPL_packL
             type[nbufs] = MPI_DOUBLE;
             blen[nbufs] = m1;
             if( ierr == MPI_SUCCESS )
-               ierr =   MPI_Address( bufs[nbufs], &disp[nbufs] );
+               ierr =   MPI_Get_address( bufs[nbufs], &disp[nbufs] );
 
             nbufs++; len -= m1; j1++; ibuf += m1;
          }
@@ -193,11 +210,15 @@ int HPL_packL
  */
       if( len > 0 )
       {                                            /* L1, DPIV, DINFO */
+#ifdef GPU_AWARE_MPI
+         bufs[nbufs] = (void *)(PANEL->dL1 + ibuf - jbm);
+#else
          bufs[nbufs] = (void *)(PANEL->L1 + ibuf - jbm);
+#endif
          type[nbufs] = MPI_DOUBLE;
          blen[nbufs] = len;
          if( ierr == MPI_SUCCESS )
-            ierr =   MPI_Address( bufs[nbufs], &disp[nbufs] );
+            ierr =   MPI_Get_address( bufs[nbufs], &disp[nbufs] );
          nbufs++;
       }
 
@@ -208,7 +229,7 @@ int HPL_packL
  * construct the struct type
  */
       if( ierr == MPI_SUCCESS )
-         ierr =   MPI_Type_struct( nbufs, blen, disp, type,
+         ierr =   MPI_Type_create_struct( nbufs, blen, disp, type,
                                    &PANEL->dtypes[IBUF] );
 /*
  * release temporaries

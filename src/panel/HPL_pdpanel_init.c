@@ -235,8 +235,8 @@ void HPL_pdpanel_init
         size_t numbytes = (size_t)(lwork) *sizeof( double );
 
 
-        if(hipMalloc((void**)&(PANEL->dWORK),numbytes)!=HIP_SUCCESS ||
-           hipHostMalloc((void**)&(PANEL->WORK),numbytes, hipHostMallocDefault)!=HIP_SUCCESS)
+        if(hipMalloc((void**)&(PANEL->dWORK),numbytes)!=hipSuccess ||
+           hipHostMalloc((void**)&(PANEL->WORK),numbytes, hipHostMallocDefault)!=hipSuccess)
         {
             HPL_pabort( __LINE__, "HPL_pdpanel_init",
                         "Memory allocation failed" );
@@ -294,8 +294,8 @@ void HPL_pdpanel_init
         size_t numbytes = (size_t)(lwork) *sizeof( double );
 
 
-        if(hipMalloc((void**)&(PANEL->dWORK),numbytes)!=HIP_SUCCESS ||
-           hipHostMalloc((void**)&(PANEL->WORK),numbytes, hipHostMallocDefault)!=HIP_SUCCESS)
+        if(hipMalloc((void**)&(PANEL->dWORK),numbytes)!=hipSuccess ||
+           hipHostMalloc((void**)&(PANEL->WORK),numbytes, hipHostMallocDefault)!=hipSuccess)
         {
             HPL_pabort( __LINE__, "HPL_pdpanel_init",
                         "Memory allocation failed" );
@@ -420,8 +420,8 @@ void HPL_pdpanel_init
       // size_t numbytes = (((size_t)((size_t)(lwork) * sizeof( double )) + (size_t)4095)/(size_t)4096)*(size_t)4096;
       size_t numbytes = (size_t)(lwork) *sizeof( int );
 
-      if(hipMalloc((void**)&(PANEL->dIWORK),numbytes)!=HIP_SUCCESS ||
-         hipHostMalloc((void**)&(PANEL->IWORK),numbytes, hipHostMallocDefault)!=HIP_SUCCESS)
+      if(hipMalloc((void**)&(PANEL->dIWORK),numbytes)!=hipSuccess ||
+         hipHostMalloc((void**)&(PANEL->IWORK),numbytes, hipHostMallocDefault)!=hipSuccess)
       {
           HPL_pabort( __LINE__, "HPL_pdpanel_init",
                       "Memory allocation failed" );

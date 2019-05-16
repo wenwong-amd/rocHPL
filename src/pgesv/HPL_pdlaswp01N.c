@@ -205,7 +205,7 @@ void HPL_pdlaswp01N
    if( myrow == icurrow )
    {
       HPL_dlaswp01N( *ipA, n, jb, dA, lda, dU, LDU, dlindxA, dlindxAU );
-#ifdef ROCM
+#if defined(ROCM) && !defined(GPU_AWARE_MPI)
       hipMemcpy2D( U, LDU*sizeof(double),
                   dU, LDU*sizeof(double),
                   jb*sizeof(double), n,
@@ -215,14 +215,20 @@ void HPL_pdlaswp01N
 /*
  * Spread U - optionally probe for column panel
  */
+#if defined(ROCM) && defined(GPU_AWARE_MPI)
+   HPL_spreadN( PBCST, IFLAG, PANEL, HplRight, n, dU, LDU, 0, iplen,
+                ipmap, ipmapm1 );
+#else
    HPL_spreadN( PBCST, IFLAG, PANEL, HplRight, n, U, LDU, 0, iplen,
                 ipmap, ipmapm1 );
+#endif
+
 /*
  * Local exchange (everywhere but in process row icurrow)
  */
    if( myrow != icurrow )
    {
-#ifdef ROCM
+#if defined(ROCM) && !defined(GPU_AWARE_MPI)
       hipMemcpy2D(dU, LDU*sizeof(double),
                    U, LDU*sizeof(double),
                   jb*sizeof(double), n,
@@ -231,7 +237,8 @@ void HPL_pdlaswp01N
       k = ipmapm1[myrow];
       HPL_dlaswp06N( iplen[k+1]-iplen[k], n, dA, lda, Mptr( dU, iplen[k],
                      0, LDU ), LDU, dlindxA );
-#ifdef ROCM
+
+#if defined(ROCM) && !defined(GPU_AWARE_MPI)
       hipMemcpy2D( U, LDU*sizeof(double),
                   dU, LDU*sizeof(double),
                   jb*sizeof(double), n,
@@ -247,11 +254,15 @@ void HPL_pdlaswp01N
 /*
  * Rolling phase
  */
+#if defined(ROCM) && defined(GPU_AWARE_MPI)
+   HPL_rollN( PBCST, IFLAG, PANEL, n, dU, LDU, iplen, ipmap, ipmapm1 );
+#else
    HPL_rollN( PBCST, IFLAG, PANEL, n, U, LDU, iplen, ipmap, ipmapm1 );
+#endif
 /*
  * Permute U in every process row
  */
-#ifdef ROCM
+#if defined(ROCM) && !defined(GPU_AWARE_MPI)
    hipMemcpy2D(dU, LDU*sizeof(double),
                 U, LDU*sizeof(double),
                jb*sizeof(double), n,

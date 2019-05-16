@@ -153,11 +153,23 @@ void HPL_pdgesvK2
  */
 #ifdef ROCM
       HPL_pdpanel_SendToHost( panel[k] );
-      hipEventRecord(panelCopy, dataStream);
-      hipEventSynchronize(panelCopy);
+      hipStreamSynchronize(dataStream);
 #endif
 
       HPL_pdfact(         panel[k] );
+
+#if defined(ROCM) && defined(GPU_AWARE_MPI)
+      //send the panel back to device before bcast
+      HPL_pdpanel_SendToDevice( panel[k] );
+
+   #ifdef HPL_DETAILED_TIMING
+      HPL_ptimer( HPL_TIMING_RPFACT );
+      hipStreamSynchronize(dataStream);
+      HPL_ptimer( HPL_TIMING_RPFACT );
+   #else
+      hipStreamSynchronize(dataStream);
+   #endif
+#endif
 
       (void) HPL_binit(   panel[k] );
       do
@@ -165,9 +177,11 @@ void HPL_pdgesvK2
       while( test != HPL_SUCCESS );
       (void) HPL_bwait(   panel[k] );
 
-#ifdef ROCM
+#if defined(ROCM) && !defined(GPU_AWARE_MPI)
       HPL_pdpanel_SendToDevice( panel[k] );
+#endif
 
+#ifdef ROCM
    #ifdef HPL_DETAILED_TIMING
       HPL_ptimer( HPL_TIMING_RPFACT );
       hipDeviceSynchronize();
@@ -184,13 +198,13 @@ void HPL_pdgesvK2
          nn = HPL_numrocI( jstart-j, j, nb, nb, mycol, 0, npcol );
          HPL_pdupdate( NULL, NULL, panel[k], nn );
 #ifdef ROCM
-#ifdef HPL_DETAILED_TIMING
+   #ifdef HPL_DETAILED_TIMING
          HPL_ptimer( HPL_TIMING_UPDATE );
          hipDeviceSynchronize();
          HPL_ptimer( HPL_TIMING_UPDATE );
-#else
+   #else
          hipDeviceSynchronize();
-#endif
+   #endif
 #endif
       }
    }
@@ -216,7 +230,7 @@ void HPL_pdgesvK2
             (void) HPL_pdupdate( NULL, NULL, panel[k], nn );
          }
 #ifdef ROCM
-#ifdef HPL_DETAILED_TIMING
+   #ifdef HPL_DETAILED_TIMING
          HPL_ptimer( HPL_TIMING_UPDATE );
          hipDeviceSynchronize();
          HPL_ptimer( HPL_TIMING_UPDATE );
@@ -224,9 +238,9 @@ void HPL_pdgesvK2
          hipEventElapsedTime(&smallDgemmTime,
                               dgemmStart, dgemmStop);
          smallDgemmGflops = (2.0*(panel[k]->mp)*jb*nn)/(1000.0*1000.0*smallDgemmTime);
-#else
+   #else
          hipDeviceSynchronize();
-#endif
+   #endif
 #endif
          /* Queue up finishing the latest update on device */
          HPL_pdupdate( NULL, NULL, panel[0], nq-nn );
@@ -234,10 +248,22 @@ void HPL_pdgesvK2
          //while computing, factor the current panel
 #ifdef ROCM
          HPL_pdpanel_SendToHost( panel[depth] );
-         hipEventRecord(panelCopy, dataStream);
-         hipEventSynchronize(panelCopy);
+         hipStreamSynchronize(dataStream);
 #endif
+
          HPL_pdfact(       panel[depth] );    /* factor current panel */
+
+#if defined(ROCM) && defined(GPU_AWARE_MPI)
+         //send the panel back to device before bcast
+         HPL_pdpanel_SendToDevice( panel[depth] );
+   #ifdef HPL_DETAILED_TIMING
+         HPL_ptimer( HPL_TIMING_RPFACT );
+         hipStreamSynchronize(dataStream);
+         HPL_ptimer( HPL_TIMING_RPFACT );
+   #else
+         hipStreamSynchronize(dataStream);
+   #endif
+#endif
 
          (void) HPL_binit(   panel[depth] );
          do
@@ -245,17 +271,18 @@ void HPL_pdgesvK2
          while( test != HPL_SUCCESS );
          (void) HPL_bwait(   panel[depth] );
 
-#ifdef ROCM
+#if defined(ROCM) && !defined(GPU_AWARE_MPI)
          HPL_pdpanel_SendToDevice( panel[depth] );
-         hipEventRecord(panelUpdate, dataStream);
-
-#ifdef HPL_DETAILED_TIMING
-         HPL_ptimer( HPL_TIMING_RPFACT );
-         hipEventSynchronize(panelUpdate);
-         HPL_ptimer( HPL_TIMING_RPFACT );
-#else
-         hipEventSynchronize(panelUpdate);
 #endif
+
+#ifdef ROCM
+   #ifdef HPL_DETAILED_TIMING
+         HPL_ptimer( HPL_TIMING_RPFACT );
+         hipStreamSynchronize(dataStream);
+         HPL_ptimer( HPL_TIMING_RPFACT );
+   #else
+         hipStreamSynchronize(dataStream);
+   #endif
 #endif
       } else {
          nn = 0;
@@ -269,15 +296,14 @@ void HPL_pdgesvK2
          { (void) HPL_bcast( panel[depth], &test ); }
          while( test != HPL_SUCCESS );
          (void) HPL_bwait(   panel[depth] );
-#ifdef ROCM
+
+#if defined(ROCM) && !defined(GPU_AWARE_MPI)
          HPL_pdpanel_SendToDevice( panel[depth] );
-         hipEventRecord(panelUpdate, dataStream);
-         hipEventSynchronize(panelUpdate);
 #endif
       }
 
 #ifdef ROCM
-#ifdef HPL_DETAILED_TIMING
+   #ifdef HPL_DETAILED_TIMING
       HPL_ptimer( HPL_TIMING_UPDATE );
       hipDeviceSynchronize();
       HPL_ptimer( HPL_TIMING_UPDATE );
@@ -285,9 +311,9 @@ void HPL_pdgesvK2
       hipEventElapsedTime(&largeDgemmTime,
                            dgemmStart, dgemmStop);
       largeDgemmGflops = (2.0*(panel[k]->mp)*jb*(nq-nn))/(1000.0*1000.0*largeDgemmTime);
-#else
+   #else
       hipDeviceSynchronize();
-#endif
+   #endif
 #endif
 
 /*
@@ -309,11 +335,11 @@ void HPL_pdgesvK2
       {
           time = HPL_timer_walltime() - start_time;
           gflops = 2.0*(N*(double)N*N - n*(double)n*n)/3.0/(time > 0.0 ? time : 1e-6)/1e9;
-#ifdef ROCM
+   #ifdef ROCM
           HPL_fprintf( stdout, "Column=%09d Fraction=%4.1f%% Small DGEMM Gflops=%9.3e large DGEMM Gflops=%9.3e Overall Gflops=%9.3e\n", j, j*100.0/N, smallDgemmGflops, largeDgemmGflops, gflops);
-#else
+   #else
           HPL_fprintf( stdout, "Column=%09d Fraction=%4.1f%% Gflops=%9.3e\n", j, j*100.0/N, gflops);
-#endif
+   #endif
       }
 #endif
    }
