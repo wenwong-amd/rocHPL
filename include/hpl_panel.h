@@ -67,22 +67,23 @@ typedef struct HPL_S_panel
    struct HPL_S_palg   * algo;          /* ptr to the algo parameters */
    struct HPL_S_pmat   * pmat;         /* ptr to the local array info */
    double              * A;              /* ptr to trailing part of A */
-   double              * dA;              /* ptr to trailing part of A */
+   double              * dA;             /* ptr to trailing part of A */
    double              * WORK;                          /* work space */
    double              * dWORK;             /* device-copy work space */
    double              * L2;                              /* ptr to L */
    double              * L1;       /* ptr to jb x jb upper block of A */
-   double              * dL2;                              /* ptr to L */
-   double              * dL1;       /* ptr to jb x jb upper block of A */
+   double              * dL2;                             /* ptr to L */
+   double              * dL1;      /* ptr to jb x jb upper block of A */
    double              * DPIV;    /* ptr to replicated jb pivot array */
    double              * dDPIV;   /* ptr to replicated jb pivot array */
    double              * DINFO;      /* ptr to replicated scalar info */
+   double              * dDINFO;     /* ptr to replicated scalar info */
    double              * U;                               /* ptr to U */
-   double              * dU;                               /* ptr to U */
+   double              * dU;                              /* ptr to U */
    int                 * IWORK;     /* integer workspace for swapping */
-   int                 * IWORK2;     /* integer workspace for swapping */
+   int                 * IWORK2;    /* integer workspace for swapping */
    int                 * dIWORK;    /* integer workspace for swapping */
-   void                * buffers[2];   /* buffers for panel bcast */
+   void                * buffers[2];       /* buffers for panel bcast */
    int                 counts [2];          /* counts for panel bcast */
    MPI_Datatype        dtypes [2];      /* data types for panel bcast */
    MPI_Request         request[1];        /* requests for panel bcast */

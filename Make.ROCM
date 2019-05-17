@@ -82,9 +82,9 @@ HPLlib       = $(LIBdir)/libhpl.a
 # header files,  MPlib  is defined  to be the name of  the library to be
 # used. The variable MPdir is only used for defining MPinc and MPlib.
 #
-MPdir        = /usr/local/openmpi
+MPdir        = /usr/lib/openmpi
 MPinc        = $(MPdir)/include
-MPlib        = $(shell $(MPdir)/bin/mpic++ --showme:link)
+MPlib        = $(shell mpic++.openmpi --showme:link)
 #
 # ----------------------------------------------------------------------
 # - Radeon Open Compute (ROCm)    --------------------------------------
@@ -151,7 +151,7 @@ LAlib        = $(HIPlib) -L$(ROCMlib) -lrocblas -L$(ROCMdir)/rocrand/lib -lrocra
 #                       Cray  fcd  (fortran  character  descriptor)  for
 #                       interoperation.
 #
-F2CDEFS      = -DROCM -DHPL_DETAILED_TIMING -DHPL_PROGRESS_REPORT -DHPL_CALL_CBLAS -DGPU_AWARE_MPI
+F2CDEFS      =
 #
 # ----------------------------------------------------------------------
 # - HPL includes / libraries / specifics -------------------------------
@@ -172,7 +172,7 @@ HPL_LIBS     = $(HPLlib) $(LAlib) $(MPlib)
 #    *) call the BLAS Fortran 77 interface,
 #    *) not display detailed timing information.
 #
-HPL_OPTS     = -DVERBOSE_PRINT
+HPL_OPTS     = -DVERBOSE_PRINT -DROCM -DHPL_DETAILED_TIMING -DHPL_PROGRESS_REPORT -DHPL_CALL_CBLAS -DHPL_NO_MPI_DATATYPE -DHPL_COPY_L
 #
 # ----------------------------------------------------------------------
 #
@@ -182,7 +182,7 @@ HPL_DEFS     = $(F2CDEFS) $(HPL_OPTS) $(HPL_INCLUDES)
 # - Compilers / linkers - Optimization flags ---------------------------
 # ----------------------------------------------------------------------
 #
-CC           = $(MPdir)/bin/mpic++
+CC           = mpic++.openmpi
 HIPCC        = ${ROCMdir}/bin/hipcc -I$(MPinc)
 CCNOOPT      = $(HPL_DEFS)
 CCFLAGS      = $(HPL_DEFS) -O3 -g -std=c++11

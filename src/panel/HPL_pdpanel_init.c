@@ -342,9 +342,10 @@ void HPL_pdpanel_init
       PANEL->DPIV  = PANEL->L1   + JB * JB;
       PANEL->dDPIV  = PANEL->dL1   + JB * JB;
       PANEL->DINFO = PANEL->DPIV + JB;
+      PANEL->dDINFO = PANEL->dDPIV + JB;
       *(PANEL->DINFO) = 0.0;
       PANEL->U     = ( nprow > 1 ? PANEL->DINFO + 1 : NULL );
-      PANEL->dU    = ( nprow > 1 ? PANEL->dL1   + JB * JB + JB +1: NULL );
+      PANEL->dU    = ( nprow > 1 ? PANEL->dDINFO + 1: NULL );
    }
 #ifdef HPL_CALL_VSIPL
    PANEL->Ablock  = A->block;

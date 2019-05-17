@@ -90,10 +90,7 @@ void HPL_pdpanel_SendToDevice
 #ifdef ROCM
 
    //copy A and/or L2
-#ifdef HPL_COPY_L
-   #error "HPL_COPY_L not supported with ROCM"
-#else
-   if( PANEL->grid->mycol == PANEL->pcol ) { //L2 reuses A
+   if( PANEL->grid->mycol == PANEL->pcol ) {
       A  = Mptr( PANEL->A,  0, -jb, PANEL->lda );
       dA = Mptr( PANEL->dA, 0, -jb, PANEL->lda );
 
@@ -103,22 +100,41 @@ void HPL_pdpanel_SendToDevice
                           PANEL->mp*sizeof(double), jb,
                           hipMemcpyHostToDevice, dataStream);
 
-   } else {
-      ml2 = ( PANEL->grid->myrow == PANEL->prow ? PANEL->mp - jb : PANEL->mp );
+#ifdef HPL_COPY_L
+      //L2 is its own array
+      if ((PANEL->mp-jb)>0)
+        hipMemcpy2DAsync(PANEL->dL2, PANEL->ldl2*sizeof(double),
+                          Mptr( PANEL->dA, jb, -jb, PANEL->lda ),  PANEL->lda*sizeof(double),
+                          (PANEL->mp-jb)*sizeof(double), jb,
+                          hipMemcpyDeviceToDevice, dataStream);
+#endif
 
+      //copy L1
+      hipMemcpy2DAsync(PANEL->dL1, jb*sizeof(double),
+                       PANEL->L1,  jb*sizeof(double),
+                       jb*sizeof(double), jb,
+                       hipMemcpyHostToDevice, dataStream);
+
+   } else {
+
+#if !defined(GPU_AWARE_MPI)
+      //L2+L1 were recieved via MPI, send them to device
+      ml2 = ( PANEL->grid->myrow == PANEL->prow ? PANEL->mp - jb : PANEL->mp );
       if (ml2>0)
         hipMemcpy2DAsync(PANEL->dL2, PANEL->ldl2*sizeof(double),
                          PANEL->L2,  PANEL->ldl2*sizeof(double),
                          ml2*sizeof(double), jb,
                          hipMemcpyHostToDevice, dataStream);
-   }
-#endif
-   //copy L1
-   hipMemcpy2DAsync(PANEL->dL1, jb*sizeof(double),
-                    PANEL->L1,  jb*sizeof(double),
-                    jb*sizeof(double), jb,
-                    hipMemcpyHostToDevice, dataStream);
 
+      //copy L1
+      hipMemcpy2DAsync(PANEL->dL1, jb*sizeof(double),
+                       PANEL->L1,  jb*sizeof(double),
+                       jb*sizeof(double), jb,
+                       hipMemcpyHostToDevice, dataStream);
+#endif
+   }
+
+   /* TODO: This needs attention for GPU Aware MPI */
    if( PANEL->grid->nprow == 1 ) {
      //unroll pivoting and send to device now
      int *ipiv     = PANEL->IWORK;
