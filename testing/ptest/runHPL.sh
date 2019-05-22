@@ -3,7 +3,7 @@
 num_cpu_cores=1
 num_gpus=1
 
-MPI_DIR=/usr/share/openmpi
+MPI_DIR=/usr/local/openmpi
 
 # FOR OMP
 export OMP_NUM_THREADS=${num_cpu_cores}
