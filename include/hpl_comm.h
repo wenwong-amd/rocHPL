@@ -69,7 +69,8 @@ typedef enum
    HPL_2RING         = 403,                      /* Increasing 2-ring */
    HPL_2RING_M       = 404,           /* Increasing 2-ring (modified) */
    HPL_BLONG         = 405,                         /* long broadcast */
-   HPL_BLONG_M       = 406               /* long broadcast (modified) */
+   HPL_BLONG_M       = 406,              /* long broadcast (modified) */
+   HPL_IBCST         = 407                               /* MPI IBCST */
 } HPL_T_TOP;
 /*
  * ---------------------------------------------------------------------
@@ -159,6 +160,10 @@ int HPL_bwait_blong STDC_ARGS( ( HPL_T_panel *        ) );
 int HPL_binit_blonM STDC_ARGS( ( HPL_T_panel *        ) );
 int HPL_bcast_blonM STDC_ARGS( ( HPL_T_panel *, int * ) );
 int HPL_bwait_blonM STDC_ARGS( ( HPL_T_panel *        ) );
+
+int HPL_binit_ibcst STDC_ARGS( ( HPL_T_panel *        ) );
+int HPL_bcast_ibcst STDC_ARGS( ( HPL_T_panel *, int * ) );
+int HPL_bwait_ibcst STDC_ARGS( ( HPL_T_panel *        ) );
 
 #if __cplusplus
 }
