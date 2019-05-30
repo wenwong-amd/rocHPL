@@ -132,6 +132,7 @@ void HPL_pdtest
    double                     Anorm1, AnormI, Gflops, Xnorm1, XnormI,
                               BnormI, resid0, resid1;
    double                     * Bptr;
+   double                     * dBptr;
    void                       * vptr = NULL;
    void                       * dvptr = NULL;
    static int                 first=1;
@@ -173,7 +174,7 @@ void HPL_pdtest
                                   sizeof(double)+(size_t)4095)/(size_t)4096)*(size_t)4096;
 #ifdef VERBOSE_PRINT
    if( ( myrow == 0 ) && ( mycol == 0 ) )
-     {printf("Allocating %g GBs of storage on GPU...",((double) numbytes)/(1024*1024*1024)); fflush(stdout);}
+     {printf("Allocating %g GBs of storage on CPU...",((double) numbytes)/(1024*1024*1024)); fflush(stdout);}
 #endif
 
    hipHostMalloc(&vptr, numbytes,0);
@@ -191,7 +192,7 @@ void HPL_pdtest
 #ifdef VERBOSE_PRINT
    if( ( myrow == 0 ) && ( mycol == 0 ) )
      {printf("done.\n");
-      printf("Allocating %g GBs of storage on CPU...", ((double) numbytes)/(1024*1024*1024)); fflush(stdout);}
+      printf("Allocating %g GBs of storage on GPU...", ((double) numbytes)/(1024*1024*1024)); fflush(stdout);}
 #endif
 
    hipMalloc(&dvptr, numbytes);
@@ -410,13 +411,13 @@ void HPL_pdtest
    HPL_pdmatgen( GRID, N, N+1, NB, mat.A, mat.ld, HPL_ISEED );
 #endif
 
-   Anorm1 = HPL_pdlange( GRID, HPL_NORM_1, N, N, NB, mat.A, mat.ld );
-   AnormI = HPL_pdlange( GRID, HPL_NORM_I, N, N, NB, mat.A, mat.ld );
+   Anorm1 = HPL_pdlange( GRID, HPL_NORM_1, N, N, NB, mat.dA, mat.ld );
+   AnormI = HPL_pdlange( GRID, HPL_NORM_I, N, N, NB, mat.dA, mat.ld );
 /*
  * Because x is distributed in process rows, switch the norms
  */
-   XnormI = HPL_pdlange( GRID, HPL_NORM_1, 1, N, NB, mat.X, 1 );
-   Xnorm1 = HPL_pdlange( GRID, HPL_NORM_I, 1, N, NB, mat.X, 1 );
+   XnormI = HPL_pdlange( GRID, HPL_NORM_1, 1, N, NB, mat.dX, 1 );
+   Xnorm1 = HPL_pdlange( GRID, HPL_NORM_I, 1, N, NB, mat.dX, 1 );
 /*
  * If I am in the col that owns b, (1) compute local BnormI, (2) all_reduce to
  * find the max (in the col). Then (3) broadcast along the rows so that every
@@ -424,11 +425,18 @@ void HPL_pdtest
  * for the entries of B, it is very likely that BnormI (<=,~) 0.5.
  */
 
-   Bptr = Mptr( mat.A, 0, nq, mat.ld );
+   Bptr  = Mptr( mat.A , 0, nq, mat.ld );
+   dBptr = Mptr( mat.dA, 0, nq, mat.ld );
    if( mycol == HPL_indxg2p( N, NB, NB, 0, npcol ) ){
       if( mat.mp > 0 )
       {
-         BnormI = Bptr[HPL_idamax( mat.mp, Bptr, 1)];
+         // int id = HPL_idamax( mat.mp, Bptr, 1);
+         // BnormI = Bptr[id];
+         int id;
+         rocblas_idamax(handle, mat.mp, dBptr, 1, &id);
+
+         //Note: id is in Fortran indexing
+         hipMemcpy(&BnormI, dBptr+id-1, 1*sizeof(double), hipMemcpyDeviceToHost);
          BnormI = Mabs( BnormI );
       }
       else
@@ -446,13 +454,23 @@ void HPL_pdtest
  */
    if( mycol == HPL_indxg2p( N, NB, NB, 0, npcol ) )
    {
-      HPL_dgemv( HplColumnMajor, HplNoTrans, mat.mp, nq, -HPL_rone,
-                 mat.A, mat.ld, mat.X, 1, HPL_rone, Bptr, 1 );
+      // HPL_dgemv( HplColumnMajor, HplNoTrans, mat.mp, nq, -HPL_rone,
+      //            mat.A, mat.ld, mat.X, 1, HPL_rone, Bptr, 1 );
+      const double one = 1.0;
+      const double mone = -1.0;
+      rocblas_dgemv(handle, rocblas_operation_none, mat.mp, nq,
+                    &mone, mat.dA, mat.ld, mat.dX, 1, &one, dBptr, 1);
+      hipMemcpy(Bptr, dBptr, mat.mp*sizeof(double), hipMemcpyDeviceToHost);
    }
    else if( nq > 0 )
    {
-      HPL_dgemv( HplColumnMajor, HplNoTrans, mat.mp, nq, -HPL_rone,
-                 mat.A, mat.ld, mat.X, 1, HPL_rzero, Bptr, 1 );
+      // HPL_dgemv( HplColumnMajor, HplNoTrans, mat.mp, nq, -HPL_rone,
+      //            mat.A, mat.ld, mat.X, 1, HPL_rzero, Bptr, 1 );
+      const double zero = 0.0;
+      const double mone = -1.0;
+      rocblas_dgemv(handle, rocblas_operation_none, mat.mp, nq,
+                    &mone, mat.dA, mat.ld, mat.dX, 1, &zero, dBptr, 1);
+      hipMemcpy(Bptr, dBptr, mat.mp*sizeof(double), hipMemcpyDeviceToHost);
    }
    else { for( ii = 0; ii < mat.mp; ii++ ) Bptr[ii] = HPL_rzero; }
 /*
@@ -464,7 +482,8 @@ void HPL_pdtest
 /*
  * Compute || b - A x ||_oo
  */
-   resid0 = HPL_pdlange( GRID, HPL_NORM_I, N, 1, NB, Bptr, mat.ld );
+   hipMemcpy(dBptr, Bptr, mat.mp*sizeof(double), hipMemcpyHostToDevice);
+   resid0 = HPL_pdlange( GRID, HPL_NORM_I, N, 1, NB, dBptr, mat.ld );
 /*
  * Computes and displays norms, residuals ...
  */

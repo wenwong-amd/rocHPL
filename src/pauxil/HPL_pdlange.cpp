@@ -49,6 +49,105 @@
  */
 #include "hpl.h"
 
+#ifdef ROCM
+
+#include <hip/hip_runtime.h>
+
+#define BLOCK_SIZE 512
+#define GRID_SIZE 512
+
+__global__ void normA_1(const int N, const int M,
+                        const double* __restrict__ A,
+                        const int LDA,
+                              double* __restrict__ normAtmp) {
+   __shared__ double s_norm[BLOCK_SIZE];
+
+   const int t = threadIdx.x;
+   const int i = blockIdx.x;
+   size_t id = i * BLOCK_SIZE + t;
+
+   s_norm[t] = 0.0;
+   for ( ; id < (size_t) N*M ; id += gridDim.x * BLOCK_SIZE ) {
+      const int m = id % M;
+      const int n = id / M;
+      const double Anm = fabs(A[n+((size_t)m*LDA)]);
+
+      s_norm[t] = (Anm > s_norm[t]) ? Anm : s_norm[t];
+   }
+   __syncthreads();
+
+   for (int k = BLOCK_SIZE / 2; k > 0; k /= 2 ) {
+      if ( t < k ) {
+         s_norm[t] = (s_norm[t + k]>s_norm[t]) ? s_norm[t + k] : s_norm[t];
+      }
+      __syncthreads();
+   }
+
+   if (t==0)
+      normAtmp[i] = s_norm[0];
+}
+
+__global__ void normA_2(const int N,
+                              double* __restrict__ normAtmp) {
+   __shared__ double s_norm[BLOCK_SIZE];
+
+   const int t = threadIdx.x;
+
+   s_norm[t] = 0.0;
+   for (size_t id = t; id < N ; id += BLOCK_SIZE ) {
+      const double Anm = normAtmp[id];
+      s_norm[t] = (Anm > s_norm[t]) ? Anm : s_norm[t];
+   }
+   __syncthreads();
+
+   for (int k = BLOCK_SIZE / 2; k > 0; k /= 2 ) {
+      if ( t < k ) {
+         s_norm[t] = (s_norm[t + k]>s_norm[t]) ? s_norm[t + k] : s_norm[t];
+      }
+      __syncthreads();
+   }
+
+   if (t==0)
+      normAtmp[0] = s_norm[0];
+}
+
+__global__ void norm1(const int N, const int M,
+                      const double* __restrict__ A,
+                      const int LDA,
+                            double* __restrict__ work) {
+   const int t = threadIdx.x;
+   const int i = blockIdx.x;
+   const size_t id = i * BLOCK_SIZE + t; //column id
+
+   if (id<N) {
+      double norm = 0.0;
+      //this is an ugly access, and a big loop
+      for (int i=0; i<M; i++) {
+         norm += fabs(A[i+id*LDA]);
+      }
+      work[id] = norm;
+   }
+}
+
+__global__ void norminf(const int N, const int M,
+                      const double* __restrict__ A,
+                      const int LDA,
+                            double* __restrict__ work) {
+   const int t = threadIdx.x;
+   const int i = blockIdx.x;
+   const size_t id = i * BLOCK_SIZE + t; //row id
+
+   if (id<M) {
+      double norm = 0.0;
+      for (size_t i=0; i < N; i ++) {
+         norm += fabs(A[id+((size_t)i*LDA)]);
+      }
+      work[id] = norm;
+   }
+}
+
+#endif
+
 #ifdef STDC_HEADERS
 double HPL_pdlange
 (
@@ -124,7 +223,7 @@ double HPL_pdlange
 /*
  * .. Local Variables ..
  */
-   double                     s, v0=HPL_rzero, * work = NULL;
+   double                     s, v0=HPL_rzero, * work = NULL, *dwork = NULL;
    MPI_Comm                   Acomm, Ccomm, Rcomm;
    int                        ii, jj, mp, mycol, myrow, npcol, nprow,
                               nq;
@@ -146,12 +245,36 @@ double HPL_pdlange
  */
       if( ( nq > 0 ) && ( mp > 0 ) )
       {
-         for( jj = 0; jj < nq; jj++ )
-         {
-            for( ii = 0; ii < mp; ii++ )
-            { v0 = Mmax( v0, Mabs( *A ) ); A++; }
-            A += LDA - mp;
+         if (nq==1) { //column vector
+            int id;
+            rocblas_idamax(handle, mp, A, 1, &id);
+            hipMemcpy(&v0, A+id-1, 1*sizeof(double), hipMemcpyDeviceToHost);
+         } else if (mp==1) { //row vector
+            int id;
+            rocblas_idamax(handle, nq, A, LDA, &id);
+            hipMemcpy(&v0, A+((size_t)id*LDA), 1*sizeof(double), hipMemcpyDeviceToHost);
+         } else {
+            //custom reduction kernels
+            hipMalloc(&dwork, GRID_SIZE*sizeof(double));
+
+            size_t grid_size = (nq*mp + BLOCK_SIZE-1)/BLOCK_SIZE;
+            grid_size = (grid_size < GRID_SIZE) ? grid_size : GRID_SIZE;
+
+            hipLaunchKernelGGL((normA_1), dim3(grid_size), dim3(BLOCK_SIZE), 0, 0,
+                                nq, mp, A, LDA, dwork);
+            hipLaunchKernelGGL((normA_2), dim3(1), dim3(BLOCK_SIZE), 0, 0,
+                                grid_size, dwork );
+
+            hipMemcpy(&v0, dwork, 1*sizeof(double), hipMemcpyDeviceToHost);
+            hipFree(dwork);
          }
+
+         // for( jj = 0; jj < nq; jj++ )
+         // {
+         //    for( ii = 0; ii < mp; ii++ )
+         //    { v0 = Mmax( v0, Mabs( *A ) ); A++; }
+         //    A += LDA - mp;
+         // }
       }
       (void) HPL_reduce( (void *)(&v0), 1, HPL_DOUBLE, HPL_max, 0,
                          Acomm );
@@ -167,11 +290,21 @@ double HPL_pdlange
          if( work == NULL )
          { HPL_pabort( __LINE__, "HPL_pdlange", "Memory allocation failed" ); }
 
-         for( jj = 0; jj < nq; jj++ )
-         {
-            s = HPL_rzero;
-            for( ii = 0; ii < mp; ii++ ) { s += Mabs( *A ); A++; }
-            work[jj] = s; A += LDA - mp;
+         // for( jj = 0; jj < nq; jj++ )
+         // {
+         //    s = HPL_rzero;
+         //    for( ii = 0; ii < mp; ii++ ) { s += Mabs( *A ); A++; }
+         //    work[jj] = s; A += LDA - mp;
+         // }
+
+         if (nq==1) { //column vector
+            rocblas_dasum(handle, mp, A, 1, work);
+         } else {
+            hipMalloc(&dwork, nq*sizeof(double));
+            size_t grid_size = (nq + BLOCK_SIZE-1)/BLOCK_SIZE;
+            hipLaunchKernelGGL((norm1), dim3(grid_size), dim3(BLOCK_SIZE), 0, 0,
+                                nq, mp, A, LDA, dwork);
+            hipMemcpy(work, dwork, nq*sizeof(double), hipMemcpyDeviceToHost);
          }
 /*
  * Find sum of global matrix columns, store on row 0 of process grid
@@ -186,6 +319,7 @@ double HPL_pdlange
             v0 = work[HPL_idamax( nq, work, 1)]; v0 = Mabs( v0 );
          }
          if( work ) free( work );
+         if( dwork ) hipFree( dwork );
       }
 /*
  * Find max in row 0, store result in process (0,0)
@@ -205,14 +339,25 @@ double HPL_pdlange
          if( work == NULL )
          { HPL_pabort( __LINE__, "HPL_pdlange", "Memory allocation failed" ); }
 
-         for( ii = 0; ii < mp; ii++ ) { work[ii] = HPL_rzero; }
+         if (mp==1) { //row vector
+            rocblas_dasum(handle, nq, A, LDA, work);
+         } else {
+            hipMalloc(&dwork, mp*sizeof(double));
 
-         for( jj = 0; jj < nq; jj++ )
-         {
-            for( ii = 0; ii < mp; ii++ )
-            { work[ii] += Mabs( *A ); A++; }
-            A += LDA - mp;
+            size_t grid_size = (mp + BLOCK_SIZE-1)/BLOCK_SIZE;
+            hipLaunchKernelGGL((norminf), dim3(grid_size), dim3(BLOCK_SIZE), 0, 0,
+                                nq, mp, A, LDA, dwork);
+            hipMemcpy(work, dwork, mp*sizeof(double), hipMemcpyDeviceToHost);
          }
+
+         // for( ii = 0; ii < mp; ii++ ) { work[ii] = HPL_rzero; }
+
+         // for( jj = 0; jj < nq; jj++ )
+         // {
+         //    for( ii = 0; ii < mp; ii++ )
+         //    { work[ii] += Mabs( *A ); A++; }
+         //    A += LDA - mp;
+         // }
 /*
  * Find sum of global matrix rows, store on column 0 of process grid
  */
@@ -226,6 +371,7 @@ double HPL_pdlange
             v0 = work[HPL_idamax( mp, work, 1)]; v0 = Mabs( v0 );
          }
          if( work ) free( work );
+         if( dwork ) hipFree( dwork );
       }
 /*
  * Find max in column 0, store result in process (0,0)

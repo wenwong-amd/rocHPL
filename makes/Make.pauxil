@@ -126,8 +126,8 @@ HPL_pdlaprnt.o         : ../HPL_pdlaprnt.c         $(INCdep)
 	$(CC) -o $@ -c $(CCFLAGS)  ../HPL_pdlaprnt.c
 HPL_pdlamch.o          : ../HPL_pdlamch.c          $(INCdep)
 	$(CC) -o $@ -c $(CCFLAGS)  ../HPL_pdlamch.c
-HPL_pdlange.o          : ../HPL_pdlange.c          $(INCdep)
-	$(CC) -o $@ -c $(CCFLAGS)  ../HPL_pdlange.c
+HPL_pdlange.o          : ../HPL_pdlange.cpp          $(INCdep)
+	$(HIPCC) -o $@ -c $(CCFLAGS)  ../HPL_pdlange.cpp
 #
 # ######################################################################
 #

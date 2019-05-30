@@ -226,22 +226,42 @@ void HPL_pdpanel_init
 #ifdef ROCM
       if(PANEL->max_work_size<(size_t)(lwork) * sizeof( double ))
       {
-        if( PANEL->WORK  )
-        {
-          hipFree( PANEL->dWORK);
-          hipHostFree( PANEL->WORK);
-        }
-        // size_t numbytes = (((size_t)((size_t)(lwork) * sizeof( double )) + (size_t)4095)/(size_t)4096)*(size_t)4096;
-        size_t numbytes = (size_t)(lwork) *sizeof( double );
+         if( PANEL->WORK  )
+         {
+            hipFree( PANEL->dWORK);
+            hipHostFree( PANEL->WORK);
+         }
+         // size_t numbytes = (((size_t)((size_t)(lwork) * sizeof( double )) + (size_t)4095)/(size_t)4096)*(size_t)4096;
+         size_t numbytes = (size_t)(lwork) *sizeof( double );
 
+#ifdef VERBOSE_PRINT
+         if( ( myrow == 0 ) && ( mycol == 0 ) )
+            {printf("Allocating %g GBs of storage on CPU...",((double) numbytes)/(1024*1024*1024)); fflush(stdout);}
+#endif
+         hipError_t statusHost = hipHostMalloc((void**)&(PANEL->WORK),numbytes, hipHostMallocDefault);
 
-        if(hipMalloc((void**)&(PANEL->dWORK),numbytes)!=hipSuccess ||
-           hipHostMalloc((void**)&(PANEL->WORK),numbytes, hipHostMallocDefault)!=hipSuccess)
-        {
+         if(statusHost!=hipSuccess) {
             HPL_pabort( __LINE__, "HPL_pdpanel_init",
-                        "Memory allocation failed" );
-        }
-        PANEL->max_work_size = (size_t)(lwork) * sizeof( double );
+                        "Panel Host Memory allocation failed" );
+         }
+
+#ifdef VERBOSE_PRINT
+         if( ( myrow == 0 ) && ( mycol == 0 ) ){
+            printf("done.\n");
+            printf("Allocating %g GBs of storage on GPU...",((double) numbytes)/(1024*1024*1024)); fflush(stdout);
+         }
+#endif
+         hipError_t statusDevice = hipMalloc((void**)&(PANEL->dWORK),numbytes);
+
+         if(statusDevice!=hipSuccess) {
+            HPL_pabort( __LINE__, "HPL_pdpanel_init",
+                        "Panel Device Memory allocation failed" );
+         }
+#ifdef VERBOSE_PRINT
+         if( ( myrow == 0 ) && ( mycol == 0 ) )
+            printf("done.\n");
+#endif
+         PANEL->max_work_size = (size_t)(lwork) * sizeof( double );
       }
 #else
       if( !( PANEL->WORK = (void *)malloc( (size_t)(lwork) *
@@ -293,14 +313,34 @@ void HPL_pdpanel_init
         // size_t numbytes = (((size_t)((size_t)(lwork) * sizeof( double )) + (size_t)4095)/(size_t)4096)*(size_t)4096;
         size_t numbytes = (size_t)(lwork) *sizeof( double );
 
+#ifdef VERBOSE_PRINT
+         if( ( myrow == 0 ) && ( mycol == 0 ) )
+            {printf("Allocating %g GBs of storage on CPU...",((double) numbytes)/(1024*1024*1024)); fflush(stdout);}
+#endif
+         hipError_t statusHost = hipHostMalloc((void**)&(PANEL->WORK),numbytes, hipHostMallocDefault);
 
-        if(hipMalloc((void**)&(PANEL->dWORK),numbytes)!=hipSuccess ||
-           hipHostMalloc((void**)&(PANEL->WORK),numbytes, hipHostMallocDefault)!=hipSuccess)
-        {
+         if(statusHost!=hipSuccess) {
             HPL_pabort( __LINE__, "HPL_pdpanel_init",
-                        "Memory allocation failed" );
-        }
-        PANEL->max_work_size = (size_t)(lwork) * sizeof( double );
+                        "Panel Host Memory allocation failed" );
+         }
+
+#ifdef VERBOSE_PRINT
+         if( ( myrow == 0 ) && ( mycol == 0 ) ){
+            printf("done.\n");
+            printf("Allocating %g GBs of storage on GPU...",((double) numbytes)/(1024*1024*1024)); fflush(stdout);
+         }
+#endif
+         hipError_t statusDevice = hipMalloc((void**)&(PANEL->dWORK),numbytes);
+
+         if(statusDevice!=hipSuccess) {
+            HPL_pabort( __LINE__, "HPL_pdpanel_init",
+                        "Panel Device Memory allocation failed" );
+         }
+#ifdef VERBOSE_PRINT
+         if( ( myrow == 0 ) && ( mycol == 0 ) )
+            printf("done.\n");
+#endif
+         PANEL->max_work_size = (size_t)(lwork) * sizeof( double );
       }
 #else
       if( !( PANEL->WORK = (void *)malloc( (size_t)(lwork) *
@@ -421,12 +461,18 @@ void HPL_pdpanel_init
       // size_t numbytes = (((size_t)((size_t)(lwork) * sizeof( double )) + (size_t)4095)/(size_t)4096)*(size_t)4096;
       size_t numbytes = (size_t)(lwork) *sizeof( int );
 
-      if(hipMalloc((void**)&(PANEL->dIWORK),numbytes)!=hipSuccess ||
-         hipHostMalloc((void**)&(PANEL->IWORK),numbytes, hipHostMallocDefault)!=hipSuccess)
-      {
-          HPL_pabort( __LINE__, "HPL_pdpanel_init",
-                      "Memory allocation failed" );
+      hipError_t statusHost = hipHostMalloc((void**)&(PANEL->IWORK),numbytes, hipHostMallocDefault);
+      if(statusHost!=hipSuccess) {
+         HPL_pabort( __LINE__, "HPL_pdpanel_init",
+                     "Panel Host Integer Memory allocation failed" );
       }
+
+      hipError_t statusDevice = hipMalloc((void**)&(PANEL->dIWORK),numbytes);
+      if(statusDevice!=hipSuccess) {
+         HPL_pabort( __LINE__, "HPL_pdpanel_init",
+                     "Panel Device Integer Memory allocation failed" );
+      }
+
       PANEL->max_iwork_size = (size_t)(lwork) * sizeof( int );
 
       size_t lwork2 = (size_t)(mp);
@@ -435,7 +481,11 @@ void HPL_pdpanel_init
       if (PANEL->IWORK2)
         hipHostFree(PANEL->IWORK2);
 
-      hipHostMalloc((void**)&(PANEL->IWORK2), lwork2 * sizeof( int ), hipHostMallocDefault );
+      statusHost = hipHostMalloc((void**)&(PANEL->IWORK2), lwork2 * sizeof( int ), hipHostMallocDefault );
+      if(statusHost!=hipSuccess) {
+         HPL_pabort( __LINE__, "HPL_pdpanel_init",
+                     "Panel Host Secondary Integer Memory allocation failed" );
+      }
     }
 #else
 
