@@ -284,9 +284,10 @@ void HPL_pdpanel_init
       PANEL->L1    = (double *)HPL_PTR( PANEL->WORK, dalign );
       PANEL->DPIV  = (double *)HPL_PTR( PANEL->WORK, dalign ) + JB * JB;
       PANEL->DINFO = PANEL->DPIV + JB;
+      PANEL->dDINFO= PANEL->dDPIV + JB;
       *(PANEL->DINFO) = 0.0;
       PANEL->U     = ( nprow > 1 ? PANEL->DINFO + 1: NULL );
-      PANEL->dU    = ( nprow > 1 ? (double *)HPL_PTR( PANEL->dWORK, dalign ) + JB * JB + JB + 1: NULL );
+      PANEL->dU    = ( nprow > 1 ? PANEL->dDINFO+ 1: NULL );
    }
    else
    {                                        /* space for L2, L1, DPIV */

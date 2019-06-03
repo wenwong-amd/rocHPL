@@ -102,11 +102,12 @@ void HPL_pdpanel_SendToDevice
 
 #ifdef HPL_COPY_L
       //L2 is its own array
-      if ((PANEL->mp-jb)>0)
+      if ((PANEL->grid->npcol>1) && (PANEL->mp-jb)>0) {
         hipMemcpy2DAsync(PANEL->dL2, PANEL->ldl2*sizeof(double),
                           Mptr( PANEL->dA, jb, -jb, PANEL->lda ),  PANEL->lda*sizeof(double),
                           (PANEL->mp-jb)*sizeof(double), jb,
                           hipMemcpyDeviceToDevice, dataStream);
+      }
 #endif
 
       //copy L1
