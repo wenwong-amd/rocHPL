@@ -101,19 +101,20 @@ void HPL_pdpanel_SendToDevice
                           hipMemcpyHostToDevice, dataStream);
 
 #ifdef HPL_COPY_L
-      //L2 is its own array
-      if( PANEL->grid->myrow == PANEL->prow ) {
-        if ((PANEL->mp-jb)>0)
-          hipMemcpy2DAsync(PANEL->dL2, PANEL->ldl2*sizeof(double),
-                            Mptr( PANEL->dA, jb, -jb, PANEL->lda ),  PANEL->lda*sizeof(double),
-                            (PANEL->mp-jb)*sizeof(double), jb,
-                            hipMemcpyDeviceToDevice, dataStream);
-      } else {
-        if ((PANEL->mp)>0)
-          hipMemcpy2DAsync(PANEL->dL2, PANEL->ldl2*sizeof(double),
-                            Mptr( PANEL->dA, 0, -jb, PANEL->lda ),  PANEL->lda*sizeof(double),
-                            (PANEL->mp)*sizeof(double), jb,
-                            hipMemcpyDeviceToDevice, dataStream);
+      if (PANEL->grid->npcol>1) {//L2 is its own array
+        if( PANEL->grid->myrow == PANEL->prow ) {
+          if ((PANEL->mp-jb)>0)
+            hipMemcpy2DAsync(PANEL->dL2, PANEL->ldl2*sizeof(double),
+                              Mptr( PANEL->dA, jb, -jb, PANEL->lda ),  PANEL->lda*sizeof(double),
+                              (PANEL->mp-jb)*sizeof(double), jb,
+                              hipMemcpyDeviceToDevice, dataStream);
+        } else {
+          if ((PANEL->mp)>0)
+            hipMemcpy2DAsync(PANEL->dL2, PANEL->ldl2*sizeof(double),
+                              Mptr( PANEL->dA, 0, -jb, PANEL->lda ),  PANEL->lda*sizeof(double),
+                              (PANEL->mp)*sizeof(double), jb,
+                              hipMemcpyDeviceToDevice, dataStream);
+        }
       }
 #endif
 
