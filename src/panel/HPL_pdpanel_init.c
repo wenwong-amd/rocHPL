@@ -162,7 +162,35 @@ void HPL_pdpanel_init
    nq = HPL_numrocI( N, JA, nb, nb, mycol, 0, npcol );
                                          /* ptr to trailing part of A */
 
+#ifdef ROCM
+   size_t numpinnedbytes = A->ld*JB*sizeof(double);
+   if(PANEL->max_pinned_work_size<(size_t)(numpinnedbytes))
+   {
+      if( PANEL->A  )
+      {
+         hipHostFree( PANEL->A);
+      }
+#ifdef VERBOSE_PRINT
+      if( ( myrow == 0 ) && ( mycol == 0 ) )
+      {printf("Allocating %g GBs of storage on CPU...",((double) numpinnedbytes)/(1024*1024*1024)); fflush(stdout);}
+#endif
+      hipError_t statusHost = hipHostMalloc(&(PANEL->A), numpinnedbytes,0);
+      if( statusHost != hipSuccess) {
+         HPL_pabort( __LINE__, "HPL_pdpanel_init",
+                     "Panel Host Memory allocation failed" );
+         return;
+      }
+#ifdef VERBOSE_PRINT
+   if( ( myrow == 0 ) && ( mycol == 0 ) )
+     {printf("done.\n");}
+#endif
+      PANEL->max_pinned_work_size = (size_t)(numpinnedbytes);
+   }
+#else
+   //use the original matrix
    PANEL->A       = Mptr( (double *)(A->A), ii, jj, A->ld );
+#endif
+
    PANEL->dA      = Mptr( (double *)(A->dA), ii, jj, A->ld );
 
 /*

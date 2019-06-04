@@ -91,7 +91,8 @@ void HPL_pdpanel_SendToDevice
 
    //copy A and/or L2
    if( PANEL->grid->mycol == PANEL->pcol ) {
-      A  = Mptr( PANEL->A,  0, -jb, PANEL->lda );
+      // A  = Mptr( PANEL->A,  0, -jb, PANEL->lda );
+      A  = Mptr( PANEL->A,  0, 0, PANEL->lda );
       dA = Mptr( PANEL->dA, 0, -jb, PANEL->lda );
 
       if (PANEL->mp>0)

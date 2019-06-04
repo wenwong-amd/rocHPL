@@ -172,26 +172,26 @@ void HPL_pdtest
    size_t numbytes = (((size_t)( (size_t)(ALGO->align) +
                                  (size_t)(mat.ld+1) * (size_t)(mat.nq) ) *
                                   sizeof(double)+(size_t)4095)/(size_t)4096)*(size_t)4096;
-#ifdef VERBOSE_PRINT
-   if( ( myrow == 0 ) && ( mycol == 0 ) )
-     {printf("Allocating %g GBs of storage on CPU...",((double) numbytes)/(1024*1024*1024)); fflush(stdout);}
-#endif
+// #ifdef VERBOSE_PRINT
+//    if( ( myrow == 0 ) && ( mycol == 0 ) )
+//      {printf("Allocating %g GBs of storage on CPU...",((double) numbytes)/(1024*1024*1024)); fflush(stdout);}
+// #endif
 
-   hipHostMalloc(&vptr, numbytes,0);
-   info[0] = (vptr==NULL);
-   info[1] = myrow; info[2] = mycol;
-   (void) HPL_all_reduce( (void *)(info), 3, HPL_INT, HPL_max,
-                          GRID->all_comm );
-   if( info[0] != 0 ) {
-     HPL_pwarn( TEST->outfp, __LINE__, "HPL_pdtest",
-                  "[%d,%d] %s", info[1], info[2],
-                  "Pinned Host memory allocation failed for A, x and b. Skip." );
-     (TEST->kskip)++;
-     return;
-   }
+//    hipHostMalloc(&vptr, numbytes,0);
+//    info[0] = (vptr==NULL);
+//    info[1] = myrow; info[2] = mycol;
+//    (void) HPL_all_reduce( (void *)(info), 3, HPL_INT, HPL_max,
+//                           GRID->all_comm );
+//    if( info[0] != 0 ) {
+//      HPL_pwarn( TEST->outfp, __LINE__, "HPL_pdtest",
+//                   "[%d,%d] %s", info[1], info[2],
+//                   "Pinned Host memory allocation failed for A, x and b. Skip." );
+//      (TEST->kskip)++;
+//      return;
+//    }
 #ifdef VERBOSE_PRINT
    if( ( myrow == 0 ) && ( mycol == 0 ) )
-     {printf("done.\n");
+     {//printf("done.\n");
       printf("Allocating %g GBs of storage on GPU...", ((double) numbytes)/(1024*1024*1024)); fflush(stdout);}
 #endif
 
@@ -244,7 +244,6 @@ void HPL_pdtest
 
 #ifdef ROCM
    HPL_pdmatgen( GRID, N, N+1, NB, mat.dA, mat.ld, HPL_ISEED );
-   // hipMemcpy(mat.dA, mat.A, (N+1)*mat.ld*sizeof(double), hipMemcpyHostToDevice);
 #else
    HPL_pdmatgen( GRID, N, N+1, NB, mat.A, mat.ld, HPL_ISEED );
 #endif
@@ -404,9 +403,7 @@ void HPL_pdtest
  */
 #ifdef ROCM
    HPL_pdmatgen( GRID, N, N+1, NB, mat.dA, mat.ld, HPL_ISEED );
-   // hipMemcpy(mat.A, mat.dA, (N*((size_t)mat.ld)+N)*sizeof(double), hipMemcpyDeviceToHost);
-   // hipMemcpy(mat.X, mat.dX, N*sizeof(double), hipMemcpyDeviceToHost);
-   hipMemcpy(vptr, dvptr, numbytes, hipMemcpyDeviceToHost);
+   // hipMemcpy(vptr, dvptr, numbytes, hipMemcpyDeviceToHost);
 #else
    HPL_pdmatgen( GRID, N, N+1, NB, mat.A, mat.ld, HPL_ISEED );
 #endif
@@ -425,7 +422,9 @@ void HPL_pdtest
  * for the entries of B, it is very likely that BnormI (<=,~) 0.5.
  */
 
-   Bptr  = Mptr( mat.A , 0, nq, mat.ld );
+   // Bptr  = Mptr( mat.A , 0, nq, mat.ld );
+   size_t BptrBytes = Mmax(mat.nq, mat.ld)*sizeof(double);
+   hipHostMalloc(&(Bptr), BptrBytes, 0);
    dBptr = Mptr( mat.dA, 0, nq, mat.ld );
    if( mycol == HPL_indxg2p( N, NB, NB, 0, npcol ) ){
       if( mat.mp > 0 )
@@ -528,6 +527,7 @@ void HPL_pdtest
 #ifdef ROCM
    if( dvptr ) hipFree( dvptr );
    if( vptr ) hipHostFree( vptr );
+   if( Bptr  )hipHostFree( Bptr  );
 #else
    if( vptr ) free( vptr );
 #endif

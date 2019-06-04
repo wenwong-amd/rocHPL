@@ -130,6 +130,7 @@ void HPL_pdtrsv
    A = AMAT->A; XR = AMAT->X;
 #ifdef ROCM
    // rocblas_set_stream(handle, 0);
+   hipHostMalloc(&(XR), AMAT->nq*sizeof(double), 0);
    dA = AMAT->dA; dXR = AMAT->dX;
 #else
    dA = AMAT->A; dXR = AMAT->X;
@@ -151,6 +152,11 @@ void HPL_pdtrsv
    kb    = n    - tmp1 * nb;
 
    Aptr = (double *)(A); XC = Mptr( Aptr, 0, Anq, lda );
+#ifdef ROCM
+   // XC = XR;
+   hipHostMalloc(&(XC), Anp*sizeof(double), 0);
+#endif
+
    dAptr = (double *)(dA); dXC = Mptr( dAptr, 0, Anq, lda );
    Mindxg2p( n, nb, nb, Bcol, 0, npcol );
 
@@ -177,9 +183,10 @@ void HPL_pdtrsv
    if( mycol != Alcol ) {
 #ifdef ROCM
       if (Anp) hipMemset(dXC, 0, Anp*sizeof(double));
-#endif
+#else
       for( tmp1=0; tmp1 < Anp; tmp1++ )
          XC[tmp1] = HPL_rzero;
+#endif
    }
 /*
  * Set up lookahead
@@ -400,6 +407,9 @@ void HPL_pdtrsv
    hipDeviceSynchronize();
    if( W  )hipHostFree( W  );
    if (dW) hipFree( dW  );
+   if( XR  )hipHostFree( XR  );
+   if( XC  )hipHostFree( XC  );
+
 #else
    if( Wfr  ) free( W  );
 #endif

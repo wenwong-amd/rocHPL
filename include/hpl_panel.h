@@ -104,6 +104,7 @@ typedef struct HPL_S_panel
    int                 msgid;           /* message id for panel bcast */
    int                 ldl2;         /* local leading dim of array L2 */
    int                 len;      /* length of the buffer to broadcast */
+   unsigned int        max_pinned_work_size;   /* largest size of pinned A space */
    unsigned int        max_work_size;   /* largest size of WORK space */
    unsigned int        max_iwork_size; /* largest size of IWORK space */
    unsigned int        free_work_now;         /* should we deallocate */

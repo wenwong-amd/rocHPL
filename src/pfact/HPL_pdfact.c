@@ -130,7 +130,7 @@ void HPL_pdfact
                        ((size_t)(align) * sizeof(double) ) ) );
    if( vptr ) free( vptr );
 
-   PANEL->A   = Mptr( PANEL->A, 0, jb, PANEL->lda );
+   // PANEL->A   = Mptr( PANEL->A, 0, jb, PANEL->lda );
    PANEL->dA  = Mptr( PANEL->dA, 0, jb, PANEL->lda );
    PANEL->nq -= jb; PANEL->jj += jb;
 #ifdef HPL_DETAILED_TIMING

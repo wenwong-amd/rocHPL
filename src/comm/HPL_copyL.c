@@ -102,7 +102,9 @@ void HPL_copyL
             hipStreamSynchronize(dataStream);
          }
 #else
-         HPL_dlacpy( PANEL->mp-jb, jb, Mptr( PANEL->A, jb, -jb, lda ),
+         // HPL_dlacpy( PANEL->mp-jb, jb, Mptr( PANEL->A, jb, -jb, lda ),
+         //             lda, PANEL->L2, PANEL->ldl2 );
+         HPL_dlacpy( PANEL->mp-jb, jb, Mptr( PANEL->A, jb, 0, lda ),
                      lda, PANEL->L2, PANEL->ldl2 );
 #endif
       }
@@ -117,7 +119,9 @@ void HPL_copyL
             hipStreamSynchronize(dataStream);
          }
 #else
-         HPL_dlacpy( PANEL->mp,    jb, Mptr( PANEL->A,  0, -jb, lda ),
+         // HPL_dlacpy( PANEL->mp,    jb, Mptr( PANEL->A,  0, -jb, lda ),
+         //             lda, PANEL->L2, PANEL->ldl2 );
+         HPL_dlacpy( PANEL->mp,    jb, Mptr( PANEL->A,  0, 0, lda ),
                      lda, PANEL->L2, PANEL->ldl2 );
 #endif
       }

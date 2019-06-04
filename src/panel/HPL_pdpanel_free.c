@@ -101,6 +101,9 @@ int HPL_pdpanel_free
 #ifdef ROCM
    if( PANEL->free_work_now == 1 )
    {
+     if( PANEL->A)
+       hipHostFree( PANEL->A);
+
      if( PANEL->WORK  )
        hipHostFree( PANEL->WORK);
 

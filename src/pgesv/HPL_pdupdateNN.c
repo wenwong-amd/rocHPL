@@ -566,7 +566,8 @@ void HPL_pdupdateNN
    }
 
    PANEL->dA = Mptr( PANEL->dA, 0, n, lda );
-   PANEL->A = Mptr( PANEL->A, 0, n, lda ); PANEL->nq -= n; PANEL->jj += n;
+   // PANEL->A = Mptr( PANEL->A, 0, n, lda );
+   PANEL->nq -= n; PANEL->jj += n;
 
 /*
  * return the outcome of the probe  (should always be  HPL_SUCCESS,  the
