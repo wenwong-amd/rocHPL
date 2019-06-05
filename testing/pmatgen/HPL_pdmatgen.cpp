@@ -56,7 +56,7 @@
 
 __global__ void hpl_init_shift(double* __restrict__ A, const size_t n) {
 
-  const size_t id = threadIdx.x + blockIdx.x*BLOCK_SIZE;
+  const size_t id = threadIdx.x + ((size_t)blockIdx.x)*BLOCK_SIZE;
 
   if (id<n)
     A[id] -= 0.5;
