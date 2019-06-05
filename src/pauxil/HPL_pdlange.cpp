@@ -70,7 +70,7 @@ __global__ void normA_1(const int N, const int M,
    for ( ; id < (size_t) N*M ; id += gridDim.x * BLOCK_SIZE ) {
       const int m = id % M;
       const int n = id / M;
-      const double Anm = fabs(A[n+((size_t)m*LDA)]);
+      const double Anm = fabs(A[n+((size_t)m)*LDA]);
 
       s_norm[t] = (Anm > s_norm[t]) ? Anm : s_norm[t];
    }
@@ -116,14 +116,14 @@ __global__ void norm1(const int N, const int M,
                       const int LDA,
                             double* __restrict__ work) {
    const int t = threadIdx.x;
-   const int i = blockIdx.x;
-   const size_t id = i * BLOCK_SIZE + t; //column id
+   const int b = blockIdx.x;
+   const size_t id = b * BLOCK_SIZE + t; //column id
 
    if (id<N) {
       double norm = 0.0;
       //this is an ugly access, and a big loop
       for (int i=0; i<M; i++) {
-         norm += fabs(A[i+id*LDA]);
+         norm += fabs(A[((size_t)i)+id*LDA]);
       }
       work[id] = norm;
    }
@@ -134,13 +134,13 @@ __global__ void norminf(const int N, const int M,
                       const int LDA,
                             double* __restrict__ work) {
    const int t = threadIdx.x;
-   const int i = blockIdx.x;
-   const size_t id = i * BLOCK_SIZE + t; //row id
+   const int b = blockIdx.x;
+   const size_t id = b * BLOCK_SIZE + t; //row id
 
    if (id<M) {
       double norm = 0.0;
-      for (size_t i=0; i < N; i ++) {
-         norm += fabs(A[id+((size_t)i*LDA)]);
+      for (size_t i=0; i < N; i++) {
+         norm += fabs(A[id+i*((size_t)LDA)]);
       }
       work[id] = norm;
    }

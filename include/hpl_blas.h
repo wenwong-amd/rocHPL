@@ -53,17 +53,6 @@
 #include "hpl_misc.h"
 
 #ifdef ROCM
-// //this is dirty
-// typedef struct {
-//    float x;
-//    float y;
-// } float2;
-
-// typedef struct {
-//    double x;
-//    double y;
-// } double2;
-
 #include <rocblas.h>
 
 extern rocblas_handle handle;
@@ -76,6 +65,22 @@ extern hipEvent_t panelCopy;
 extern hipEvent_t dlaswpStart, dlaswpStop;
 extern hipEvent_t dtrsmStart, dtrsmStop;
 extern hipEvent_t dgemmStart, dgemmStop;
+
+void HPL_dgemv_gpu
+STDC_ARGS( (
+   rocblas_handle,
+   const int,
+   const int,
+   const double,
+   const double *,
+   const int,
+   const double *,
+   const int,
+   const double,
+   double *,
+   const int
+) );
+
 #endif
 
 #if __cplusplus
