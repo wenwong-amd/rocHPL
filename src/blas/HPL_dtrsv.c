@@ -437,30 +437,6 @@ void HPL_dtrsv
  *
  * ---------------------------------------------------------------------
  */
-// #ifdef ROCM
-//    rocblas_side side = rocblas_side_left;
-//    rocblas_fill uplo;
-//    rocblas_operation transA;
-
-//    if( ORDER == HplColumnMajor )
-//    {
-//       uplo   = ( UPLO  == HplUpper   ? rocblas_fill_upper     : rocblas_fill_lower );
-//       transA = ( TRANS == HplNoTrans ? rocblas_operation_none : rocblas_operation_transpose );
-//    }
-//    else
-//    {
-//       uplo   = ( UPLO  == HplUpper   ? rocblas_fill_lower          : rocblas_fill_upper     );
-//       transA = ( TRANS == HplNoTrans ? rocblas_operation_transpose : rocblas_operation_none );
-//    }
-
-//    rocblas_diagonal diag = ( DIAG == HplNonUnit ? rocblas_diagonal_non_unit : rocblas_diagonal_unit );
-
-//    const double one = 1.0;
-//    rocblas_dtrsm(handle, side, uplo, transA, diag,
-//                  N, 1, &one, A, LDA, X, INCX);
-//    return;
-// #endif
-
 #ifdef HPL_CALL_CBLAS
    cblas_dtrsv( ORDER, UPLO, TRANS, DIAG, N, A, LDA, X, INCX );
 #endif

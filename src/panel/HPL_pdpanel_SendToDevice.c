@@ -87,8 +87,6 @@ void HPL_pdpanel_SendToDevice
 
    if(  jb <= 0 ) return;
 
-#ifdef ROCM
-
    //copy A and/or L2
    if( PANEL->grid->mycol == PANEL->pcol ) {
       // A  = Mptr( PANEL->A,  0, -jb, PANEL->lda );
@@ -101,7 +99,6 @@ void HPL_pdpanel_SendToDevice
                           PANEL->mp*sizeof(double), jb,
                           hipMemcpyHostToDevice, dataStream);
 
-#ifdef HPL_COPY_L
       if (PANEL->grid->npcol>1) {//L2 is its own array
         if( PANEL->grid->myrow == PANEL->prow ) {
           if ((PANEL->mp-jb)>0)
@@ -117,7 +114,6 @@ void HPL_pdpanel_SendToDevice
                               hipMemcpyDeviceToDevice, dataStream);
         }
       }
-#endif
 
       //copy L1
       hipMemcpy2DAsync(PANEL->dL1, jb*sizeof(double),
@@ -231,8 +227,6 @@ void HPL_pdpanel_SendToDevice
                       jb*sizeof(int), 1,
                       hipMemcpyHostToDevice, dataStream);
    }
-
-#endif
 
 /*
  * End of HPL_pdpanel_SendToDevice

@@ -1,12 +1,7 @@
 #include "hpl.h"
 
-#ifdef ROCM
 rocblas_handle handle;
 
-/*
-  The first time DGEMM or DTRSM are called, the library needs to map a GPU to the MPI process.
-  This variable checks if this step has already been performed
-*/
 hipStream_t computeStream, dataStream;
 
 hipEvent_t panelUpdate;
@@ -15,7 +10,6 @@ hipEvent_t panelCopy;
 hipEvent_t dlaswpStart, dlaswpStop;
 hipEvent_t dtrsmStart, dtrsmStop;
 hipEvent_t dgemmStart, dgemmStop;
-#endif
 
 int stringCmp( const void *a, const void *b)
 {
@@ -32,7 +26,6 @@ static char     host_name[MPI_MAX_PROCESSOR_NAME];
   This function needs to be called by all the MPI processes.
 */
 void  HPL_InitGPU(){
-#ifdef ROCM
   char (*host_names)[MPI_MAX_PROCESSOR_NAME];
 
   int i, n, namelen, color, rank, nprocs;
@@ -63,8 +56,6 @@ void  HPL_InitGPU(){
   }
 
   /* Find out how many DP capable GPUs are in the system and their device number */
-  hipInit(0);
-
   int deviceCount;
   hipGetDeviceCount(&deviceCount);
 
@@ -92,15 +83,12 @@ void  HPL_InitGPU(){
   hipEventCreate(&dtrsmStop);
   hipEventCreate(&dgemmStart);
   hipEventCreate(&dgemmStop);
-#endif
 }
 
 
 void  Free_gpu(){
-#ifdef ROCM
   rocblas_destroy_handle(handle);
 
   hipStreamDestroy(computeStream);
   hipStreamDestroy(dataStream);
-#endif
 }

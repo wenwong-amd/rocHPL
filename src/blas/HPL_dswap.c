@@ -106,11 +106,6 @@ void HPL_dswap
  *
  * ---------------------------------------------------------------------
  */
-// #ifdef ROCM
-//    rocblas_dswap(handle, N, X, INCX, Y, INCY);
-//    return;
-// #endif
-
 #ifdef HPL_CALL_CBLAS
    cblas_dswap( N, X, INCX, Y, INCY );
 #endif

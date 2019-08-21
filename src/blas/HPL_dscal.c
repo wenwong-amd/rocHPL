@@ -99,24 +99,19 @@ void HPL_dscal
  *
  * ---------------------------------------------------------------------
  */
-// #ifdef ROCM
-//    rocblas_dscal(handle, N, &ALPHA, X, INCX);
-//    return;
-// #endif
-
-// #ifdef HPL_CALL_CBLAS
-//    cblas_dscal( N, ALPHA, X, INCX );
-// #endif
+#ifdef HPL_CALL_CBLAS
+   cblas_dscal( N, ALPHA, X, INCX );
+#endif
 
    if (N<1) return;
 
-   int i;
-   #pragma omp parallel for
-   for (i = 0; i < N; ++i) {
-       X[i*INCX] *= ALPHA;
-   }
+   // int i;
+   // // #pragma omp parallel for
+   // for (i = 0; i < N; ++i) {
+   //     X[i*INCX] *= ALPHA;
+   // }
 
-   return;
+   // return;
 
 #ifdef HPL_CALL_VSIPL
    register double           x0, x1, x2, x3, x4, x5, x6, x7;

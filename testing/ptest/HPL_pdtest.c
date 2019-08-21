@@ -48,10 +48,8 @@
  * Include files
  */
 #include "hpl.h"
+#include <hip/hip_runtime_api.h>
 
-#ifdef ROCM
-#include <hip/hip_runtime.h>
-#endif
 
 #ifdef STDC_HEADERS
 void HPL_pdtest
@@ -167,28 +165,12 @@ void HPL_pdtest
 /*
  * Allocate dynamic memory
  */
-#ifdef ROCM
+
    //allocate on device
    size_t numbytes = (((size_t)( (size_t)(ALGO->align) +
                                  (size_t)(mat.ld+1) * (size_t)(mat.nq) ) *
                                   sizeof(double)+(size_t)4095)/(size_t)4096)*(size_t)4096;
-// #ifdef VERBOSE_PRINT
-//    if( ( myrow == 0 ) && ( mycol == 0 ) )
-//      {printf("Allocating %g GBs of storage on CPU...",((double) numbytes)/(1024*1024*1024)); fflush(stdout);}
-// #endif
 
-//    hipHostMalloc(&vptr, numbytes,0);
-//    info[0] = (vptr==NULL);
-//    info[1] = myrow; info[2] = mycol;
-//    (void) HPL_all_reduce( (void *)(info), 3, HPL_INT, HPL_max,
-//                           GRID->all_comm );
-//    if( info[0] != 0 ) {
-//      HPL_pwarn( TEST->outfp, __LINE__, "HPL_pdtest",
-//                   "[%d,%d] %s", info[1], info[2],
-//                   "Pinned Host memory allocation failed for A, x and b. Skip." );
-//      (TEST->kskip)++;
-//      return;
-//    }
 #ifdef VERBOSE_PRINT
    if( ( myrow == 0 ) && ( mycol == 0 ) )
      {//printf("done.\n");
@@ -212,24 +194,6 @@ void HPL_pdtest
      printf("done.\n");
 #endif
 
-#else
-   vptr = (void*)malloc( ( (size_t)(ALGO->align) +
-                           (size_t)(mat.ld+1) * (size_t)(mat.nq) ) *
-                         sizeof(double) );
-   info[0] = (vptr == NULL); info[1] = myrow; info[2] = mycol;
-   (void) HPL_all_reduce( (void *)(info), 3, HPL_INT, HPL_max,
-                          GRID->all_comm );
-   if( info[0] != 0 )
-   {
-      if( ( myrow == 0 ) && ( mycol == 0 ) )
-         HPL_pwarn( TEST->outfp, __LINE__, "HPL_pdtest",
-                    "[%d,%d] %s", info[1], info[2],
-                    "Memory allocation failed for A, x and b. Skip." );
-      (TEST->kskip)++;
-      return;
-   }
-   dvptr = vptr;
-#endif
 
 /*
  * generate matrix and right-hand-side, [ A | b ] which is N by N+1.
@@ -242,17 +206,8 @@ void HPL_pdtest
                                ((size_t)(ALGO->align) * sizeof(double) ) );
    mat.dX  = Mptr( mat.dA, 0, mat.nq, mat.ld );
 
-#ifdef ROCM
    HPL_pdmatgen( GRID, N, N+1, NB, mat.dA, mat.ld, HPL_ISEED );
-#else
-   HPL_pdmatgen( GRID, N, N+1, NB, mat.A, mat.ld, HPL_ISEED );
-#endif
 
-#ifdef HPL_CALL_VSIPL
-   mat.block = vsip_blockbind_d( (vsip_scalar_d *)(mat.A),
-                                 (vsip_length)(mat.ld * mat.nq),
-                                 VSIP_MEM_NONE );
-#endif
 /*
  * Solve linear system
  */
@@ -263,10 +218,6 @@ void HPL_pdtest
    HPL_ptimer( 0 );
    time( &current_time_end );
 
-#ifdef HPL_CALL_VSIPL
-   (void) vsip_blockrelease_d( mat.block, VSIP_TRUE );
-   vsip_blockdestroy_d( mat.block );
-#endif
 /*
  * Gather max of all CPU and WALL clock timings and print timing results
  */
@@ -401,12 +352,7 @@ void HPL_pdtest
  * Check computation, re-generate [ A | b ], compute norm 1 and inf of A and x,
  * and norm inf of b - A x. Display residual checks.
  */
-#ifdef ROCM
    HPL_pdmatgen( GRID, N, N+1, NB, mat.dA, mat.ld, HPL_ISEED );
-   // hipMemcpy(vptr, dvptr, numbytes, hipMemcpyDeviceToHost);
-#else
-   HPL_pdmatgen( GRID, N, N+1, NB, mat.A, mat.ld, HPL_ISEED );
-#endif
 
    Anorm1 = HPL_pdlange( GRID, HPL_NORM_1, N, N, NB, mat.dA, mat.ld );
    AnormI = HPL_pdlange( GRID, HPL_NORM_I, N, N, NB, mat.dA, mat.ld );
@@ -524,13 +470,9 @@ void HPL_pdtest
       }
    }
 
-#ifdef ROCM
    if( dvptr ) hipFree( dvptr );
-   if( vptr ) hipHostFree( vptr );
-   if( Bptr  )hipHostFree( Bptr  );
-#else
-   if( vptr ) free( vptr );
-#endif
+   if( vptr  ) hipHostFree( vptr );
+   if( Bptr  ) hipHostFree( Bptr  );
 /*
  * End of HPL_pdtest
  */

@@ -167,24 +167,12 @@ void HPL_pdmxswp
    if( M > 0 )
    {
       lda = PANEL->lda;
-// #ifdef ROCM
-//       hipMemcpy2D( Wmx, 1*sizeof(double),
-//                    Mptr( PANEL->A, II+(int)(WORK[1]), 0, lda ), lda*sizeof(double),
-//                    n0*sizeof(double), 1,
-//                    hipMemcpyDeviceToHost);
-//       if( myrow == icurrow )
-//       {
-//         hipMemcpy2D( A0, 1*sizeof(double),
-//                    Mptr( PANEL->A, II, 0, lda ), lda*sizeof(double),
-//                    n0*sizeof(double), 1,
-//                    hipMemcpyDeviceToHost);
-//       }
-// #else
+
       HPL_dcopy( n0, Mptr( PANEL->A, II+(int)(WORK[1]), 0, lda ), lda,
                  Wmx, 1 );
       if( myrow == icurrow )
       { HPL_dcopy( n0, Mptr( PANEL->A, II, 0, lda ), lda, A0, 1 ); }
-// #endif
+
    }
    else { for( i = 0; i < n0; i++ ) Wmx[i] = HPL_rzero; }
 /*

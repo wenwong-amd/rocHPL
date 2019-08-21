@@ -141,11 +141,6 @@ void HPL_dger
  *
  * ---------------------------------------------------------------------
  */
-// #ifdef ROCM
-//    rocblas_dger(handle, M, N, &ALPHA, X, INCX, Y, INCY, A, LDA);
-//    return;
-// #endif
-
 #ifdef HPL_CALL_CBLAS
    cblas_dger( ORDER, M, N, ALPHA, X, INCX, Y, INCY, A, LDA );
 #endif

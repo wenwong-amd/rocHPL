@@ -48,6 +48,7 @@
  * Include files
  */
 #include "hpl.h"
+#include <hip/hip_runtime.h>
 /*
  * Define default value for unrolling factor
  */
@@ -56,33 +57,6 @@
 #define    HPL_LASWP00N_LOG2_DEPTH   5
 #endif
 
-#ifdef ROCM
-
-#include <hip/hip_runtime.h>
-
-
-#if 0
-#define BLOCK_SIZE 64
-__global__ void dlaswp00N(const int N, const int M,
-                     double* __restrict__ A,
-                     const int LDA,
-                     const int* __restrict__ IPIV) {
-
-   const int n = threadIdx.x + blockDim.x*blockIdx.x;
-
-   if (n<N)  {
-      for(int i = 0; i < M; i++ ) {
-         int ip = IPIV[i];
-
-         if(i != ip) { //swap
-            const double r = A[i+n*LDA];
-            A[i+n*LDA] = A[ip+n*LDA];
-            A[ip+n*LDA] = r;
-         }
-      }
-   }
-}
-#else
 #define BLOCK_SIZE 512
 
 __global__ void dlaswp00N(const int N, const int M,
@@ -127,9 +101,6 @@ __global__ void dlaswp00N(const int N, const int M,
       }
    }
 }
-#endif
-#endif
-
 
 
 #ifdef STDC_HEADERS
@@ -199,24 +170,15 @@ void HPL_dlaswp00N
  */
    if( ( M <= 0 ) || ( N <= 0 ) ) return;
 
-#ifdef ROCM
    hipStream_t stream;
    rocblas_get_stream(handle, &stream);
 
    int grid_size = N;
-   // int grid_size = (N+BLOCK_SIZE-1)/BLOCK_SIZE;
    hipLaunchKernelGGL((dlaswp00N), dim3(grid_size), dim3(BLOCK_SIZE), 0, stream,
                                       N, M, A, LDA, IPIV);
 
-   // for( i = 0; i < M; i++ )
-   // {
-   //    if( i != ( ip = IPIV[i] ) )
-   //    {
-   //       a0 = A + i; a1 = A + ip;
-   //       rocblas_dswap(handle, N, a0, LDA, a1, LDA);
-   //    }
-   // }
-#else
+//original
+#if 0 
    nr = N - ( nu = (int)( ( (unsigned int)(N) >> HPL_LASWP00N_LOG2_DEPTH )
                           << HPL_LASWP00N_LOG2_DEPTH ) );
 

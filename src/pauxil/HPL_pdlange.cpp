@@ -48,9 +48,6 @@
  * Include files
  */
 #include "hpl.h"
-
-#ifdef ROCM
-
 #include <hip/hip_runtime.h>
 
 #define BLOCK_SIZE 512
@@ -145,8 +142,6 @@ __global__ void norminf(const int N, const int M,
       work[id] = norm;
    }
 }
-
-#endif
 
 #ifdef STDC_HEADERS
 double HPL_pdlange

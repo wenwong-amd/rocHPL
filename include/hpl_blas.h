@@ -51,9 +51,6 @@
  * ---------------------------------------------------------------------
  */
 #include "hpl_misc.h"
-
-#ifdef ROCM
-#include "hip/hip_runtime_api.h"
 #include <rocblas.h>
 
 extern rocblas_handle handle;
@@ -81,8 +78,6 @@ STDC_ARGS( (
    double *,
    const int
 ) );
-
-#endif
 
 #if __cplusplus
 extern "C" {

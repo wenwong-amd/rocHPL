@@ -48,7 +48,6 @@
  * Include files
  */
 #include "hpl.h"
-
 #include <hip/hip_runtime.h>
 
 

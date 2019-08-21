@@ -65,13 +65,11 @@ void HPL_pdpanel_SendToHost
 
    if( ( PANEL->grid->mycol != PANEL->pcol ) || ( jb <= 0 ) ) return;
 
-#ifdef ROCM
 	 if (PANEL->mp>0)
 	   hipMemcpy2DAsync(PANEL->A,  PANEL->lda*sizeof(double),
 	                    PANEL->dA, PANEL->lda*sizeof(double),
 	                    PANEL->mp*sizeof(double), jb,
 	                    hipMemcpyDeviceToHost, dataStream);
-#endif
 
 /*
  * End of HPL_pdpanel_SendToHost

@@ -49,10 +49,6 @@
  */
 #include "hpl.h"
 
-#ifdef ROCM
-#include "hip/hip_runtime.h"
-#endif
-
 #ifdef HPL_NO_MPI_DATATYPE  /* The user insists to not use MPI types */
 #ifndef HPL_COPY_L       /* and also want to avoid the copy of L ... */
 #define HPL_COPY_L   /* well, sorry, can not do that: force the copy */
@@ -162,7 +158,6 @@ void HPL_pdpanel_init
    nq = HPL_numrocI( N, JA, nb, nb, mycol, 0, npcol );
                                          /* ptr to trailing part of A */
 
-#ifdef ROCM
    size_t numpinnedbytes = A->ld*JB*sizeof(double);
    if(PANEL->max_pinned_work_size<(size_t)(numpinnedbytes))
    {
@@ -186,10 +181,6 @@ void HPL_pdpanel_init
 #endif
       PANEL->max_pinned_work_size = (size_t)(numpinnedbytes);
    }
-#else
-   //use the original matrix
-   PANEL->A       = Mptr( (double *)(A->A), ii, jj, A->ld );
-#endif
 
    PANEL->dA      = Mptr( (double *)(A->dA), ii, jj, A->ld );
 
@@ -251,7 +242,6 @@ void HPL_pdpanel_init
       if( nprow > 1 )                                 /* space for U */
       { nu = nq - JB; lwork += JB * Mmax( 0, nu ); }
 
-#ifdef ROCM
       if(PANEL->max_work_size<(size_t)(lwork) * sizeof( double ))
       {
          if( PANEL->WORK  )
@@ -291,15 +281,6 @@ void HPL_pdpanel_init
 #endif
          PANEL->max_work_size = (size_t)(lwork) * sizeof( double );
       }
-#else
-      if( !( PANEL->WORK = (void *)malloc( (size_t)(lwork) *
-                                           sizeof( double ) ) ) )
-      {
-         HPL_pabort( __LINE__, "HPL_pdpanel_init",
-                     "Memory allocation failed" );
-      }
-      PANEL->dWORK = PANEL->WORK;
-#endif
 /*
  * Initialize the pointers of the panel structure  -  Always re-use A in
  * the only process column
@@ -331,7 +312,7 @@ void HPL_pdpanel_init
          nu = ( mycol == icurcol ? nq - JB : nq );
          lwork += JB * Mmax( 0, nu );
       }
-#ifdef ROCM
+
       if(PANEL->max_work_size<(size_t)(lwork) * sizeof( double ))
       {
         if( PANEL->WORK  )
@@ -371,14 +352,6 @@ void HPL_pdpanel_init
 #endif
          PANEL->max_work_size = (size_t)(lwork) * sizeof( double );
       }
-#else
-      if( !( PANEL->WORK = (void *)malloc( (size_t)(lwork) *
-                                           sizeof( double ) ) ) )
-      {
-         HPL_pabort( __LINE__, "HPL_pdpanel_init",
-                     "Memory allocation failed" );
-      }
-#endif
 /*
  * Initialize the pointers of the panel structure - Re-use A in the cur-
  * rent process column when HPL_COPY_L is not defined.
@@ -416,25 +389,6 @@ void HPL_pdpanel_init
       PANEL->U     = ( nprow > 1 ? PANEL->DINFO + 1 : NULL );
       PANEL->dU    = ( nprow > 1 ? PANEL->dDINFO + 1: NULL );
    }
-#ifdef HPL_CALL_VSIPL
-   PANEL->Ablock  = A->block;
-/*
- * Create blocks and bind them to the data pointers
- */
-   PANEL->L1block = vsip_blockbind_d( (vsip_scalar_d *)(PANEL->L1),
-                                      (vsip_length)(JB*JB), VSIP_MEM_NONE );
-   PANEL->L2block = vsip_blockbind_d( (vsip_scalar_d *)(PANEL->L2),
-                                      (vsip_length)(PANEL->ldl2*JB),
-                                      VSIP_MEM_NONE );
-   if( nprow > 1 )
-   {
-      nu = ( mycol == icurcol ? nq - JB : nq );
-      PANEL->Ublock = vsip_blockbind_d( (vsip_scalar_d *)(PANEL->U),
-                                        (vsip_length)(JB * Mmax( 0, nu )),
-                                        VSIP_MEM_NONE );
-   }
-   else { PANEL->Ublock = A->block; }
-#endif
 /*
  * If nprow is 1, we just allocate an array of JB integers for the swap.
  * When nprow > 1, we allocate the space for the index arrays immediate-
@@ -479,9 +433,8 @@ void HPL_pdpanel_init
       lwork = 4 + (9 * JB) + (3 * nprow) + itmp1;
    }
 
-#ifdef ROCM
-    if(PANEL->max_iwork_size<(size_t)(lwork) * sizeof( int ))
-    {
+   if(PANEL->max_iwork_size<(size_t)(lwork) * sizeof( int ))
+   {
       if( PANEL->IWORK  )
       {
         hipFree( PANEL->dIWORK);
@@ -515,15 +468,7 @@ void HPL_pdpanel_init
          HPL_pabort( __LINE__, "HPL_pdpanel_init",
                      "Panel Host Secondary Integer Memory allocation failed" );
       }
-    }
-#else
-
-   PANEL->IWORK = (int *)malloc( (size_t)(lwork) * sizeof( int ) );
-
-   if( PANEL->IWORK == NULL )
-   { HPL_pabort( __LINE__, "HPL_pdpanel_init", "Memory allocation failed" ); }
-                       /* Initialize the first entry of the workarray */
-#endif
+   }
 
    if (lwork)
     *(PANEL->IWORK) = -1;

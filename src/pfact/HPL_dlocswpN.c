@@ -127,10 +127,6 @@ void HPL_dlocswpN
 
    double *dWmx = PANEL->dWORK + 4;
 
-// #ifdef ROCM
-//    //send the max row back to device
-//    hipMemcpy( dWmx, Wmx, n0*sizeof(double), hipMemcpyHostToDevice);
-// #endif
 /*
  * Replicated swap and copy of the current (new) row of A into L1
  */
@@ -160,23 +156,6 @@ void HPL_dlocswpN
  */
                A1 = Mptr( PANEL->A,  II,     0, lda );
                A2 = Mptr( A1,        ilindx, 0, lda );
-// #ifdef ROCM
-//                // copy current to row to max row
-//                hipMemcpy2D( A2, lda*sizeof(double),
-//                             A1, lda*sizeof(double),
-//                             n0*sizeof(double), 1,
-//                             hipMemcpyDeviceToDevice);
-
-//                // copy max row into current row and L
-//                hipMemcpy2D( A1, lda*sizeof(double),
-//                             dWmx, 1*sizeof(double),
-//                             n0*sizeof(double), 1,
-//                             hipMemcpyDeviceToDevice);
-//                hipMemcpy2D( L, n0*sizeof(double),
-//                             dWmx, 1*sizeof(double),
-//                             n0*sizeof(double), 1,
-//                             hipMemcpyDeviceToDevice);
-// #else
 
                for( i = 0; i < nu; i += HPL_LOCSWP_DEPTH,
                     Wmx += HPL_LOCSWP_DEPTH, Wr0 += HPL_LOCSWP_DEPTH )
@@ -226,7 +205,6 @@ void HPL_dlocswpN
                }
                for( i = 0; i < nr; i++, L += n0, A1 += lda, A2 += lda )
                { *L = *A1 = Wmx[i]; *A2 = Wr0[i]; }
-// #endif
             }
             else
             {
@@ -234,14 +212,8 @@ void HPL_dlocswpN
  * otherwise the current row of  A  is swapped with itself, so just copy
  * the current of A into L1.
  */
-               // *Mptr( PANEL->A, II, JJ, lda ) = gmax;
-// #ifdef ROCM
-//                //copy max row to L
-//                hipMemcpy2D( L , n0*sizeof(double),
-//                             dWmx, 1*sizeof(double),
-//                             n0*sizeof(double), 1,
-//                             hipMemcpyDeviceToDevice);
-// #else
+               *Mptr( PANEL->A, II, JJ, lda ) = gmax;
+
                for( i = 0; i < nu; i += HPL_LOCSWP_DEPTH,
                     Wmx += HPL_LOCSWP_DEPTH, Wr0 += HPL_LOCSWP_DEPTH )
                {
@@ -274,7 +246,6 @@ void HPL_dlocswpN
 #endif
                }
                for( i = 0; i < nr; i++, L += n0 ) { *L = Wmx[i]; }
-// #endif
             }
          }
          else
@@ -285,17 +256,6 @@ void HPL_dlocswpN
  */
             A1 = Mptr( PANEL->A,  II, 0, lda );
 
-// #ifdef ROCM
-//             //copy Wmx to A1 and L
-//             hipMemcpy2D( A1, lda*sizeof(double),
-//                          dWmx, 1*sizeof(double),
-//                          n0*sizeof(double), 1,
-//                          hipMemcpyDeviceToDevice);
-//             hipMemcpy2D( L , n0*sizeof(double),
-//                          dWmx, 1*sizeof(double),
-//                          n0*sizeof(double), 1,
-//                          hipMemcpyDeviceToDevice);
-// #else
             for( i = 0; i < nu; i += HPL_LOCSWP_DEPTH,
                  Wmx += HPL_LOCSWP_DEPTH )
             {
@@ -345,7 +305,6 @@ void HPL_dlocswpN
 
             for( i = 0; i < nr; i++, L += n0, A1 += lda )
             { *L = *A1 = Wmx[i]; }
-// #endif
          }
       }
       else
@@ -354,13 +313,6 @@ void HPL_dlocswpN
  * otherwise I do not own the current row of A, so copy the max row  Wmx
  * into L1.
  */
-// #ifdef ROCM
-//             //copy Wmx to L
-//             hipMemcpy2D( L, n0*sizeof(double),
-//                          dWmx, 1*sizeof(double),
-//                          n0*sizeof(double), 1,
-//                          hipMemcpyDeviceToDevice);
-// #else
          for( i = 0; i < nu; i += HPL_LOCSWP_DEPTH,
               Wmx += HPL_LOCSWP_DEPTH )
          {
@@ -393,7 +345,6 @@ void HPL_dlocswpN
 #endif
          }
          for( i = 0; i < nr; i++, L += n0 ) { *L = Wmx[i]; }
-// #endif
 /*
  * and if I own the max row, overwrite it with the current row Wr0.
  */
@@ -401,13 +352,6 @@ void HPL_dlocswpN
          {
             A2 = Mptr( PANEL->A, II + (size_t)(WORK[1]), 0, lda );
 
-// #ifdef ROCM
-//             //copy Wmx to L
-//             hipMemcpy2D( A2, n0*sizeof(double),
-//                          Wr0, 1*sizeof(double),
-//                          n0*sizeof(double), 1,
-//                          hipMemcpyHostToDevice);
-// #else
             for( i = 0; i < nu; i += HPL_LOCSWP_DEPTH,
                  Wr0 += HPL_LOCSWP_DEPTH )
             {
@@ -441,7 +385,6 @@ void HPL_dlocswpN
             }
 
             for( i = 0; i < nr; i++, A2 += lda ) { *A2 = Wr0[i]; }
-// #endif
          }
       }
    }
@@ -451,13 +394,6 @@ void HPL_dlocswpN
  * Otherwise the max element in the current column is zero,  simply copy
  * the current row Wr0 into L1. The matrix is singular.
  */
-// #ifdef ROCM
-//       //copy Wr0 to L
-//       hipMemcpy2D( L, n0*sizeof(double),
-//                    Wr0, 1*sizeof(double),
-//                    n0*sizeof(double), 1,
-//                    hipMemcpyHostToDevice);
-// #else
       for( i = 0; i < nu; i += HPL_LOCSWP_DEPTH,
            Wr0 += HPL_LOCSWP_DEPTH )
       {
@@ -491,7 +427,6 @@ void HPL_dlocswpN
       }
 
       for( i = 0; i < nr; i++, L += n0 ) { *L = Wr0[i]; }
-// #endif
 /*
  * set INFO.
  */

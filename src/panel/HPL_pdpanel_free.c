@@ -46,10 +46,6 @@
  */
 #include "hpl.h"
 
-#ifdef ROCM
-#include "hip/hip_runtime.h"
-#endif
-
 #ifdef STDC_HEADERS
 int HPL_pdpanel_free
 (
@@ -80,25 +76,8 @@ int HPL_pdpanel_free
 /* ..
  * .. Executable Statements ..
  */
-   // if( PANEL->pmat->info == 0 ) PANEL->pmat->info = *(PANEL->DINFO);
-#ifdef HPL_CALL_VSIPL
-/*
- * Release the blocks
- */
-   (void) vsip_blockrelease_d( PANEL->L1block, VSIP_TRUE );
-   (void) vsip_blockrelease_d( PANEL->L2block, VSIP_TRUE );
-   if( PANEL->grid->nprow > 1 )
-      (void) vsip_blockrelease_d( PANEL->Ublock,  VSIP_TRUE );
-/*
- * Destroy blocks
- */
-   vsip_blockdestroy_d( PANEL->L1block );
-   vsip_blockdestroy_d( PANEL->L2block );
-   if( PANEL->grid->nprow > 1 )
-      vsip_blockdestroy_d( PANEL->Ublock );
-#endif
+   if( PANEL->pmat->info == 0 ) PANEL->pmat->info = *(PANEL->DINFO);
 
-#ifdef ROCM
    if( PANEL->free_work_now == 1 )
    {
      if( PANEL->A)
@@ -123,10 +102,6 @@ int HPL_pdpanel_free
 
      PANEL->max_iwork_size = 0;
    }
-#else
-   if( PANEL->WORK  ) free( PANEL->WORK  );
-   if( PANEL->IWORK ) free( PANEL->IWORK );
-#endif
 
    return( MPI_SUCCESS );
 /*

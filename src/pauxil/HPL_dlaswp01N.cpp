@@ -48,6 +48,7 @@
  * Include files
  */
 #include "hpl.h"
+#include <hip/hip_runtime.h>
 /*
  * Define default value for unrolling factor
  */
@@ -55,9 +56,6 @@
 #define    HPL_LASWP01N_DEPTH      32
 #define    HPL_LASWP01N_LOG2_DEPTH  5
 #endif
-
-#ifdef ROCM
-#include <hip/hip_runtime.h>
 
 #define BLOCK_SIZE 512
 
@@ -112,8 +110,6 @@ __global__ void dlaswp01N(const int                  N,
    for (int i=m;i<JB;i+=blockDim.x)
       U[i+n*((size_t)LDU)] = s_Un_ipiv[i];
 }
-#endif
-
 
 #ifdef STDC_HEADERS
 void HPL_dlaswp01N
@@ -213,7 +209,6 @@ void HPL_dlaswp01N
  */
    if( ( M <= 0 ) || ( N <= 0 ) ) return;
 
-#ifdef ROCM
    hipStream_t stream;
    rocblas_get_stream(handle, &stream);
 
@@ -221,7 +216,8 @@ void HPL_dlaswp01N
    hipLaunchKernelGGL((dlaswp01N), dim3(grid_size), dim3(BLOCK_SIZE), 0, stream,
                                       N, M, JB, A, LDA, U, LDU, LINDXA, LINDXAU);
 
-#else
+//original
+#if 0
    nr = N - ( nu = (int)( ( (unsigned int)(N) >> HPL_LASWP01N_LOG2_DEPTH ) <<
                             HPL_LASWP01N_LOG2_DEPTH ) );
 

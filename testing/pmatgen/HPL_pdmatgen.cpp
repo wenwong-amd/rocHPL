@@ -48,8 +48,6 @@
  * Include files
  */
 #include "hpl.h"
-
-#ifdef ROCM
 #include "rocrand.h"
 
 #define BLOCK_SIZE 512
@@ -61,8 +59,6 @@ __global__ void hpl_init_shift(double* __restrict__ A, const size_t n) {
   if (id<n)
     A[id] -= 0.5;
 }
-
-#endif
 
 #ifdef STDC_HEADERS
 void HPL_pdmatgen
@@ -185,8 +181,9 @@ void HPL_pdmatgen
    ib2[0] = iran1[0]; ib2[1] = iran1[1];
    ib3[0] = iran1[0]; ib3[1] = iran1[1];
 
-#ifdef ROCM
 
+#if 1
+   /* Initialize on GPU */
    mp = (mp<LDA) ? LDA : mp;
    unsigned long long pos1 = myrow*nq + mycol*mp*M;
 
@@ -207,7 +204,8 @@ void HPL_pdmatgen
    hipDeviceSynchronize();
 
    rocrand_destroy_generator(generator);
-#else
+
+#else //original initialization
 
    for( jblk = 0; jblk < nblks; jblk++ )
    {

@@ -50,9 +50,9 @@
  * Include files
  * ---------------------------------------------------------------------
  */
-#ifdef __STDC__
-#define STDC_HEADERS
-#endif
+// #ifdef __STDC__
+// #define STDC_HEADERS
+// #endif
 
 #include <stdio.h>
 #include <stdlib.h>

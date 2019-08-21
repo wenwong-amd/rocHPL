@@ -62,11 +62,20 @@
 #define HPL_NO_DETAILED_TIMING
 #endif
 
-#ifndef ROCM
+// Check supported options in ROCM port
+#ifdef HPL_CALL_VSIPL
+#error "HPL_CALL_VSIPL not supported"
+#endif
+#ifdef HPL_USE_MPI_DATATYPE
+#error "HPL_USE_MPI_DATATYPE not supported"
+#endif
+#ifdef HPL_NO_COPY_L
+#error "HPL_NO_COPY_L not supported"
+#endif
+
 #ifndef HPL_CALL_VSIPL          /* Call the Fortran 77 BLAS interface */
 #ifndef HPL_CALL_CBLAS                       /* there can be only one */
 #define HPL_CALL_FBLAS
-#endif
 #endif
 #endif
 /*
@@ -74,6 +83,8 @@
  * Include files
  * ---------------------------------------------------------------------
  */
+#include "hip/hip_runtime_api.h"
+
 #include "hpl_misc.h"
 #include "hpl_blas.h"
 #include "hpl_auxil.h"
@@ -92,6 +103,7 @@
 #include "hpl_ptimer.h"
 #include "hpl_pmatgen.h"
 #include "hpl_ptest.h"
+
 
 #endif
 /*

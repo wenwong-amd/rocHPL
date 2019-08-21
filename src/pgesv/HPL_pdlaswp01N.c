@@ -146,13 +146,8 @@ void HPL_pdlaswp01N
    nprow = PANEL->grid->nprow; myrow = PANEL->grid->myrow;
    A     = PANEL->A;
    U     = PANEL->U;
-#ifdef ROCM
    dA     = PANEL->dA;
    dU     = PANEL->dU;
-#else
-   dA     = PANEL->A;
-   dU     = PANEL->U;
-#endif
 
    iflag  = PANEL->IWORK;
    lda   = PANEL->lda; icurrow = PANEL->prow;
@@ -169,17 +164,10 @@ void HPL_pdlaswp01N
    lindxAU = lindxA + k; iplen = lindxAU + k; ipmap = iplen + nprow + 1;
    ipmapm1 = ipmap + nprow; permU = ipmapm1 + nprow; iwork = permU + jb;
 
-#ifdef ROCM
    dlindxA   = PANEL->dIWORK;
    dlindxAU  = dlindxA + k;
    dpermU    = dlindxAU + k;
    dpermU_ex = dpermU + jb;
-#else
-   dlindxA   = lindxA;
-   dlindxAU  = lindxAU;
-   dpermU    = permU;
-   dpermU_ex = permU_ex;
-#endif
 
    if( *iflag == -1 )    /* no index arrays have been computed so far */
    {
@@ -205,7 +193,7 @@ void HPL_pdlaswp01N
    if( myrow == icurrow )
    {
       HPL_dlaswp01N( *ipA, n, jb, dA, lda, dU, LDU, dlindxA, dlindxAU );
-#if defined(ROCM) && !defined(GPU_AWARE_MPI)
+#if !defined(GPU_AWARE_MPI)
       hipMemcpy2D( U, LDU*sizeof(double),
                   dU, LDU*sizeof(double),
                   jb*sizeof(double), n,
@@ -215,7 +203,7 @@ void HPL_pdlaswp01N
 /*
  * Spread U - optionally probe for column panel
  */
-#if defined(ROCM) && defined(GPU_AWARE_MPI)
+#if defined(GPU_AWARE_MPI)
    HPL_spreadN( PBCST, IFLAG, PANEL, HplRight, n, dU, LDU, 0, iplen,
                 ipmap, ipmapm1 );
 #else
@@ -228,7 +216,7 @@ void HPL_pdlaswp01N
  */
    if( myrow != icurrow )
    {
-#if defined(ROCM) && !defined(GPU_AWARE_MPI)
+#if !defined(GPU_AWARE_MPI)
       hipMemcpy2D(dU, LDU*sizeof(double),
                    U, LDU*sizeof(double),
                   jb*sizeof(double), n,
@@ -238,7 +226,7 @@ void HPL_pdlaswp01N
       HPL_dlaswp06N( iplen[k+1]-iplen[k], n, dA, lda, Mptr( dU, iplen[k],
                      0, LDU ), LDU, dlindxA );
 
-#if defined(ROCM) && !defined(GPU_AWARE_MPI)
+#if !defined(GPU_AWARE_MPI)
       hipMemcpy2D( U, LDU*sizeof(double),
                   dU, LDU*sizeof(double),
                   jb*sizeof(double), n,
@@ -254,7 +242,7 @@ void HPL_pdlaswp01N
 /*
  * Rolling phase
  */
-#if defined(ROCM) && defined(GPU_AWARE_MPI)
+#if defined(GPU_AWARE_MPI)
    HPL_rollN( PBCST, IFLAG, PANEL, n, dU, LDU, iplen, ipmap, ipmapm1 );
 #else
    HPL_rollN( PBCST, IFLAG, PANEL, n, U, LDU, iplen, ipmap, ipmapm1 );
@@ -262,7 +250,7 @@ void HPL_pdlaswp01N
 /*
  * Permute U in every process row
  */
-#if defined(ROCM) && !defined(GPU_AWARE_MPI)
+#if !defined(GPU_AWARE_MPI)
    hipMemcpy2D(dU, LDU*sizeof(double),
                 U, LDU*sizeof(double),
                jb*sizeof(double), n,

@@ -173,7 +173,7 @@ HPL_LIBS     = $(HPLlib) $(LAlib) $(MPlib)
 #    *) call the BLAS Fortran 77 interface,
 #    *) not display detailed timing information.
 #
-HPL_OPTS     = -DVERBOSE_PRINT -DROCM -DHPL_DETAILED_TIMING -DHPL_PROGRESS_REPORT -DHPL_CALL_CBLAS -DHPL_NO_MPI_DATATYPE -DHPL_COPY_L
+HPL_OPTS     = -DVERBOSE_PRINT -DHPL_DETAILED_TIMING -DHPL_PROGRESS_REPORT -DHPL_CALL_CBLAS -DHPL_NO_MPI_DATATYPE -DHPL_COPY_L
 #
 # ----------------------------------------------------------------------
 #
