@@ -94,12 +94,6 @@ int HPL_pdpanel_free
      if( PANEL->IWORK  )
        hipHostFree( PANEL->IWORK);
 
-     if( PANEL->dIWORK  )
-       hipFree( PANEL->dIWORK);
-
-     if( PANEL->IWORK2  )
-       hipHostFree( PANEL->IWORK2);
-
      PANEL->max_iwork_size = 0;
    }
 

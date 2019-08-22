@@ -101,7 +101,7 @@ void HPL_pdupdateNN
  * .. Local Variables ..
  */
    double                    * Aptr, * L1ptr, * L2ptr, * Uptr, * dpiv;
-   int                       * ipiv;
+   int                       * dipiv;
 #ifdef HPL_CALL_VSIPL
    vsip_mview_d              * Av0, * Av1, * Lv0, * Lv1, * Uv0, * Uv1;
 #endif
@@ -153,11 +153,9 @@ void HPL_pdupdateNN
       L2ptr = PANEL->dL2;
 
       ldl2 = PANEL->ldl2;
-      dpiv  = PANEL->DPIV;
-      ipiv  = PANEL->IWORK;
       mp   = PANEL->mp - jb; iroff = PANEL->ii;   nq0   = 0;
 
-      ipiv = PANEL->dIWORK; //already updated and on device
+      dipiv = PANEL->dipiv; //already updated and on device
 /*
  * So far we have not updated anything -  test availability of the panel
  * to be forwarded - If detected forward it and finish the update in one
@@ -171,10 +169,10 @@ void HPL_pdupdateNN
  */
 #ifdef HPL_DETAILED_TIMING
          HPL_ptimer( HPL_TIMING_LASWP );
-         HPL_dlaswp00N( jb, nn, Aptr, lda, ipiv );
+         HPL_dlaswp00N( jb, nn, Aptr, lda, dipiv );
          HPL_ptimer( HPL_TIMING_LASWP );
 #else
-         HPL_dlaswp00N( jb, nn, Aptr, lda, ipiv );
+         HPL_dlaswp00N( jb, nn, Aptr, lda, dipiv );
 #endif
         const double one = 1.0;
         rocblas_dtrsm(handle, rocblas_side_left, rocblas_fill_lower,
@@ -199,12 +197,12 @@ void HPL_pdupdateNN
 #ifdef HPL_DETAILED_TIMING
          hipEventRecord(dlaswpStart, stream);
          HPL_ptimer( HPL_TIMING_LASWP );
-         HPL_dlaswp00N( jb, nn, Aptr, lda, ipiv );
+         HPL_dlaswp00N( jb, nn, Aptr, lda, dipiv );
 
          hipEventRecord(dlaswpStop, stream);
          HPL_ptimer( HPL_TIMING_LASWP );
 #else
-         HPL_dlaswp00N( jb, nn, Aptr, lda, ipiv );
+         HPL_dlaswp00N( jb, nn, Aptr, lda, dipiv );
 #endif
 
 #ifdef HPL_DETAILED_TIMING

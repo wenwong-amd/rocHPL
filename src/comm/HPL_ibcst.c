@@ -114,6 +114,7 @@ int HPL_binit_ibcst( PANEL )
 #endif
 
 static MPI_Request request = MPI_REQUEST_NULL;
+static MPI_Request request2 = MPI_REQUEST_NULL;
 
 #ifdef STDC_HEADERS
 int HPL_bcast_ibcst
@@ -131,7 +132,7 @@ int HPL_bcast_ibcst( PANEL, IFLAG )
  * .. Local Variables ..
  */
    MPI_Comm                   comm;
-   int                        ierr, go, next, msgid, prev, rank, root,
+   int                        ierr, ierr2, go, next, msgid, prev, rank, root,
                               size;
 /* ..
  * .. Executable Statements ..
@@ -144,11 +145,13 @@ int HPL_bcast_ibcst( PANEL, IFLAG )
    root = PANEL->pcol;        msgid = PANEL->msgid;
 
    ierr = MPI_Ibcast( _M_BUFF, _M_COUNT, _M_TYPE, root, comm, &request);
+   ierr2 = MPI_Ibcast( PANEL->ipiv, PANEL->jb, MPI_INT, root, comm, &request2);
 /*
  * If the message was received and being forwarded,  return HPL_SUCCESS.
  * If an error occured in an MPI call, return HPL_FAILURE.
  */
    *IFLAG = ( ierr == MPI_SUCCESS ? HPL_SUCCESS : HPL_FAILURE );
+   *IFLAG = ( ierr2 == MPI_SUCCESS ? *IFLAG : HPL_FAILURE );
 
    return( *IFLAG );
 }
@@ -176,6 +179,7 @@ int HPL_bwait_ibcst( PANEL )
    if( PANEL->grid->npcol <= 1 ) { return( HPL_SUCCESS ); }
 
    MPI_Wait(&request, MPI_STATUS_IGNORE);
+   MPI_Wait(&request2, MPI_STATUS_IGNORE);
 /*
  * Release the arrays of request / status / data-types and buffers
  */

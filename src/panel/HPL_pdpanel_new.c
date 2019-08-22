@@ -152,8 +152,6 @@ void HPL_pdpanel_new
    p->WORK = NULL;
    p->dWORK = NULL;
    p->IWORK = NULL;
-   p->dIWORK = NULL;
-   p->IWORK2 = NULL;
    HPL_pdpanel_init( GRID, ALGO, M, N, JB, A, IA, JA, TAG, p );
    *PANEL = p;
 /*

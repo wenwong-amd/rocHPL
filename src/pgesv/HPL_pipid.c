@@ -135,19 +135,19 @@ void HPL_pipid
  */
    int                        dst, fndd, fnds, ia, i, j, jb, lst, off,
                               src;
-   double                     * dpiv;
+   int                     * ipiv;
 /* ..
  * .. Executable Statements ..
  */
-   dpiv = PANEL->DPIV; jb = PANEL->jb; src = ia = PANEL->ia;
-   dst  = (int)(dpiv[0]); IPID[0] = dst; IPID[1] = src; *K = 2;
+   ipiv = PANEL->ipiv; jb = PANEL->jb; src = ia = PANEL->ia;
+   dst  = (int)(ipiv[0]); IPID[0] = dst; IPID[1] = src; *K = 2;
    if( src != dst ) { IPID[2] = src; IPID[3] = dst; *K += 2; }
 
    for( i = 1; i < jb; i++ )
    {
       fnds = 0; j = 1;
 
-      if( ( src = ia + i ) == ( dst = (int)(dpiv[i]) ) )
+      if( ( src = ia + i ) == ( dst = (int)(ipiv[i]) ) )
       {
          do { if( src == IPID[j] ) { fnds = j; } else { j += 2; } }
          while( !( fnds ) && ( j < *K ) );

@@ -74,15 +74,19 @@ typedef struct HPL_S_panel
    double              * L1;       /* ptr to jb x jb upper block of A */
    double              * dL2;                             /* ptr to L */
    double              * dL1;      /* ptr to jb x jb upper block of A */
-   double              * DPIV;    /* ptr to replicated jb pivot array */
-   double              * dDPIV;   /* ptr to replicated jb pivot array */
    double              * DINFO;      /* ptr to replicated scalar info */
    double              * dDINFO;     /* ptr to replicated scalar info */
+   int                 * ipiv;
+   int                 * dipiv;
+   int                 * lindxA;
+   int                 * dlindxA;
+   int                 * lindxAU;
+   int                 * dlindxAU;
+   int                 * permU;
+   int                 * dpermU;
    double              * U;                               /* ptr to U */
    double              * dU;                              /* ptr to U */
    int                 * IWORK;     /* integer workspace for swapping */
-   int                 * IWORK2;    /* integer workspace for swapping */
-   int                 * dIWORK;    /* integer workspace for swapping */
    void                * buffers[2];       /* buffers for panel bcast */
    int                 counts [2];          /* counts for panel bcast */
    MPI_Datatype        dtypes [2];      /* data types for panel bcast */

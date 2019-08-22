@@ -143,7 +143,12 @@ void HPL_pdupdateNT
    if( PANEL->grid->nprow == 1 )
    {
       Aptr = PANEL->A;       L2ptr = PANEL->L2;   L1ptr = PANEL->L1;
-      ldl2 = PANEL->ldl2;    dpiv  = PANEL->DPIV; ipiv  = PANEL->IWORK;
+      ldl2 = PANEL->ldl2;    
+
+      //This is wrong, but not suported yet
+      // dpiv  = PANEL->ipiv; 
+      ipiv  = PANEL->dipiv; 
+
       mp   = PANEL->mp - jb; iroff = PANEL->ii;   nq0   = 0; 
 #ifdef HPL_CALL_VSIPL
 /*

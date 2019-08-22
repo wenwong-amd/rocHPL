@@ -87,6 +87,94 @@ void HPL_pdpanel_SendToDevice
 
    if(  jb <= 0 ) return;
 
+   if( PANEL->grid->nprow == 1 ) {
+     //unroll pivoting and send to device now
+     int *ipiv     = PANEL->ipiv;
+     int *ipiv_ex  = PANEL->ipiv+jb;
+     int *upiv     = PANEL->IWORK + jb; //scratch space
+
+     for( i = 0; i < jb; i++ ) { ipiv[i] -= PANEL->ii; } //shift
+     HPL_unroll_ipiv(PANEL->mp, jb, ipiv, ipiv_ex, upiv);
+
+     int *dipiv    = PANEL->dipiv;
+     int *dipiv_ex = PANEL->dipiv+jb;
+
+     hipMemcpy2DAsync(dipiv, jb*sizeof(int),
+                      upiv,  jb*sizeof(int),
+                      jb*sizeof(int), 1,
+                      hipMemcpyHostToDevice, dataStream);
+     hipMemcpy2DAsync(dipiv_ex, jb*sizeof(int),
+                      ipiv_ex,  jb*sizeof(int),
+                      jb*sizeof(int), 1,
+                      hipMemcpyHostToDevice, dataStream);
+   } else {
+      if( equil == -1 ) equil = PANEL->algo->equil;
+
+      int k = (int)((unsigned int)(jb) << 1);
+      int *iflag   = PANEL->IWORK;
+      int *ipl     = iflag + 1;
+      int *ipID    = ipl + 1;
+      int *ipA     = ipID + ((unsigned int)(k) << 1);
+      int *iplen   = ipA + 1;
+      int *ipmap   = iplen + PANEL->grid->nprow + 1;
+      int *ipmapm1 = ipmap + PANEL->grid->nprow;
+      int *upiv     = ipmapm1 + PANEL->grid->nprow;
+      int *iwork    = upiv + PANEL->mp;
+
+      int *lindxA  = PANEL->lindxA;
+      int *lindxAU = PANEL->lindxAU;
+      int *permU    = PANEL->permU;
+      int *permU_ex = permU + jb;
+
+      int *dlindxA  = PANEL->dlindxA;
+      int *dlindxAU = PANEL->dlindxAU;
+      int *dpermU    = PANEL->dpermU;
+      int *dpermU_ex = dpermU + jb;
+
+      if( *iflag == -1 )    /* no index arrays have been computed so far */
+      {
+         HPL_pipid(   PANEL,  ipl, ipID );
+         HPL_plindx1( PANEL, *ipl, ipID, ipA, lindxA, lindxAU, iplen,
+                      ipmap, ipmapm1, permU, iwork );
+         *iflag = 1;
+      }
+      else if( *iflag == 0 ) /* HPL_pdlaswp00N called before: reuse ipID */
+      {
+         HPL_plindx1( PANEL, *ipl, ipID, ipA, lindxA, lindxAU, iplen,
+                      ipmap, ipmapm1, permU, iwork );
+         *iflag = 1;
+      }
+      else if( ( *iflag == 1 ) && ( equil != 0 ) )
+      {   /* HPL_pdlaswp01N was call before only re-compute IPLEN, IPMAP */
+         HPL_plindx10( PANEL, *ipl, ipID, iplen, ipmap, ipmapm1 );
+         *iflag = 1;
+      }
+
+      int N = Mmax(*ipA, jb);
+      if (N>0) {
+         hipMemcpy2DAsync(dlindxA, k*sizeof(int),
+                           lindxA, k*sizeof(int),
+                           N*sizeof(int), 1,
+                           hipMemcpyHostToDevice, dataStream);
+         hipMemcpy2DAsync(dlindxAU, k*sizeof(int),
+                           lindxAU, k*sizeof(int),
+                           N*sizeof(int), 1,
+                           hipMemcpyHostToDevice, dataStream);
+      }
+
+      HPL_unroll_ipiv(jb, jb, permU, permU_ex, upiv);
+
+      hipMemcpy2DAsync(dpermU, jb*sizeof(int),
+                      upiv,  jb*sizeof(int),
+                      jb*sizeof(int), 1,
+                      hipMemcpyHostToDevice, dataStream);
+      hipMemcpy2DAsync(dpermU_ex, jb*sizeof(int),
+                      permU_ex,  jb*sizeof(int),
+                      jb*sizeof(int), 1,
+                      hipMemcpyHostToDevice, dataStream);
+   }
+
+
    //copy A and/or L2
    if( PANEL->grid->mycol == PANEL->pcol ) {
       // A  = Mptr( PANEL->A,  0, -jb, PANEL->lda );
@@ -138,94 +226,6 @@ void HPL_pdpanel_SendToDevice
                        jb*sizeof(double), jb,
                        hipMemcpyHostToDevice, dataStream);
 #endif
-   }
-
-   /* TODO: This needs attention for GPU Aware MPI */
-   if( PANEL->grid->nprow == 1 ) {
-     //unroll pivoting and send to device now
-     int *ipiv     = PANEL->IWORK;
-     int *ipiv_ex  = PANEL->IWORK+jb;
-     int *upiv     = PANEL->IWORK2;
-
-     for( i = 0; i < jb; i++ ) { ipiv[i] = (int)(PANEL->DPIV[i]) - PANEL->ii; } //shift
-     HPL_unroll_ipiv(PANEL->mp, jb, ipiv, ipiv_ex, upiv);
-
-     int *dipiv    = PANEL->dIWORK;
-     int *dipiv_ex = PANEL->dIWORK+jb;
-
-     hipMemcpy2DAsync(dipiv, jb*sizeof(int),
-                      upiv,  jb*sizeof(int),
-                      jb*sizeof(int), 1,
-                      hipMemcpyHostToDevice, dataStream);
-     hipMemcpy2DAsync(dipiv_ex, jb*sizeof(int),
-                      ipiv_ex,  jb*sizeof(int),
-                      jb*sizeof(int), 1,
-                      hipMemcpyHostToDevice, dataStream);
-   } else {
-      if( equil == -1 ) equil = PANEL->algo->equil;
-
-      int k = (int)((unsigned int)(jb) << 1);
-      int *iflag   = PANEL->IWORK;
-      int *ipl     = iflag + 1;
-      int *ipID    = ipl + 1;
-      int *ipA     = ipID + ((unsigned int)(k) << 1);
-      int *lindxA  = ipA + 1;
-      int *lindxAU = lindxA + k;
-      int *iplen   = lindxAU + k;
-      int *ipmap   = iplen + PANEL->grid->nprow + 1;
-      int *ipmapm1 = ipmap + PANEL->grid->nprow;
-      int *permU    = ipmapm1 + PANEL->grid->nprow;
-      int *permU_ex = permU + jb;
-      int *iwork    = permU_ex + jb;
-
-      int *upiv     = PANEL->IWORK2;
-
-      int *dlindxA  = PANEL->dIWORK;
-      int *dlindxAU = dlindxA + k;
-      int *dpermU    = dlindxAU + k;
-      int *dpermU_ex = dpermU + jb;
-
-      if( *iflag == -1 )    /* no index arrays have been computed so far */
-      {
-         HPL_pipid(   PANEL,  ipl, ipID );
-         HPL_plindx1( PANEL, *ipl, ipID, ipA, lindxA, lindxAU, iplen,
-                      ipmap, ipmapm1, permU, iwork );
-         *iflag = 1;
-      }
-      else if( *iflag == 0 ) /* HPL_pdlaswp00N called before: reuse ipID */
-      {
-         HPL_plindx1( PANEL, *ipl, ipID, ipA, lindxA, lindxAU, iplen,
-                      ipmap, ipmapm1, permU, iwork );
-         *iflag = 1;
-      }
-      else if( ( *iflag == 1 ) && ( equil != 0 ) )
-      {   /* HPL_pdlaswp01N was call before only re-compute IPLEN, IPMAP */
-         HPL_plindx10( PANEL, *ipl, ipID, iplen, ipmap, ipmapm1 );
-         *iflag = 1;
-      }
-
-      int N = Mmax(*ipA, jb);
-      if (N>0) {
-         hipMemcpy2DAsync(dlindxA, k*sizeof(int),
-                           lindxA, k*sizeof(int),
-                           N*sizeof(int), 1,
-                           hipMemcpyHostToDevice, dataStream);
-         hipMemcpy2DAsync(dlindxAU, k*sizeof(int),
-                           lindxAU, k*sizeof(int),
-                           N*sizeof(int), 1,
-                           hipMemcpyHostToDevice, dataStream);
-      }
-
-      HPL_unroll_ipiv(jb, jb, permU, permU_ex, upiv);
-
-      hipMemcpy2DAsync(dpermU, jb*sizeof(int),
-                      upiv,  jb*sizeof(int),
-                      jb*sizeof(int), 1,
-                      hipMemcpyHostToDevice, dataStream);
-      hipMemcpy2DAsync(dpermU_ex, jb*sizeof(int),
-                      permU_ex,  jb*sizeof(int),
-                      jb*sizeof(int), 1,
-                      hipMemcpyHostToDevice, dataStream);
    }
 
 /*
