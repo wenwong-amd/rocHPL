@@ -153,13 +153,8 @@ void HPL_pdgesvK2
  */
       HPL_pdpanel_SendToHost( panel[k] );
       hipStreamSynchronize(dataStream);
-      hipDeviceSynchronize();
-      printf("rank %d,%d start here\n", GRID->myrow, GRID->mycol);
 
       HPL_pdfact(         panel[k] );
-
-      hipDeviceSynchronize();
-      printf("rank %d,%d end here\n", GRID->myrow, GRID->mycol);
 
 #if defined(GPU_AWARE_MPI)
       //send the panel back to device before bcast
