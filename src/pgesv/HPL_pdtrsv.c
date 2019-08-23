@@ -200,7 +200,7 @@ void HPL_pdtrsv
         hipMalloc((void**)&dW, nn * sizeof( double ));
 #else
         hipHostMalloc((void**)&W, nn * sizeof( double ), 0);
-        hipMalloc((void**)&W, nn * sizeof( double ));
+        hipMalloc((void**)&dW, nn * sizeof( double ));
 #endif
       }
 
