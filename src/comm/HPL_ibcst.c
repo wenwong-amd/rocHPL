@@ -107,7 +107,12 @@ int HPL_binit_ibcst( PANEL )
 
 #else
 
+#if defined(GPU_AWARE_MPI)
+#define   _M_BUFF     (void *)(PANEL->dL2)
+#else
 #define   _M_BUFF     (void *)(PANEL->L2)
+#endif
+
 #define   _M_COUNT    PANEL->len
 #define   _M_TYPE     MPI_DOUBLE
 

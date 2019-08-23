@@ -130,7 +130,9 @@ void HPL_pdtrsv
    A = AMAT->A; XR = AMAT->X;
 
    // rocblas_set_stream(handle, 0);
+#ifndef GPU_AWARE_MPI
    hipHostMalloc(&(XR), AMAT->nq*sizeof(double), 0);
+#endif
    dA = AMAT->dA; dXR = AMAT->dX;
 
    (void) HPL_grid_info( GRID, &nprow, &npcol, &myrow, &mycol );
@@ -151,7 +153,9 @@ void HPL_pdtrsv
    Aptr = (double *)(A); XC = Mptr( Aptr, 0, Anq, lda );
 
    // XC = XR;
+#ifndef GPU_AWARE_MPI
    hipHostMalloc(&(XC), Anp*sizeof(double), 0);
+#endif
 
    dAptr = (double *)(dA); dXC = Mptr( dAptr, 0, Anq, lda );
    Mindxg2p( n, nb, nb, Bcol, 0, npcol );
@@ -160,13 +164,22 @@ void HPL_pdtrsv
    {
       if( mycol == Bcol  )
       {
+#ifdef GPU_AWARE_MPI
+         hipDeviceSynchronize();
+         (void) HPL_send( dXC, Anp, Alcol, Rmsgid, Rcomm );
+#else
          if (Anp) hipMemcpy(XC, dXC, Anp*sizeof(double), hipMemcpyDeviceToHost);
          (void) HPL_send( XC, Anp, Alcol, Rmsgid, Rcomm );
+#endif
       }
       else if( mycol == Alcol )
       {
+#ifdef GPU_AWARE_MPI
+         (void) HPL_recv( dXC, Anp, Bcol,  Rmsgid, Rcomm );
+#else
          (void) HPL_recv( XC, Anp, Bcol,  Rmsgid, Rcomm );
          if (Anp) hipMemcpy(dXC, XC, Anp*sizeof(double), hipMemcpyHostToDevice);
+#endif
       }
    }
 
@@ -183,12 +196,18 @@ void HPL_pdtrsv
    {
       size_t nn = Mmin( n1, Anp );
       if (nn) {
-        hipHostMalloc((void**)&W, nn * sizeof( double ), 0);
+#ifdef GPU_AWARE_MPI
         hipMalloc((void**)&dW, nn * sizeof( double ));
+#else
+        hipHostMalloc((void**)&W, nn * sizeof( double ), 0);
+        hipMalloc((void**)&W, nn * sizeof( double ));
+#endif
       }
 
+#ifndef GPU_AWARE_MPI
       if( W == NULL || dW == NULL)
       { HPL_pabort( __LINE__, "HPL_pdtrsv", "Memory allocation failed" ); }
+#endif
       Wfr = 1;
    }
 
@@ -241,16 +260,27 @@ void HPL_pdtrsv
          if( myrow == rowprev )
          {
             if( GridIsNot1xQ ) {
+#ifdef GPU_AWARE_MPI
+               hipDeviceSynchronize();
+               (void) HPL_send( dXdprev, kbprev, MModSub1( myrow, nprow ),
+                                Cmsgid, Ccomm );
+#else               
                if (kbprev) hipMemcpy(Xdprev, dXdprev, kbprev*sizeof(double), hipMemcpyDeviceToHost);
                (void) HPL_send( Xdprev, kbprev, MModSub1( myrow, nprow ),
                                 Cmsgid, Ccomm );
+#endif               
             }
          }
          else
          {
+#ifdef GPU_AWARE_MPI            
+            (void) HPL_recv( dXdprev, kbprev, MModAdd1( myrow, nprow ),
+                             Cmsgid, Ccomm );
+#else
             (void) HPL_recv( Xdprev, kbprev, MModAdd1( myrow, nprow ),
                              Cmsgid, Ccomm );
             if (kbprev) hipMemcpy(dXdprev, Xdprev, kbprev*sizeof(double), hipMemcpyHostToDevice);
+#endif
          }
 /*
  * Compute partial update of previous solution block and send it to cur-
@@ -265,8 +295,13 @@ void HPL_pdtrsv
                          &mone, dAprev+tmp1, lda, dXdprev, 1, &one,
                          dXC+tmp1, 1 );
             if( GridIsNotPx1 ) {
+#ifdef GPU_AWARE_MPI
+               hipDeviceSynchronize();
+               (void) HPL_send( dXC+tmp1, n1pprev, Alcol, Rmsgid, Rcomm );
+#else
                if (n1pprev) hipMemcpy(XC+tmp1, dXC+tmp1, n1pprev*sizeof(double), hipMemcpyDeviceToHost);
                (void) HPL_send( XC+tmp1, n1pprev, Alcol, Rmsgid, Rcomm );
+#endif
             }
          }
 /*
@@ -275,9 +310,15 @@ void HPL_pdtrsv
  */
          if( ( myrow != rowprev ) &&
              ( myrow != MModAdd1( rowprev, nprow ) ) ) {
+#ifdef GPU_AWARE_MPI            
+            hipDeviceSynchronize();
+            (void) HPL_send( dXdprev, kbprev, MModSub1( myrow, nprow ),
+                             Cmsgid, Ccomm );
+#else 
             if (kbprev) hipMemcpy(Xdprev, dXdprev, kbprev*sizeof(double), hipMemcpyDeviceToHost);
             (void) HPL_send( Xdprev, kbprev, MModSub1( myrow, nprow ),
                              Cmsgid, Ccomm );
+#endif
          }
       }
       else if( mycol == Alcol )
@@ -288,8 +329,12 @@ void HPL_pdtrsv
  */
          if( n1pprev > 0 )
          {
+#ifdef GPU_AWARE_MPI   
+            (void) HPL_recv( dW, n1pprev, colprev, Rmsgid, Rcomm );
+#else 
             (void) HPL_recv( W, n1pprev, colprev, Rmsgid, Rcomm );
             if (n1pprev) hipMemcpy(dW, W, n1pprev*sizeof(double), hipMemcpyHostToDevice);
+#endif
             const double one = 1.0;
             rocblas_daxpy(handle, n1pprev, &one, dW, 1, dXC+Anpprev-n1pprev, 1);
          }
@@ -339,17 +384,25 @@ void HPL_pdtrsv
  * Replicate last solution block
  */
    if( mycol == colprev ) {
+#ifdef GPU_AWARE_MPI
+      hipDeviceSynchronize();
+      (void) HPL_broadcast( (void *)(dXR), kbprev, HPL_DOUBLE, rowprev,
+                            Ccomm );
+#else
       if (kbprev) hipMemcpy(XR, dXR, kbprev*sizeof(double), hipMemcpyDeviceToHost);
       (void) HPL_broadcast( (void *)(XR), kbprev, HPL_DOUBLE, rowprev,
                             Ccomm );
       if (kbprev) hipMemcpy(dXR, XR, kbprev*sizeof(double), hipMemcpyHostToDevice);
+#endif
    }
 
    hipDeviceSynchronize();
    if( dW  )hipFree( dW  );
+#ifndef GPU_AWARE_MPI
    if( W   )hipHostFree( W  );
    if( XR  )hipHostFree( XR  );
    if( XC  )hipHostFree( XC  );
+#endif
 
 #ifdef HPL_DETAILED_TIMING
    HPL_ptimer( HPL_TIMING_PTRSV );

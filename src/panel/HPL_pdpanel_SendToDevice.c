@@ -87,27 +87,36 @@ void HPL_pdpanel_SendToDevice
 
    if(  jb <= 0 ) return;
 
+#ifdef GPU_AWARE_MPI
+   //only the root column copies to device
+   if( PANEL->grid->mycol == PANEL->pcol ) {
+#endif
+
    if( PANEL->grid->nprow == 1 ) {
-     //unroll pivoting and send to device now
-     int *ipiv     = PANEL->ipiv;
-     int *ipiv_ex  = PANEL->ipiv+jb;
-     int *upiv     = PANEL->IWORK + jb; //scratch space
 
-     for( i = 0; i < jb; i++ ) { ipiv[i] -= PANEL->ii; } //shift
-     HPL_unroll_ipiv(PANEL->mp, jb, ipiv, ipiv_ex, upiv);
 
-     int *dipiv    = PANEL->dipiv;
-     int *dipiv_ex = PANEL->dipiv+jb;
+      //unroll pivoting and send to device now
+      int *ipiv     = PANEL->ipiv;
+      int *ipiv_ex  = PANEL->ipiv+jb;
+      int *upiv     = PANEL->IWORK + jb; //scratch space
+ 
+      for( i = 0; i < jb; i++ ) { ipiv[i] -= PANEL->ii; } //shift
+      HPL_unroll_ipiv(PANEL->mp, jb, ipiv, ipiv_ex, upiv);
+ 
+      int *dipiv    = PANEL->dipiv;
+      int *dipiv_ex = PANEL->dipiv+jb;
+ 
+      hipMemcpy2DAsync(dipiv, jb*sizeof(int),
+                       upiv,  jb*sizeof(int),
+                       jb*sizeof(int), 1,
+                       hipMemcpyHostToDevice, dataStream);
+      hipMemcpy2DAsync(dipiv_ex, jb*sizeof(int),
+                       ipiv_ex,  jb*sizeof(int),
+                       jb*sizeof(int), 1,
+                       hipMemcpyHostToDevice, dataStream);
 
-     hipMemcpy2DAsync(dipiv, jb*sizeof(int),
-                      upiv,  jb*sizeof(int),
-                      jb*sizeof(int), 1,
-                      hipMemcpyHostToDevice, dataStream);
-     hipMemcpy2DAsync(dipiv_ex, jb*sizeof(int),
-                      ipiv_ex,  jb*sizeof(int),
-                      jb*sizeof(int), 1,
-                      hipMemcpyHostToDevice, dataStream);
    } else {
+
       if( equil == -1 ) equil = PANEL->algo->equil;
 
       int k = (int)((unsigned int)(jb) << 1);
@@ -174,6 +183,9 @@ void HPL_pdpanel_SendToDevice
                       hipMemcpyHostToDevice, dataStream);
    }
 
+#ifdef GPU_AWARE_MPI
+   }
+#endif
 
    //copy A and/or L2
    if( PANEL->grid->mycol == PANEL->pcol ) {

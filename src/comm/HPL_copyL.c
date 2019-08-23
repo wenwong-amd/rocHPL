@@ -93,30 +93,14 @@ void HPL_copyL
 
       if( PANEL->grid->myrow == PANEL->prow )
       {
-#if defined(GPU_AWARE_MPI)
-         if ((PANEL->mp-jb)>0) {
-            hipMemcpy2DAsync(PANEL->dL2, PANEL->ldl2*sizeof(double),
-                             Mptr( PANEL->dA, jb, -jb, lda ),  lda*sizeof(double),
-                             (PANEL->mp-jb)*sizeof(double), jb,
-                             hipMemcpyDeviceToDevice, dataStream);
-            hipStreamSynchronize(dataStream);
-         }
-#else
+#if !defined(GPU_AWARE_MPI)
          HPL_dlacpy( PANEL->mp-jb, jb, Mptr( PANEL->A, jb, 0, lda ),
                      lda, PANEL->L2, PANEL->ldl2 );
 #endif
       }
       else
       {
-#if defined(GPU_AWARE_MPI)
-         if ((PANEL->mp)>0) {
-            hipMemcpy2DAsync(PANEL->dL2, PANEL->ldl2*sizeof(double),
-                             Mptr( PANEL->dA,  0, -jb, lda ),  lda*sizeof(double),
-                             (PANEL->mp)*sizeof(double), jb,
-                             hipMemcpyDeviceToDevice, dataStream);
-            hipStreamSynchronize(dataStream);
-         }
-#else
+#if !defined(GPU_AWARE_MPI)
          HPL_dlacpy( PANEL->mp,    jb, Mptr( PANEL->A,  0, 0, lda ),
                      lda, PANEL->L2, PANEL->ldl2 );
 #endif

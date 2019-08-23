@@ -177,7 +177,6 @@ void HPL_pdgesvK2
 
 #if !defined(GPU_AWARE_MPI)
       HPL_pdpanel_SendToDevice( panel[k] );
-#endif
 
    #ifdef HPL_DETAILED_TIMING
       HPL_ptimer( HPL_TIMING_RPFACT );
@@ -186,6 +185,7 @@ void HPL_pdgesvK2
    #else
       hipDeviceSynchronize();
    #endif
+#endif
 /*
  * Partial update of the depth-k-1 panels in front of me
  */
@@ -193,14 +193,14 @@ void HPL_pdgesvK2
       {
          nn = HPL_numrocI( jstart-j, j, nb, nb, mycol, 0, npcol );
          HPL_pdupdate( NULL, NULL, panel[k], nn );
-   #ifdef HPL_DETAILED_TIMING
-         HPL_ptimer( HPL_TIMING_UPDATE );
-         hipDeviceSynchronize();
-         HPL_ptimer( HPL_TIMING_UPDATE );
-   #else
-         hipDeviceSynchronize();
-   #endif
       }
+#ifdef HPL_DETAILED_TIMING
+      HPL_ptimer( HPL_TIMING_UPDATE );
+      hipDeviceSynchronize();
+      HPL_ptimer( HPL_TIMING_UPDATE );
+#else
+      hipDeviceSynchronize();
+#endif
    }
 /*
  * Main loop over the remaining columns of A
@@ -263,7 +263,6 @@ void HPL_pdgesvK2
 
 #if !defined(GPU_AWARE_MPI)
          HPL_pdpanel_SendToDevice( panel[depth] );
-#endif
 
    #ifdef HPL_DETAILED_TIMING
          HPL_ptimer( HPL_TIMING_RPFACT );
@@ -272,11 +271,13 @@ void HPL_pdgesvK2
    #else
          hipStreamSynchronize(dataStream);
    #endif
+#endif
       } else {
          nn = 0;
 
          /* Queue up finishing the latest update */
          HPL_pdupdate( NULL, NULL, panel[0], nq-nn );
+         hipStreamSynchronize(dataStream);
 
          /* broadcast current panel */
          (void) HPL_binit(   panel[depth] );
@@ -332,7 +333,10 @@ void HPL_pdgesvK2
    for( k = 0; k < depth; k++ )
    {
       (void) HPL_pdupdate( NULL, NULL, panel[k], nn );
-       hipDeviceSynchronize();
+   }
+   hipDeviceSynchronize();
+   for( k = 0; k < depth; k++ )
+   {
       (void) HPL_pdpanel_disp(  &panel[k] );
    }
    (void) HPL_pdpanel_disp( &panel[depth] );
