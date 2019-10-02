@@ -115,9 +115,12 @@ void HPL_pdlaswp01T
  * .. Local Variables ..
  */
    double                    * A, * U;
+   double                    * dA, * dU;
    int                       * ipID, * iplen, * ipmap, * ipmapm1,
                              * iwork, * lindxA = NULL, * lindxAU,
                              * permU;
+   int                       * dlindxA = NULL, * dlindxAU,
+                             * dpermU, * dpermU_ex;
    static int                equil=-1;
    int                       icurrow, * iflag, * ipA, * ipl, jb, k,
                              lda, myrow, n, nprow;
@@ -142,6 +145,7 @@ void HPL_pdlaswp01T
  */
    nprow = PANEL->grid->nprow; myrow = PANEL->grid->myrow;
    A     = PANEL->A;   U       = PANEL->U;     iflag  = PANEL->IWORK;
+   dA    = PANEL->dA;  dU      = PANEL->dU;
    lda   = PANEL->lda; icurrow = PANEL->prow;
 /*
  * Compute ipID (if not already done for this panel). lindxA and lindxAU
@@ -152,9 +156,20 @@ void HPL_pdlaswp01T
  * i.e. 4 + 9*jb + 3*nprow + max(2*jb, nprow+1);
  */
    k = (int)((unsigned int)(jb) << 1);  ipl = iflag + 1; ipID = ipl + 1;
-   ipA     = ipID + ((unsigned int)(k) << 1); lindxA = ipA + 1;
-   lindxAU = lindxA + k; iplen = lindxAU + k; ipmap = iplen + nprow + 1;
-   ipmapm1 = ipmap + nprow; permU = ipmapm1 + nprow; iwork = permU + jb;
+   ipA     = ipID + ((unsigned int)(k) << 1);
+   iplen = ipA + 1;
+   ipmap = iplen + nprow + 1;
+   ipmapm1 = ipmap + nprow;
+   iwork = ipmapm1 + nprow;
+
+   lindxA  = PANEL->lindxA;
+   lindxAU = PANEL->lindxAU;
+   permU   = PANEL->permU;
+
+   dlindxA  = PANEL->dlindxA;
+   dlindxAU = PANEL->dlindxAU;
+   dpermU   = PANEL->dpermU;
+   dpermU_ex = dpermU + jb;
 
    if( *iflag == -1 )    /* no index arrays have been computed so far */
    {
@@ -174,24 +189,54 @@ void HPL_pdlaswp01T
       HPL_plindx10( PANEL, *ipl, ipID, iplen, ipmap, ipmapm1 );
       *iflag = 1;
    }
+
+   hipStream_t stream;
+   rocblas_get_stream(handle, &stream);
+
 /*
  * Copy into U the rows to be spread (local to icurrow)
  */
    if( myrow == icurrow )
-   { HPL_dlaswp01T( *ipA, n, A, lda, U, LDU, lindxA, lindxAU ); }
+   {
+      HPL_dlaswp01T( *ipA, n, dA, lda, dU, LDU, dlindxA, dlindxAU );
+#if !defined(GPU_AWARE_MPI)
+      hipMemcpy2D( U, LDU*sizeof(double),
+                  dU, LDU*sizeof(double),
+                  n*sizeof(double), jb,
+                  hipMemcpyDeviceToHost);
+#endif
+   }
 /*
  * Spread U - optionally probe for column panel
  */
+#if defined(GPU_AWARE_MPI)
+   hipStreamSynchronize(stream);
+   HPL_spreadT( PBCST, IFLAG, PANEL, HplRight, n, dU, LDU, 0, iplen,
+                ipmap, ipmapm1 );
+#else
    HPL_spreadT( PBCST, IFLAG, PANEL, HplRight, n, U, LDU, 0, iplen,
                 ipmap, ipmapm1 );
+#endif
 /*
  * Local exchange (everywhere but in process row icurrow)
  */
    if( myrow != icurrow )
    {
+#if !defined(GPU_AWARE_MPI)
+      hipMemcpy2D(dU, LDU*sizeof(double),
+                   U, LDU*sizeof(double),
+                   n*sizeof(double), jb,
+                   hipMemcpyHostToDevice);
+#endif
       k = ipmapm1[myrow];
-      HPL_dlaswp06T( iplen[k+1]-iplen[k], n, A, lda, Mptr( U, 0,
-                     iplen[k], LDU ), LDU, lindxA );
+      HPL_dlaswp06T( iplen[k+1]-iplen[k], n, dA, lda, Mptr( dU, 0,
+                     iplen[k], LDU ), LDU, dlindxA );
+#if !defined(GPU_AWARE_MPI)
+      hipMemcpy2D( U, LDU*sizeof(double),
+                  dU, LDU*sizeof(double),
+                  n*sizeof(double), jb,
+                  hipMemcpyDeviceToHost);
+#endif
    }
 /*
  * Equilibration
@@ -202,11 +247,22 @@ void HPL_pdlaswp01T
 /*
  * Rolling phase
  */
+#if defined(GPU_AWARE_MPI)
+   hipStreamSynchronize(stream);
+   HPL_rollT( PBCST, IFLAG, PANEL, n, dU, LDU, iplen, ipmap, ipmapm1 );
+#else
    HPL_rollT( PBCST, IFLAG, PANEL, n, U, LDU, iplen, ipmap, ipmapm1 );
+#endif
 /*
  * Permute U in every process row
  */
-   HPL_dlaswp10N( n, jb, U, LDU, permU );
+#if !defined(GPU_AWARE_MPI)
+   hipMemcpy2D(dU, LDU*sizeof(double),
+                U, LDU*sizeof(double),
+                n*sizeof(double), jb,
+               hipMemcpyHostToDevice);
+#endif
+   HPL_dlaswp10N( n, jb, dU, LDU, dpermU );
 
 #ifdef HPL_DETAILED_TIMING
    HPL_ptimer( HPL_TIMING_LASWP );

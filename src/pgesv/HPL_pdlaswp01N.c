@@ -193,6 +193,9 @@ void HPL_pdlaswp01N
       HPL_plindx10( PANEL, *ipl, ipID, iplen, ipmap, ipmapm1 );
       *iflag = 1;
    }
+
+   hipStream_t stream;
+   rocblas_get_stream(handle, &stream);
 /*
  * Copy into U the rows to be spread (local to icurrow)
  */
@@ -210,6 +213,7 @@ void HPL_pdlaswp01N
  * Spread U - optionally probe for column panel
  */
 #if defined(GPU_AWARE_MPI)
+   hipStreamSynchronize(stream);
    HPL_spreadN( PBCST, IFLAG, PANEL, HplRight, n, dU, LDU, 0, iplen,
                 ipmap, ipmapm1 );
 #else
@@ -249,6 +253,7 @@ void HPL_pdlaswp01N
  * Rolling phase
  */
 #if defined(GPU_AWARE_MPI)
+   hipStreamSynchronize(stream);
    HPL_rollN( PBCST, IFLAG, PANEL, n, dU, LDU, iplen, ipmap, ipmapm1 );
 #else
    HPL_rollN( PBCST, IFLAG, PANEL, n, U, LDU, iplen, ipmap, ipmapm1 );

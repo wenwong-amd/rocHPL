@@ -48,6 +48,7 @@
  * Include files
  */
 #include "hpl.h"
+#include <hip/hip_runtime.h>
 /*
  * Define default value for unrolling factor
  */
@@ -55,6 +56,60 @@
 #define    HPL_LASWP06T_DEPTH       32
 #define    HPL_LASWP06T_LOG2_DEPTH   5
 #endif
+
+#define TILE_DIM 32
+#define BLOCK_ROWS 8
+
+__global__ void dlaswp06T(const int M, const int N,
+                          double* __restrict__ A,
+                          const int LDA,
+                          double* __restrict__ U,
+                          const int LDU,
+                          const int* __restrict__ LINDXA) {
+
+   __shared__ double s_U[TILE_DIM][TILE_DIM+1];
+   __shared__ double s_A[TILE_DIM][TILE_DIM+1];
+
+   const int am = threadIdx.x + TILE_DIM * blockIdx.x;
+   const int an = threadIdx.y + TILE_DIM * blockIdx.y;
+
+   const int um = threadIdx.y + TILE_DIM * blockIdx.x;
+   const int un = threadIdx.x + TILE_DIM * blockIdx.y;
+
+   int aip;
+
+   if (am<M) {
+      aip = LINDXA[am];
+      s_A[threadIdx.x][threadIdx.y+ 0] = (an+ 0<N) ? A[aip+(an+ 0)*((size_t)LDA)] : 0.0;
+      s_A[threadIdx.x][threadIdx.y+ 8] = (an+ 8<N) ? A[aip+(an+ 8)*((size_t)LDA)] : 0.0;
+      s_A[threadIdx.x][threadIdx.y+16] = (an+16<N) ? A[aip+(an+16)*((size_t)LDA)] : 0.0;
+      s_A[threadIdx.x][threadIdx.y+24] = (an+24<N) ? A[aip+(an+24)*((size_t)LDA)] : 0.0;
+   }
+
+   if (un<N) {
+      s_U[threadIdx.y+ 0][threadIdx.x] = (um+ 0<M) ? U[un+(um+ 0)*((size_t)LDU)] : 0.0;
+      s_U[threadIdx.y+ 8][threadIdx.x] = (um+ 8<M) ? U[un+(um+ 8)*((size_t)LDU)] : 0.0;
+      s_U[threadIdx.y+16][threadIdx.x] = (um+16<M) ? U[un+(um+16)*((size_t)LDU)] : 0.0;
+      s_U[threadIdx.y+24][threadIdx.x] = (um+24<M) ? U[un+(um+24)*((size_t)LDU)] : 0.0;
+   }
+
+   __syncthreads();
+
+   //swap
+   if (am<M) {
+      if ((an+ 0)<N) A[aip+(an+ 0)*((size_t)LDA)] = s_U[threadIdx.x][threadIdx.y+ 0];
+      if ((an+ 8)<N) A[aip+(an+ 8)*((size_t)LDA)] = s_U[threadIdx.x][threadIdx.y+ 8];
+      if ((an+16)<N) A[aip+(an+16)*((size_t)LDA)] = s_U[threadIdx.x][threadIdx.y+16];
+      if ((an+24)<N) A[aip+(an+24)*((size_t)LDA)] = s_U[threadIdx.x][threadIdx.y+24];
+   }
+
+   if (un<N) {
+      if ((um+ 0)<M) U[un+(um+ 0)*((size_t)LDU)] = s_A[threadIdx.y+ 0][threadIdx.x];
+      if ((um+ 8)<M) U[un+(um+ 8)*((size_t)LDU)] = s_A[threadIdx.y+ 8][threadIdx.x];
+      if ((um+16)<M) U[un+(um+16)*((size_t)LDU)] = s_A[threadIdx.y+16][threadIdx.x];
+      if ((um+24)<M) U[un+(um+24)*((size_t)LDU)] = s_A[threadIdx.y+24][threadIdx.x];
+   }
+}
 
 #ifdef STDC_HEADERS
 void HPL_dlaswp06T
@@ -124,6 +179,20 @@ void HPL_dlaswp06T
 /*
  * .. Local Variables ..
  */
+
+
+   if( ( M <= 0 ) || ( N <= 0 ) ) return;
+
+   hipStream_t stream;
+   rocblas_get_stream(handle, &stream);
+
+   dim3 grid_size((M+TILE_DIM-1)/TILE_DIM,(N+TILE_DIM-1)/TILE_DIM);
+   dim3 block_size(TILE_DIM,BLOCK_ROWS);
+   hipLaunchKernelGGL((dlaswp06T), grid_size, block_size, 0, stream,
+                                      M, N, A, LDA, U, LDU, LINDXA);
+
+//original
+#if 0
    double                     r;
    double                     * U0 = U, * a0, * u0;
    const int                  incA = (int)( (unsigned int)(LDA) <<
@@ -201,6 +270,7 @@ void HPL_dlaswp06T
          { r = *a0; *a0 = u0[j]; u0[j] = r; }
       }
    }
+#endif
 /*
  * End of HPL_dlaswp06T
  */

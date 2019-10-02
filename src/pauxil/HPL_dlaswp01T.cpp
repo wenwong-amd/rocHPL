@@ -48,6 +48,7 @@
  * Include files
  */
 #include "hpl.h"
+#include <hip/hip_runtime.h>
 /*
  * Define default value for unrolling factor
  */
@@ -55,6 +56,83 @@
 #define    HPL_LASWP01T_DEPTH       32
 #define    HPL_LASWP01T_LOG2_DEPTH   5
 #endif
+
+#define TILE_DIM 32
+#define BLOCK_ROWS 8
+
+/* Build U matrix from rows of A */
+__global__ void dlaswp01T_1(const int                  M,
+                            const int                  N,
+                                  double *__restrict__ A,
+                            const int                  LDA,
+                                  double *__restrict__ U,
+                            const int                  LDU,
+                            const int    *__restrict__ LINDXA,
+                            const int    *__restrict__ LINDXAU) {
+
+   __shared__ double s_U[TILE_DIM][TILE_DIM+1];
+
+   const int m = threadIdx.x + TILE_DIM * blockIdx.x;
+   const int n = threadIdx.y + TILE_DIM * blockIdx.y;
+
+   if (m<M) {
+      const int ipa  = LINDXA[m];
+      const int ipau = LINDXAU[m];
+
+      if (ipau>=0) { //row will swap into U
+         //save in LDS for the moment
+         //possible cache-hits if ipas are close
+         s_U[threadIdx.x][threadIdx.y+ 0] = (n+ 0<N) ? A[ipa+(n+ 0)*((size_t)LDA)] : 0.0;
+         s_U[threadIdx.x][threadIdx.y+ 8] = (n+ 8<N) ? A[ipa+(n+ 8)*((size_t)LDA)] : 0.0;
+         s_U[threadIdx.x][threadIdx.y+16] = (n+16<N) ? A[ipa+(n+16)*((size_t)LDA)] : 0.0;
+         s_U[threadIdx.x][threadIdx.y+24] = (n+24<N) ? A[ipa+(n+24)*((size_t)LDA)] : 0.0;
+      }
+   }
+
+   __syncthreads();
+
+   const int um = threadIdx.y + TILE_DIM*blockIdx.x;
+   const int un = threadIdx.x + TILE_DIM*blockIdx.y;
+
+   if (un<N) {
+      const int uipau0 = (um+ 0<M) ? LINDXAU[um+ 0] : -1;
+      const int uipau1 = (um+ 8<M) ? LINDXAU[um+ 8] : -1;
+      const int uipau2 = (um+16<M) ? LINDXAU[um+16] : -1;
+      const int uipau3 = (um+24<M) ? LINDXAU[um+24] : -1;
+
+      //write out chunks of U
+      if (uipau0>=0) U[un+uipau0*((size_t)LDU)] = s_U[threadIdx.y+ 0][threadIdx.x];
+      if (uipau1>=0) U[un+uipau1*((size_t)LDU)] = s_U[threadIdx.y+ 8][threadIdx.x];
+      if (uipau2>=0) U[un+uipau2*((size_t)LDU)] = s_U[threadIdx.y+16][threadIdx.x];
+      if (uipau3>=0) U[un+uipau3*((size_t)LDU)] = s_U[threadIdx.y+24][threadIdx.x];
+   }
+}
+
+#define BLOCK_SIZE 512
+
+/* Perform any local row swaps of A */
+__global__ void dlaswp01T_2(const int                  M,
+                            const int                  N,
+                                  double *__restrict__ A,
+                            const int                  LDA,
+                                  double *__restrict__ U,
+                            const int                  LDU,
+                            const int    *__restrict__ LINDXA,
+                            const int    *__restrict__ LINDXAU) {
+
+   const int n = threadIdx.x + BLOCK_SIZE * blockIdx.x;
+
+   if (n<N) {
+      for (int i=0;i<M;i++) {
+         const int ipa  = LINDXA[i];
+         const int ipau = LINDXAU[i];
+
+         if (ipau<0) { //swap into A
+            A[-ipau+n*((size_t)LDA)] = A[ipa+n*((size_t)LDA)];
+         }
+      }
+   }
+}
 
 #ifdef STDC_HEADERS
 void HPL_dlaswp01T
@@ -141,6 +219,22 @@ void HPL_dlaswp01T
 /*
  * .. Local Variables ..
  */
+
+   if( ( M <= 0 ) || ( N <= 0 ) ) return;
+
+   hipStream_t stream;
+   rocblas_get_stream(handle, &stream);
+
+   dim3 grid_size((M+TILE_DIM-1)/TILE_DIM,(N+TILE_DIM-1)/TILE_DIM);
+   dim3 block_size(TILE_DIM,BLOCK_ROWS);
+   hipLaunchKernelGGL((dlaswp01T_1), grid_size, block_size, 0, stream,
+                           M, N, A, LDA, U, LDU, LINDXA, LINDXAU);
+
+   hipLaunchKernelGGL((dlaswp01T_2), dim3((N+BLOCK_SIZE-1)/BLOCK_SIZE), BLOCK_SIZE, 0, stream,
+                           M, N, A, LDA, U, LDU, LINDXA, LINDXAU);
+
+//original
+#if 0
    double                     * a0, * a1;
    const int                  incA = (int)( (unsigned int)(LDA) <<
                                             HPL_LASWP01T_LOG2_DEPTH ),
@@ -150,6 +244,7 @@ void HPL_dlaswp01T
 /* ..
  * .. Executable Statements ..
  */
+
    if( ( M <= 0 ) || ( N <= 0 ) ) return;
 
    nr = N - ( nu = (int)( ( (unsigned int)(N) >> HPL_LASWP01T_LOG2_DEPTH ) <<
@@ -246,6 +341,7 @@ void HPL_dlaswp01T
          }
       }
    }
+#endif
 /*
  * End of HPL_dlaswp01T
  */

@@ -152,14 +152,6 @@ int main( ARGC, ARGV )
                &ntps, topval, &ndhs, ndhval, &fswap, &tswap, &L1notran,
                &Unotran, &equil, &align );
 
-   //check support
-   if(L1notran == 0 || Unotran == 0) {
-     if( rank == 0 ) printf("  ERROR: L1 and/or U in transpose form not supported, please edit HPL.dat \n");
-     MPI_Finalize();
-     exit( 1 );
-     return( 0 );
-   }
- 
    // Initialize GPU 
    HPL_InitGPU();
 

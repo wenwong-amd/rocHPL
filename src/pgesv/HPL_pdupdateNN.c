@@ -102,9 +102,7 @@ void HPL_pdupdateNN
  */
    double                    * Aptr, * L1ptr, * L2ptr, * Uptr, * dpiv;
    int                       * dipiv;
-#ifdef HPL_CALL_VSIPL
-   vsip_mview_d              * Av0, * Av1, * Lv0, * Lv1, * Uv0, * Uv1;
-#endif
+
    int                       curr, i, iroff, jb, lda, ldl2, mp, n, nb,
                              nq0, nn, test;
    static int                tswap = 0;
@@ -195,26 +193,16 @@ void HPL_pdupdateNN
       if( ( nn = n - nq0 ) > 0 )
       {
 #ifdef HPL_DETAILED_TIMING
-         hipEventRecord(dlaswpStart, stream);
          HPL_ptimer( HPL_TIMING_LASWP );
          HPL_dlaswp00N( jb, nn, Aptr, lda, dipiv );
-
-         hipEventRecord(dlaswpStop, stream);
          HPL_ptimer( HPL_TIMING_LASWP );
 #else
          HPL_dlaswp00N( jb, nn, Aptr, lda, dipiv );
-#endif
-
-#ifdef HPL_DETAILED_TIMING
-        hipEventRecord(dtrsmStart, stream);
 #endif
         const double one = 1.0;
         rocblas_dtrsm(handle, rocblas_side_left, rocblas_fill_lower,
                       rocblas_operation_none, rocblas_diagonal_unit,
                       jb, nn, &one, L1ptr, jb, Aptr, lda);
-#ifdef HPL_DETAILED_TIMING
-        hipEventRecord(dtrsmStop, stream);
-#endif
 
 #ifdef HPL_DETAILED_TIMING
        hipEventRecord(dgemmStart, stream);
@@ -237,17 +225,12 @@ void HPL_pdupdateNN
       if( fswap == HPL_NO_SWP )
       { fswap = PANEL->algo->fswap; tswap = PANEL->algo->fsthr; }
 
-#ifdef HPL_DETAILED_TIMING
-      hipEventRecord(dlaswpStart, stream);
-#endif
       if( (   fswap == HPL_SWAP01 ) ||
           ( ( fswap == HPL_SW_MIX ) && ( n > tswap ) ) )
       { HPL_pdlaswp01N( PBCST, &test, PANEL, n ); }
       else
       { HPL_pdlaswp00N( PBCST, &test, PANEL, n ); }
-#ifdef HPL_DETAILED_TIMING
-      hipEventRecord(dlaswpStop, stream);
-#endif
+
 /*
  * Compute redundantly row block of U and update trailing submatrix
  */
@@ -266,20 +249,30 @@ void HPL_pdupdateNN
       {
          nn = n - nq0; nn = Mmin( nb, nn );
 
-         HPL_dtrsm( HplColumnMajor, HplLeft,  HplLower, HplNoTrans,
-                    HplUnit, jb, nn, HPL_rone, L1ptr, jb, Uptr, LDU );
+         const double one = 1.0;
+         rocblas_dtrsm(handle, rocblas_side_left, rocblas_fill_lower,
+                       rocblas_operation_none, rocblas_diagonal_unit,
+                       jb, nn, &one, L1ptr, jb, Uptr, LDU);
          if( curr != 0 )
          {
-            HPL_dgemm( HplColumnMajor, HplNoTrans, HplNoTrans, mp, nn,
-                       jb, -HPL_rone, L2ptr, ldl2, Uptr, LDU, HPL_rone,
-                       Mptr( Aptr, jb, 0, lda ), lda );
-            HPL_dlacpy( jb, nn, Uptr, LDU, Aptr, lda );
+            const double mone = -1.0;
+            rocblas_dgemm(handle, rocblas_operation_none, rocblas_operation_none,
+                          mp, nn, jb, &mone,
+                          L2ptr, ldl2, Uptr, LDU, &one,
+                          Mptr( Aptr, jb, 0, lda ), lda );
+            if(nn)
+              hipMemcpy2DAsync(Aptr, lda*sizeof(double),
+                               Uptr, LDU*sizeof(double),
+                               jb*sizeof(double), nn,
+                               hipMemcpyDeviceToDevice, stream);
          }
          else
          {
-            HPL_dgemm( HplColumnMajor, HplNoTrans, HplNoTrans, mp, nn,
-                       jb, -HPL_rone, L2ptr, ldl2, Uptr, LDU, HPL_rone,
-                       Aptr, lda );
+            const double mone = -1.0;
+            rocblas_dgemm(handle, rocblas_operation_none, rocblas_operation_none,
+                          mp, nn, jb, &mone,
+                          L2ptr, ldl2, Uptr, LDU, &one,
+                          Aptr, lda );
          }
          Uptr = Mptr( Uptr, 0, nn, LDU );
          Aptr = Mptr( Aptr, 0, nn, lda ); nq0 += nn;
@@ -291,16 +284,10 @@ void HPL_pdupdateNN
  */
       if( ( nn = n - nq0 ) > 0 )
       {
-#ifdef HPL_DETAILED_TIMING
-         hipEventRecord(dtrsmStart, stream);
-#endif
          const double one = 1.0;
          rocblas_dtrsm(handle, rocblas_side_left, rocblas_fill_lower,
                        rocblas_operation_none, rocblas_diagonal_unit,
                        jb, nn, &one, L1ptr, jb, Uptr, LDU);
-#ifdef HPL_DETAILED_TIMING
-         hipEventRecord(dtrsmStop, stream);
-#endif
          if( curr != 0 )
          {
 #ifdef HPL_DETAILED_TIMING

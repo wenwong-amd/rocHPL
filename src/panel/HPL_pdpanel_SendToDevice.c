@@ -171,16 +171,24 @@ void HPL_pdpanel_SendToDevice
                            hipMemcpyHostToDevice, dataStream);
       }
 
-      HPL_unroll_ipiv(jb, jb, permU, permU_ex, upiv);
 
-      hipMemcpy2DAsync(dpermU, jb*sizeof(int),
+      if ((PANEL->algo->upfun == HPL_pdupdateNN)
+          ||(PANEL->algo->upfun == HPL_pdupdateTN) ) {
+        HPL_unroll_ipiv(jb, jb, permU, permU_ex, upiv);
+        hipMemcpy2DAsync(dpermU_ex, jb*sizeof(int),
+                        permU_ex,  jb*sizeof(int),
+                        jb*sizeof(int), 1,
+                        hipMemcpyHostToDevice, dataStream);
+        hipMemcpy2DAsync(dpermU, jb*sizeof(int),
                       upiv,  jb*sizeof(int),
                       jb*sizeof(int), 1,
                       hipMemcpyHostToDevice, dataStream);
-      hipMemcpy2DAsync(dpermU_ex, jb*sizeof(int),
-                      permU_ex,  jb*sizeof(int),
-                      jb*sizeof(int), 1,
-                      hipMemcpyHostToDevice, dataStream);
+      } else {
+        hipMemcpy2DAsync(dpermU, jb*sizeof(int),
+                        permU,  jb*sizeof(int),
+                        jb*sizeof(int), 1,
+                        hipMemcpyHostToDevice, dataStream);
+      }
    }
 
 #ifdef GPU_AWARE_MPI

@@ -48,6 +48,7 @@
  * Include files
  */
 #include "hpl.h"
+#include <hip/hip_runtime.h>
 /*
  * Define default value for unrolling factor
  */
@@ -55,6 +56,30 @@
 #define    HPL_LASWP10N_DEPTH       32
 #define    HPL_LASWP10N_LOG2_DEPTH   5
 #endif
+
+#define BLOCK_SIZE 512
+
+__global__ void dlaswp10N(const int M, const int N,
+                     double* __restrict__ A,
+                     const int LDA,
+                     const int* __restrict__ IPIV) {
+
+   const int m = threadIdx.x + BLOCK_SIZE * blockIdx.x;
+
+   if (m<M) {
+      for (int i=0;i<N;i++) {
+         const int ip = IPIV[i];
+
+         if (ip!=i) {
+            //swap
+            const double Ai  = A[m+i*((size_t)LDA)];
+            const double Aip = A[m+ip*((size_t)LDA)];
+            A[m+i*((size_t)LDA)]  = Aip;
+            A[m+ip*((size_t)LDA)] = Ai;
+         }
+      }
+   }
+}
 
 #ifdef STDC_HEADERS
 void HPL_dlaswp10N
@@ -108,6 +133,19 @@ void HPL_dlaswp10N
  *
  * ---------------------------------------------------------------------
  */ 
+
+
+   if( ( M <= 0 ) || ( N <= 0 ) ) return;
+
+   hipStream_t stream;
+   rocblas_get_stream(handle, &stream);
+
+   dim3 grid_size((M+BLOCK_SIZE-1)/BLOCK_SIZE);
+   hipLaunchKernelGGL((dlaswp10N), grid_size, dim3(BLOCK_SIZE), 0, stream,
+                              M, N, A, LDA, IPIV);
+
+//original
+#if 0
 /*
  * .. Local Variables ..
  */
@@ -180,6 +218,7 @@ void HPL_dlaswp10N
          { r = a0[i]; a0[i] = a1[i]; a1[i] = r; }
       }
    }
+#endif
 /*
  * End of HPL_dlaswp10N
  */

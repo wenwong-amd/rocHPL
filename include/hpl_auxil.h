@@ -122,6 +122,15 @@ STDC_ARGS( (
    double *,
    const int
 ) );
+void                             HPL_dlatcpy_gpu
+STDC_ARGS( (
+   const int,
+   const int,
+   const double *,
+   const int,
+   double *,
+   const int
+) );
 void                             HPL_dlaprnt
 STDC_ARGS( (
    const int,

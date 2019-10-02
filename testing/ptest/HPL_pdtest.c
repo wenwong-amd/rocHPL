@@ -208,6 +208,25 @@ void HPL_pdtest
 
    HPL_pdmatgen( GRID, N, N+1, NB, mat.dA, mat.ld, HPL_ISEED );
 
+   int Anp;
+   Mnumroc( Anp, mat.n, mat.nb, mat.nb, myrow, 0, nprow );
+   int n1 = ( npcol - 1 ) * mat.nb; n1 = Mmax( n1, mat.nb );
+   size_t nn = Mmin( n1, Anp );
+#ifdef GPU_AWARE_MPI
+   hipMalloc((void**)&(mat.dW), nn * sizeof( double ));
+
+   if( mat.dW == NULL)
+      { HPL_pabort( __LINE__, "HPL_pdtest", "pdtest Memory allocation failed" ); }
+#else
+   hipMalloc((void**)&(mat.dW), nn * sizeof( double ));
+   hipHostMalloc((void**)&(mat.W), nn * sizeof( double ), 0);
+   hipHostMalloc(&(mat.XR), mat.nq*sizeof(double), 0);
+   hipHostMalloc(&(mat.XC), Anp*sizeof(double), 0);
+
+   if( mat.W == NULL || mat.dW == NULL || mat.XR==NULL || mat.XC==NULL)
+      { HPL_pabort( __LINE__, "HPL_pdtest", "pdtest Memory allocation failed" ); }
+#endif
+
 /*
  * Solve linear system
  */
@@ -473,6 +492,13 @@ void HPL_pdtest
    if( dvptr ) hipFree( dvptr );
    if( vptr  ) hipHostFree( vptr );
    if( Bptr  ) hipHostFree( Bptr  );
+
+if( mat.dW  )hipFree( mat.dW  );
+#ifndef GPU_AWARE_MPI
+   if( mat.W   )hipHostFree( mat.W  );
+   if( mat.XR  )hipHostFree( mat.XR  );
+   if( mat.XC  )hipHostFree( mat.XC  );
+#endif
 /*
  * End of HPL_pdtest
  */

@@ -127,13 +127,12 @@ void HPL_pdtrsv
    if( ( n = AMAT->n ) <= 0 ) return;
    nb = AMAT->nb; lda = AMAT->ld;
 
-   A = AMAT->A; XR = AMAT->X;
+   A = AMAT->A; XR = AMAT->XR; XC = AMAT->XC;
 
-   // rocblas_set_stream(handle, 0);
-#ifndef GPU_AWARE_MPI
-   hipHostMalloc(&(XR), AMAT->nq*sizeof(double), 0);
-#endif
    dA = AMAT->dA; dXR = AMAT->dX;
+
+   hipStream_t stream;
+   rocblas_get_stream(handle, &stream);
 
    (void) HPL_grid_info( GRID, &nprow, &npcol, &myrow, &mycol );
    Rcomm = GRID->row_comm; Rmsgid = MSGID_BEGIN_PTRSV;
@@ -151,11 +150,6 @@ void HPL_pdtrsv
    kb    = n    - tmp1 * nb;
 
    Aptr = (double *)(A); XC = Mptr( Aptr, 0, Anq, lda );
-
-   // XC = XR;
-#ifndef GPU_AWARE_MPI
-   hipHostMalloc(&(XC), Anp*sizeof(double), 0);
-#endif
 
    dAptr = (double *)(dA); dXC = Mptr( dAptr, 0, Anq, lda );
    Mindxg2p( n, nb, nb, Bcol, 0, npcol );
@@ -186,7 +180,7 @@ void HPL_pdtrsv
    Rmsgid = ( Rmsgid + 2 >
               MSGID_END_PTRSV ? MSGID_BEGIN_PTRSV : Rmsgid + 2 );
    if( mycol != Alcol ) {
-      if (Anp) hipMemset(dXC, 0, Anp*sizeof(double));
+      if (Anp) hipMemsetAsync(dXC, 0, Anp*sizeof(double), stream);
    }
 /*
  * Set up lookahead
@@ -194,20 +188,8 @@ void HPL_pdtrsv
    n1 = ( npcol - 1 ) * nb; n1 = Mmax( n1, nb );
    if( Anp > 0 )
    {
-      size_t nn = Mmin( n1, Anp );
-      if (nn) {
-#ifdef GPU_AWARE_MPI
-        hipMalloc((void**)&dW, nn * sizeof( double ));
-#else
-        hipHostMalloc((void**)&W, nn * sizeof( double ), 0);
-        hipMalloc((void**)&dW, nn * sizeof( double ));
-#endif
-      }
-
-#ifndef GPU_AWARE_MPI
-      if( W == NULL || dW == NULL)
-      { HPL_pabort( __LINE__, "HPL_pdtrsv", "Memory allocation failed" ); }
-#endif
+      dW = AMAT->dW;
+      W = AMAT->W;
       Wfr = 1;
    }
 
@@ -395,14 +377,6 @@ void HPL_pdtrsv
       if (kbprev) hipMemcpy(dXR, XR, kbprev*sizeof(double), hipMemcpyHostToDevice);
 #endif
    }
-
-   hipDeviceSynchronize();
-   if( dW  )hipFree( dW  );
-#ifndef GPU_AWARE_MPI
-   if( W   )hipHostFree( W  );
-   if( XR  )hipHostFree( XR  );
-   if( XC  )hipHostFree( XC  );
-#endif
 
 #ifdef HPL_DETAILED_TIMING
    HPL_ptimer( HPL_TIMING_PTRSV );

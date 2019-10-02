@@ -154,53 +154,51 @@ void HPL_dlocswpT
                A1 = Mptr( PANEL->A, II,     0, lda );
                A2 = Mptr( A1,       ilindx, 0, lda );
 
-               // #pragma omp parallel for
-               for( i = 0; i < nu; i += HPL_LOCSWP_DEPTH) {
-                  //,
-                   // Wmx += HPL_LOCSWP_DEPTH, Wr0 += HPL_LOCSWP_DEPTH,
-                   // L   += HPL_LOCSWP_DEPTH )
-
-                  L[i+ 0]=A1[( 0+i)*lda]=Wmx[i+ 0]; A2[( 0+i)*lda]=Wr0[i+ 0];// A1+=lda; A2+=lda;
+               for( i = 0; i < nu; i += HPL_LOCSWP_DEPTH,
+                    Wmx += HPL_LOCSWP_DEPTH, Wr0 += HPL_LOCSWP_DEPTH,
+                    L   += HPL_LOCSWP_DEPTH )
+               {
+                  L[ 0]=*A1=Wmx[ 0]; *A2=Wr0[ 0]; A1+=lda; A2+=lda;
 #if ( HPL_LOCSWP_DEPTH >  1 )
-                  L[i+ 1]=A1[( 1+i)*lda]=Wmx[i+ 1]; A2[( 1+i)*lda]=Wr0[i+ 1];// A1+=lda; A2+=lda;
+                  L[ 1]=*A1=Wmx[ 1]; *A2=Wr0[ 1]; A1+=lda; A2+=lda;
 #endif
 #if ( HPL_LOCSWP_DEPTH >  2 )
-                  L[i+ 2]=A1[( 2+i)*lda]=Wmx[i+ 2]; A2[( 2+i)*lda]=Wr0[i+ 2];// A1+=lda; A2+=lda;
-                  L[i+ 3]=A1[( 3+i)*lda]=Wmx[i+ 3]; A2[( 3+i)*lda]=Wr0[i+ 3];// A1+=lda; A2+=lda;
+                  L[ 2]=*A1=Wmx[ 2]; *A2=Wr0[ 2]; A1+=lda; A2+=lda;
+                  L[ 3]=*A1=Wmx[ 3]; *A2=Wr0[ 3]; A1+=lda; A2+=lda;
 #endif
 #if ( HPL_LOCSWP_DEPTH >  4 )
-                  L[i+ 4]=A1[( 4+i)*lda]=Wmx[i+ 4]; A2[( 4+i)*lda]=Wr0[i+ 4];// A1+=lda; A2+=lda;
-                  L[i+ 5]=A1[( 5+i)*lda]=Wmx[i+ 5]; A2[( 5+i)*lda]=Wr0[i+ 5];// A1+=lda; A2+=lda;
-                  L[i+ 6]=A1[( 6+i)*lda]=Wmx[i+ 6]; A2[( 6+i)*lda]=Wr0[i+ 6];// A1+=lda; A2+=lda;
-                  L[i+ 7]=A1[( 7+i)*lda]=Wmx[i+ 7]; A2[( 7+i)*lda]=Wr0[i+ 7];// A1+=lda; A2+=lda;
+                  L[ 4]=*A1=Wmx[ 4]; *A2=Wr0[ 4]; A1+=lda; A2+=lda;
+                  L[ 5]=*A1=Wmx[ 5]; *A2=Wr0[ 5]; A1+=lda; A2+=lda;
+                  L[ 6]=*A1=Wmx[ 6]; *A2=Wr0[ 6]; A1+=lda; A2+=lda;
+                  L[ 7]=*A1=Wmx[ 7]; *A2=Wr0[ 7]; A1+=lda; A2+=lda;
 #endif
 #if ( HPL_LOCSWP_DEPTH >  8 )
-                  L[i+ 8]=A1[( 8+i)*lda]=Wmx[i+ 8]; A2[( 8+i)*lda]=Wr0[i+ 8];// A1+=lda; A2+=lda;
-                  L[i+ 9]=A1[( 9+i)*lda]=Wmx[i+ 9]; A2[( 9+i)*lda]=Wr0[i+ 9];// A1+=lda; A2+=lda;
-                  L[i+10]=A1[(10+i)*lda]=Wmx[i+10]; A2[(10+i)*lda]=Wr0[i+10];// A1+=lda; A2+=lda;
-                  L[i+11]=A1[(11+i)*lda]=Wmx[i+11]; A2[(11+i)*lda]=Wr0[i+11];// A1+=lda; A2+=lda;
-                  L[i+12]=A1[(12+i)*lda]=Wmx[i+12]; A2[(12+i)*lda]=Wr0[i+12];// A1+=lda; A2+=lda;
-                  L[i+13]=A1[(13+i)*lda]=Wmx[i+13]; A2[(13+i)*lda]=Wr0[i+13];// A1+=lda; A2+=lda;
-                  L[i+14]=A1[(14+i)*lda]=Wmx[i+14]; A2[(14+i)*lda]=Wr0[i+14];// A1+=lda; A2+=lda;
-                  L[i+15]=A1[(15+i)*lda]=Wmx[i+15]; A2[(15+i)*lda]=Wr0[i+15];// A1+=lda; A2+=lda;
+                  L[ 8]=*A1=Wmx[ 8]; *A2=Wr0[ 8]; A1+=lda; A2+=lda;
+                  L[ 9]=*A1=Wmx[ 9]; *A2=Wr0[ 9]; A1+=lda; A2+=lda;
+                  L[10]=*A1=Wmx[10]; *A2=Wr0[10]; A1+=lda; A2+=lda;
+                  L[11]=*A1=Wmx[11]; *A2=Wr0[11]; A1+=lda; A2+=lda;
+                  L[12]=*A1=Wmx[12]; *A2=Wr0[12]; A1+=lda; A2+=lda;
+                  L[13]=*A1=Wmx[13]; *A2=Wr0[13]; A1+=lda; A2+=lda;
+                  L[14]=*A1=Wmx[14]; *A2=Wr0[14]; A1+=lda; A2+=lda;
+                  L[15]=*A1=Wmx[15]; *A2=Wr0[15]; A1+=lda; A2+=lda;
 #endif
 #if ( HPL_LOCSWP_DEPTH > 16 )
-                  L[i+16]=A1[(16+i)*lda]=Wmx[i+16]; A2[(16+i)*lda]=Wr0[i+16];// A1+=lda; A2+=lda;
-                  L[i+17]=A1[(17+i)*lda]=Wmx[i+17]; A2[(17+i)*lda]=Wr0[i+17];// A1+=lda; A2+=lda;
-                  L[i+18]=A1[(18+i)*lda]=Wmx[i+18]; A2[(18+i)*lda]=Wr0[i+18];// A1+=lda; A2+=lda;
-                  L[i+19]=A1[(19+i)*lda]=Wmx[i+19]; A2[(19+i)*lda]=Wr0[i+19];// A1+=lda; A2+=lda;
-                  L[i+20]=A1[(20+i)*lda]=Wmx[i+20]; A2[(20+i)*lda]=Wr0[i+20];// A1+=lda; A2+=lda;
-                  L[i+21]=A1[(21+i)*lda]=Wmx[i+21]; A2[(21+i)*lda]=Wr0[i+21];// A1+=lda; A2+=lda;
-                  L[i+22]=A1[(22+i)*lda]=Wmx[i+22]; A2[(22+i)*lda]=Wr0[i+22];// A1+=lda; A2+=lda;
-                  L[i+23]=A1[(23+i)*lda]=Wmx[i+23]; A2[(23+i)*lda]=Wr0[i+23];// A1+=lda; A2+=lda;
-                  L[i+24]=A1[(24+i)*lda]=Wmx[i+24]; A2[(24+i)*lda]=Wr0[i+24];// A1+=lda; A2+=lda;
-                  L[i+25]=A1[(25+i)*lda]=Wmx[i+25]; A2[(25+i)*lda]=Wr0[i+25];// A1+=lda; A2+=lda;
-                  L[i+26]=A1[(26+i)*lda]=Wmx[i+26]; A2[(26+i)*lda]=Wr0[i+26];// A1+=lda; A2+=lda;
-                  L[i+27]=A1[(27+i)*lda]=Wmx[i+27]; A2[(27+i)*lda]=Wr0[i+27];// A1+=lda; A2+=lda;
-                  L[i+28]=A1[(28+i)*lda]=Wmx[i+28]; A2[(28+i)*lda]=Wr0[i+28];// A1+=lda; A2+=lda;
-                  L[i+29]=A1[(29+i)*lda]=Wmx[i+29]; A2[(29+i)*lda]=Wr0[i+29];// A1+=lda; A2+=lda;
-                  L[i+30]=A1[(30+i)*lda]=Wmx[i+30]; A2[(30+i)*lda]=Wr0[i+30];// A1+=lda; A2+=lda;
-                  L[i+31]=A1[(31+i)*lda]=Wmx[i+31]; A2[(31+i)*lda]=Wr0[i+31];// A1+=lda; A2+=lda;
+                  L[16]=*A1=Wmx[16]; *A2=Wr0[16]; A1+=lda; A2+=lda;
+                  L[17]=*A1=Wmx[17]; *A2=Wr0[17]; A1+=lda; A2+=lda;
+                  L[18]=*A1=Wmx[18]; *A2=Wr0[18]; A1+=lda; A2+=lda;
+                  L[19]=*A1=Wmx[19]; *A2=Wr0[19]; A1+=lda; A2+=lda;
+                  L[20]=*A1=Wmx[20]; *A2=Wr0[20]; A1+=lda; A2+=lda;
+                  L[21]=*A1=Wmx[21]; *A2=Wr0[21]; A1+=lda; A2+=lda;
+                  L[22]=*A1=Wmx[22]; *A2=Wr0[22]; A1+=lda; A2+=lda;
+                  L[23]=*A1=Wmx[23]; *A2=Wr0[23]; A1+=lda; A2+=lda;
+                  L[24]=*A1=Wmx[24]; *A2=Wr0[24]; A1+=lda; A2+=lda;
+                  L[25]=*A1=Wmx[25]; *A2=Wr0[25]; A1+=lda; A2+=lda;
+                  L[26]=*A1=Wmx[26]; *A2=Wr0[26]; A1+=lda; A2+=lda;
+                  L[27]=*A1=Wmx[27]; *A2=Wr0[27]; A1+=lda; A2+=lda;
+                  L[28]=*A1=Wmx[28]; *A2=Wr0[28]; A1+=lda; A2+=lda;
+                  L[29]=*A1=Wmx[29]; *A2=Wr0[29]; A1+=lda; A2+=lda;
+                  L[30]=*A1=Wmx[30]; *A2=Wr0[30]; A1+=lda; A2+=lda;
+                  L[31]=*A1=Wmx[31]; *A2=Wr0[31]; A1+=lda; A2+=lda;
 #endif
                }
 
