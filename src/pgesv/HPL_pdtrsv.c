@@ -149,7 +149,8 @@ void HPL_pdtrsv
    Alcol = tmp1 - ( tmp1 / npcol ) * npcol;
    kb    = n    - tmp1 * nb;
 
-   Aptr = (double *)(A); XC = Mptr( Aptr, 0, Anq, lda );
+   Aptr = (double *)(A); 
+   //XC = Mptr( Aptr, 0, Anq, lda );
 
    dAptr = (double *)(dA); dXC = Mptr( dAptr, 0, Anq, lda );
    Mindxg2p( n, nb, nb, Bcol, 0, npcol );
