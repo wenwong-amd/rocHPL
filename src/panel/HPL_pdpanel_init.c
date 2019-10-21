@@ -243,7 +243,9 @@ void HPL_pdpanel_init
  *       lindxAU  is of size at most 2 * JB +
  *       permU    is of size at most 2 * JB
  *
- * that is  6*JB.
+ *       ipiv     is of size at most JB
+ *
+ * that is  7*JB.
  * 
  * We make sure that those three arrays are contiguous in memory for the
  * later panel broadcast (using type punning to put the integer array at
@@ -253,10 +255,12 @@ void HPL_pdpanel_init
 
    dalign = ALGO->align * sizeof( double );
    size_t lpiv = (6*JB*sizeof(int) + sizeof(double)-1)/(sizeof(double));
+   size_t ipivlen = (JB*sizeof(int) + sizeof(double)-1)/(sizeof(double));
 
    if( npcol == 1 )                             /* P x 1 process grid */
    {                                     /* space for L1, PIV, DINFO */
-      lwork = ALGO->align + ( PANEL->len = JB * JB + lpiv + 1 );
+      PANEL->len = JB * JB + lpiv; //L1, integer arrays
+      lwork = ALGO->align + ( PANEL->len + ipivlen + 1);
       if( nprow > 1 )                                 /* space for U */
       { nu = nq - JB; lwork += JB * Mmax( 0, nu ); }
 
@@ -309,20 +313,19 @@ void HPL_pdpanel_init
       PANEL->dL1   = (double *)HPL_PTR( PANEL->dWORK, dalign );
       PANEL->L1    = (double *)HPL_PTR( PANEL->WORK, dalign );
       
-      PANEL->dipiv = (int *) (PANEL->dL1 + JB * JB);
-      PANEL->ipiv  = (int *) (PANEL->L1 + JB * JB);
-      
-      //alias these for the nprow==1 case
-      PANEL->dlindxA  = PANEL->dipiv;
-      PANEL->lindxA   = PANEL->ipiv;
-      
+      PANEL->dlindxA = (int *) (PANEL->dL1 + JB * JB);
+      PANEL->lindxA  = (int *) (PANEL->L1 + JB * JB);
       PANEL->dlindxAU = PANEL->dlindxA  + 2*JB;
       PANEL->lindxAU  = PANEL->lindxA   + 2*JB;
       PANEL->dpermU   = PANEL->dlindxAU + 2*JB;
       PANEL->permU    = PANEL->lindxAU  + 2*JB;
 
-      PANEL->DINFO = ((double*) PANEL->ipiv)  + lpiv;
-      PANEL->dDINFO= ((double*) PANEL->dipiv) + lpiv;
+      //Put ipiv array at the end
+      PANEL->dipiv = PANEL->dpermU + JB;
+      PANEL->ipiv  = PANEL->permU  + JB;
+
+      PANEL->DINFO = ((double*) PANEL->lindxA)  + lpiv + ipivlen;
+      PANEL->dDINFO= ((double*) PANEL->dlindxA) + lpiv + ipivlen;
       
       *(PANEL->DINFO) = 0.0;
       PANEL->U     = ( nprow > 1 ? PANEL->DINFO + 1: NULL );
@@ -332,13 +335,13 @@ void HPL_pdpanel_init
    {                                        /* space for L2, L1, DPIV */
       ml2 = ( myrow == icurrow ? mp - JB : mp ); ml2 = Mmax( 0, ml2 );
       
-      itmp1 = JB*JB + lpiv + 1;  //L1, integer arrays, and DINFO
+      itmp1 = JB*JB + lpiv;  //L1, integer arrays
       PANEL->len = ml2*JB + itmp1;
 
 #ifdef HPL_COPY_L
-      lwork = ALGO->align + PANEL->len;
+      lwork = ALGO->align + PANEL->len + ipivlen + 1;
 #else
-      lwork = ALGO->align + ( mycol == icurcol ? itmp1 : PANEL->len );
+      lwork = ALGO->align + ( mycol == icurcol ? itmp1 : PANEL->len ) + ipivlen + 1;
 #endif
       if( nprow > 1 )                                 /* space for U */
       {
@@ -415,20 +418,18 @@ void HPL_pdpanel_init
       }
 #endif
 
-      PANEL->dipiv = (int *) (PANEL->dL1 + JB * JB);
-      PANEL->ipiv  = (int *) (PANEL->L1  + JB * JB);
-      
-      //alias these for the nprow==1 case
-      PANEL->dlindxA  = PANEL->dipiv;
-      PANEL->lindxA   = PANEL->ipiv;
-      
+      PANEL->dlindxA = (int *) (PANEL->dL1 + JB * JB);
+      PANEL->lindxA  = (int *) (PANEL->L1  + JB * JB);
       PANEL->dlindxAU = PANEL->dlindxA  + 2*JB;
       PANEL->lindxAU  = PANEL->lindxA   + 2*JB;
       PANEL->dpermU   = PANEL->dlindxAU + 2*JB;
       PANEL->permU    = PANEL->lindxAU  + 2*JB;
 
-      PANEL->DINFO = ((double*) PANEL->ipiv) + lpiv;
-      PANEL->dDINFO= ((double*) PANEL->dipiv) + lpiv;
+      PANEL->dipiv = PANEL->dpermU + JB;
+      PANEL->ipiv  = PANEL->permU  + JB;
+
+      PANEL->DINFO = ((double*) PANEL->lindxA)  + lpiv + ipivlen;
+      PANEL->dDINFO= ((double*) PANEL->dlindxA) + lpiv + ipivlen;
 
       *(PANEL->DINFO) = 0.0;
       PANEL->U     = ( nprow > 1 ? PANEL->DINFO + 1 : NULL );

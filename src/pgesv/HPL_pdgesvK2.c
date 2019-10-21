@@ -277,7 +277,7 @@ void HPL_pdgesvK2
 
          /* Queue up finishing the latest update */
          HPL_pdupdate( NULL, NULL, panel[0], nq-nn );
-         hipStreamSynchronize(dataStream);
+         // hipStreamSynchronize(dataStream);
 
          /* broadcast current panel */
          (void) HPL_binit(   panel[depth] );

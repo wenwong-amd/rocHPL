@@ -288,7 +288,6 @@ label_end_of_npqs: ;
    vsip_finalize((void*)0);
 #endif
    MPI_Finalize();
-   exit( 0 );
 
    return( 0 );
 /*
