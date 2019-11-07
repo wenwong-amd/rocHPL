@@ -37,7 +37,7 @@ def buildNode(nodename, buildCommands, runCommands, publishCommands, artifacts, 
 
         sh 'whoami'
         sh 'adduser --disabled-password --gecos \"\" temp'
-        sh 'su - temp'
+        sh 'sudo -u temp bash'
         sh 'whoami'
 
         /**
