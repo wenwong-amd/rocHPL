@@ -7,8 +7,8 @@ def artifacts = [
   'HPL-ROCm/results.txt'
 ]
 
-def nodes = ['pavii1']   // Supported: pvaii1, p47-2, t1h2-rtg2
-def ROCm = ['2.4']        // Supported: 2.4-2.9
+def nodes = ['p47-2']   // Supported: pvaii1, p47-2, t1h2-rtg2
+def ROCm = ['2.10rc']        // Supported: 2.4-2.9
 def os = ['ubuntu-18.04'] // Supported: ubuntu-18.04, centos-7
 def cores = [
   "t1h2-rtg2": "128",
