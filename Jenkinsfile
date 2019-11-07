@@ -79,6 +79,7 @@ def buildNode(nodename, buildCommands, runCommands, publishCommands, artifacts, 
         /**
          * Build the code according to master-builder
          */
+        sh 'apt install -y mlocate'
         sh 'updatedb'
         sh 'locate mpi.h'
         stage('Build' + buildLabel) {
