@@ -98,6 +98,7 @@ def buildNode(nodename, buildCommands, runCommands, publishCommands, artifacts, 
           catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE'){
             for (rcmd in runCommands){
               withEnv(['PATH+ANYSTRING=' + envPATH]){
+                echo rcmd + ' ' + cores
                 sh rcmd + ' ' + cores
               }
             }
