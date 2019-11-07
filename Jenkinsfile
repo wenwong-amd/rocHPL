@@ -13,7 +13,7 @@ def os = ['ubuntu-18.04'] // Supported: ubuntu-18.04, centos-7
 def cores = [
   "t1h2-rtg2": "128",
   "p47-2": "32",
-  "pavii1": "32"
+  "pavii1": "16"
 ]
 
 /**
