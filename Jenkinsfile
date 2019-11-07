@@ -35,7 +35,7 @@ def buildNode(nodename, buildCommands, runCommands, publishCommands, artifacts, 
         doGenerateSubmoduleConfigurations: scm.doGenerateSubmoduleConfigurations,
         extensions: scm.extensions + [[
         $class: 'RelativeTargetDirectory',
-        relativeTargetDir: 'shoc-hip'
+        relativeTargetDir: 'HPL-ROCm'
         ]],
         userRemoteConfigs: scm.userRemoteConfigs
       ])
