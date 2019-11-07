@@ -25,47 +25,6 @@ def buildNode(nodename, buildCommands, runCommands, publishCommands, artifacts, 
     buildLabel =  ' (' + nodename + ') [ROCm-' + ROCm + ']' + '<' + os + '>'
 
     /**
-     * Checkout the changed code
-     */
-    stage('Checkout' + buildLabel){
-      checkout scm
-      checkout([
-        $class: 'GitSCM',
-        branches: scm.branches,
-        doGenerateSubmoduleConfigurations: scm.doGenerateSubmoduleConfigurations,
-        extensions: scm.extensions + [[
-        $class: 'RelativeTargetDirectory',
-        relativeTargetDir: 'HPL-ROCm'
-        ]],
-        userRemoteConfigs: scm.userRemoteConfigs
-      ])
-    }
-    // Get the hash for the current commit
-    sh 'git rev-parse HEAD > commit'
-    def commit = readFile('commit').trim()
-    echo "the commit is: " + commit
-    /**
-     * Checkout the master-builder script
-     */
-    stage('Get Master Builder' + buildLabel){
-      sh 'rm -rf master-builder'
-      checkout([
-        $class: 'GitSCM',
-        branches: [[name: '*/master']],
-        doGenerateSubmoduleConfigurations: false,
-        extensions: [[
-        $class: 'RelativeTargetDirectory',
-        relativeTargetDir: 'master-builder'
-        ]],
-        submoduleCfg: [],
-        userRemoteConfigs: [[
-        credentialsId: 'f411fa5a-a38f-4385-86d9-5e19bfc32a7d',
-        url: 'http://gitlab1.amd.com/AST/master-builder'
-        ]]
-      ])
-    }
-
-    /**
      * Build docker image
      */
     // Create the dockerfile for creating the docker image
@@ -75,6 +34,50 @@ def buildNode(nodename, buildCommands, runCommands, publishCommands, artifacts, 
       //docker.image('rocmdev-' + os + ':' + ROCm).inside(
       docker.image('compute-artifactory.amd.com:5000/rocm-plus-docker/compute-rocm-rel-2.10:2').inside(
         '--privileged --user root --device=/dev/kfd --device=/dev/dri --group-add video -e ROCm="' + ROCm + '"') {
+
+        sh 'adduser --disabled-password --gecos \"\" temp'
+        sh 'su - temp'
+
+        /**
+         * Checkout the changed code
+         */
+        stage('Checkout' + buildLabel){
+          checkout scm
+          checkout([
+            $class: 'GitSCM',
+            branches: scm.branches,
+            doGenerateSubmoduleConfigurations: scm.doGenerateSubmoduleConfigurations,
+            extensions: scm.extensions + [[
+            $class: 'RelativeTargetDirectory',
+            relativeTargetDir: 'HPL-ROCm'
+            ]],
+            userRemoteConfigs: scm.userRemoteConfigs
+          ])
+        }
+        // Get the hash for the current commit
+        sh 'git rev-parse HEAD > commit'
+        def commit = readFile('commit').trim()
+        echo "the commit is: " + commit
+        /**
+         * Checkout the master-builder script
+         */
+        stage('Get Master Builder' + buildLabel){
+          sh 'rm -rf master-builder'
+          checkout([
+            $class: 'GitSCM',
+            branches: [[name: '*/master']],
+            doGenerateSubmoduleConfigurations: false,
+            extensions: [[
+            $class: 'RelativeTargetDirectory',
+            relativeTargetDir: 'master-builder'
+            ]],
+            submoduleCfg: [],
+            userRemoteConfigs: [[
+            credentialsId: 'f411fa5a-a38f-4385-86d9-5e19bfc32a7d',
+            url: 'http://gitlab1.amd.com/AST/master-builder'
+            ]]
+          ])
+        }
 
         /**
          * Build the code according to master-builder
