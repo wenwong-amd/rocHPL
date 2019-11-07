@@ -35,8 +35,10 @@ def buildNode(nodename, buildCommands, runCommands, publishCommands, artifacts, 
       docker.image('compute-artifactory.amd.com:5000/rocm-plus-docker/compute-rocm-rel-2.10:2').inside(
         '--privileged --user root --device=/dev/kfd --device=/dev/dri --group-add video -e ROCm="' + ROCm + '"') {
 
+        sh 'whoami'
         sh 'adduser --disabled-password --gecos \"\" temp'
         sh 'su - temp'
+        sh 'whoami'
 
         /**
          * Checkout the changed code
