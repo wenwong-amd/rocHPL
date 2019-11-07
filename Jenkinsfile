@@ -73,7 +73,7 @@ def buildNode(nodename, buildCommands, runCommands, publishCommands, artifacts, 
     // Launch the docker container with stages nested inside
     docker.withRegistry(registry) {
       //docker.image('rocmdev-' + os + ':' + ROCm).inside(
-      docker.image('compute-artifactory.amd.com:5000/rocm-plus-docker/compute-rocm-rel-2.10-flattened:2').inside(
+      docker.image('compute-artifactory.amd.com:5000/rocm-plus-docker/compute-rocm-rel-2.10:2').inside(
         '--privileged --user root --device=/dev/kfd --device=/dev/dri --group-add video -e ROCm="' + ROCm + '"') {
 
         /**
