@@ -27,6 +27,7 @@ def buildNode(nodename, buildCommands, runCommands, publishCommands, artifacts, 
     /**
      * Checkout the changed code
      */
+    sh 'rm -rf HPL-ROCm'
     stage('Checkout' + buildLabel){
       checkout scm
       checkout([
