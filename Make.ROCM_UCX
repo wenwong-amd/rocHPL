@@ -61,7 +61,7 @@ TOUCH        = touch
 # - Platform identifier ------------------------------------------------
 # ----------------------------------------------------------------------
 #
-ARCH         = ROCM
+ARCH         = ROCM_UCX
 #
 # ----------------------------------------------------------------------
 # - HPL Directory Structure / HPL library ------------------------------
@@ -82,8 +82,8 @@ HPLlib       = $(LIBdir)/libhpl.a
 # header files,  MPlib  is defined  to be the name of  the library to be
 # used. The variable MPdir is only used for defining MPinc and MPlib.
 #
-MPdir        ?= /usr/lib/openmpi
-MPICC        = mpic++.openmpi
+MPdir        = $(HPL_ROOT)/../local/openmpi
+MPICC        = $(MPdir)/bin/mpic++
 MPinc        = $(MPdir)/include
 MPlib        = $(shell $(MPICC) --showme:link)
 #
@@ -173,7 +173,7 @@ HPL_LIBS     = $(HPLlib) $(LAlib) $(MPlib)
 #    *) call the BLAS Fortran 77 interface,
 #    *) not display detailed timing information.
 #
-HPL_OPTS     = -DVERBOSE_PRINT -DHPL_DETAILED_TIMING -DHPL_PROGRESS_REPORT -DHPL_CALL_CBLAS -DHPL_NO_MPI_DATATYPE -DHPL_COPY_L
+HPL_OPTS     = -DVERBOSE_PRINT -DHPL_DETAILED_TIMING -DHPL_PROGRESS_REPORT -DHPL_CALL_CBLAS -DHPL_NO_MPI_DATATYPE -DHPL_COPY_L -DGPU_AWARE_MPI
 #
 # ----------------------------------------------------------------------
 #

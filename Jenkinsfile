@@ -4,17 +4,13 @@ def runCommands = ['./master-builder/tier1/HPL-ROCm.sh run']
 def publishCommands = ['./master-builder/tier1/HPL-ROCm.sh publish']
 def envPATH = '/opt/rocm/bin'
 def artifacts = [
-  'HPL-ROCm/results.txt'
+  'HPL-ROCm/HPL.run',
+  'HPL-ROCm/HPL.out'
 ]
 
-def nodes = ['p47-2']   // Supported: pvaii1, p47-2, t1h2-rtg2
+def nodes = ['t1h2-rtg2']   // Supported: pvaii1, p47-2, t1h2-rtg2
 def ROCm = ['2.10rc']        // Supported: 2.4-2.9
 def os = ['ubuntu-18.04'] // Supported: ubuntu-18.04, centos-7
-def cores = [
-  "t1h2-rtg2": "128",
-  "p47-2": "32",
-  "pavii1": "16"
-]
 
 /**
  * Create the Pipeline to run on the node "nodename"
@@ -28,7 +24,7 @@ def buildNode(nodename, buildCommands, runCommands, publishCommands, artifacts, 
      * Checkout the changed code
      */
     stage('Checkout' + buildLabel){
-      checkout scm
+      // checkout scm
       checkout([
         $class: 'GitSCM',
         branches: scm.branches,
@@ -80,6 +76,7 @@ def buildNode(nodename, buildCommands, runCommands, publishCommands, artifacts, 
          * Build the code according to master-builder
          */
         sh 'apt install -y mlocate'
+        sh 'apt install -y autoconf libtool automake m4 pkg-config flex'
         sh 'updatedb'
         sh 'locate mpi.h'
         stage('Build' + buildLabel) {

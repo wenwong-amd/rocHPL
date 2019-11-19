@@ -69,14 +69,14 @@ all     : dexe
 #
 dexe    : dexe.grd
 #
-$(BINdir)/HPL.dat : ../HPL.dat
+$(BINdir)/../../HPL.dat : ../HPL.dat
 	( $(CP) ../HPL.dat $(BINdir)/../../ )
 	( $(CP) ../runHPL.sh $(BINdir)/../../ )
 	( $(CP) ../runHPL_omp.sh $(BINdir)/../../ )
 #
 dexe.grd: $(HPL_pteobj) $(HPLlib)
 	$(LINKER) $(LINKFLAGS) -o $(xhpl) $(HPL_pteobj) $(HPL_LIBS)
-	$(MAKE) $(BINdir)/HPL.dat
+	$(MAKE) $(BINdir)/../../HPL.dat
 	$(TOUCH) dexe.grd
 #
 # ######################################################################
