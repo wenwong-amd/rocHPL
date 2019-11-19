@@ -145,7 +145,7 @@ def buildNode(nodename, buildCommands, runCommands, publishCommands, artifacts, 
 for (n in nodes){
   for (r in ROCm){
     for (o in os){
-      buildNode(n, buildCommands, runCommands, publishCommands, artifacts, envPATH, r, o, cores[n])
+      buildNode(n, buildCommands, runCommands, publishCommands, artifacts, envPATH, r, o)
     }
   }
 }
