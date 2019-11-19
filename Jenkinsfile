@@ -46,7 +46,7 @@ def buildNode(nodename, buildCommands, runCommands, publishCommands, artifacts, 
     // Get the hash for the current commit
     dir(repoPath){
       sh 'git rev-parse HEAD > commit'
-      def commit = readFile('commit').trim()
+      commit = readFile('commit').trim()
       echo "the commit is: " + commit
     }
     /**
