@@ -15,7 +15,7 @@ def os = ['ubuntu-18.04'] // Supported: ubuntu-18.04, centos-7
 /**
  * Create the Pipeline to run on the node "nodename"
  */
-def buildNode(nodename, buildCommands, runCommands, publishCommands, artifacts, envPATH, ROCm, os, cores) {
+def buildNode(nodename, buildCommands, runCommands, publishCommands, artifacts, envPATH, ROCm, os) {
   return node(nodename) {
     // Set build label
     buildLabel =  ' (' + nodename + ') [ROCm-' + ROCm + ']' + '<' + os + '>'
