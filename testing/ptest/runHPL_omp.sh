@@ -1,6 +1,6 @@
 #!/bin/bash
 
-num_cpu_cores=$1
+num_cpu_cores=32
 num_gpus=1
 
 MPI_DIR=/usr/local/openmpi
