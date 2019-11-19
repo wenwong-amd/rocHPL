@@ -1,16 +1,23 @@
-// List of commands to be run sequentially within the corresponding stages
-def buildCommands = ['./master-builder/tier1/HPL-ROCm.sh build']
-def runCommands = ['./master-builder/tier1/HPL-ROCm.sh run']
-def publishCommands = ['./master-builder/tier1/HPL-ROCm.sh publish']
+// Path of app script in master-builder
+scriptPath = './master-builder/tier1/HPL-ROCm.sh'
+// Directory to clone app into
+repoPath = 'HPL-ROCm'
+// Path to ROCm
 def envPATH = '/opt/rocm/bin'
+// Name of any results files to store for later retrieval in Jenkins
 def artifacts = [
-  'HPL-ROCm/HPL.run',
-  'HPL-ROCm/HPL.out'
+  repoPath + '/HPL.run',
+  repoPath + '/HPL.out'
 ]
 
 def nodes = ['t1h2-rtg2']   // Supported: pvaii1, p47-2, t1h2-rtg2
 def ROCm = ['2.10rc']        // Supported: 2.4-2.9
 def os = ['ubuntu-18.04'] // Supported: ubuntu-18.04, centos-7
+
+// Run Commands (shouldn't need to change)
+def buildCommands = [scriptPath + ' build']
+def runCommands = [scriptPath + ' run']
+def publishCommands = [scriptPath + ' publish']
 
 /**
  * Create the Pipeline to run on the node "nodename"
@@ -31,15 +38,17 @@ def buildNode(nodename, buildCommands, runCommands, publishCommands, artifacts, 
         doGenerateSubmoduleConfigurations: scm.doGenerateSubmoduleConfigurations,
         extensions: scm.extensions + [[
         $class: 'RelativeTargetDirectory',
-        relativeTargetDir: 'HPL-ROCm'
+        relativeTargetDir: repoPath
         ]],
         userRemoteConfigs: scm.userRemoteConfigs
       ])
     }
     // Get the hash for the current commit
-    sh 'git rev-parse HEAD > commit'
-    def commit = readFile('commit').trim()
-    echo "the commit is: " + commit
+    dir(repoPath){
+      sh 'git rev-parse HEAD > commit'
+      def commit = readFile('commit').trim()
+      echo "the commit is: " + commit
+    }
     /**
      * Checkout the master-builder script
      */
