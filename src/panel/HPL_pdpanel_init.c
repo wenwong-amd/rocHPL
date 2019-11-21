@@ -246,10 +246,10 @@ void HPL_pdpanel_init
  *       ipiv     is of size at most JB
  *
  * that is  7*JB.
- * 
+ *
  * We make sure that those three arrays are contiguous in memory for the
  * later panel broadcast (using type punning to put the integer array at
- * the end.  We  also  choose  to put this amount of space right after 
+ * the end.  We  also  choose  to put this amount of space right after
  * L2 (when it exist) so that one can receive a contiguous buffer.
  */
 
@@ -312,7 +312,7 @@ void HPL_pdpanel_init
       PANEL->L2    = PANEL->A  + ( myrow == icurrow ? JB : 0 );
       PANEL->dL1   = (double *)HPL_PTR( PANEL->dWORK, dalign );
       PANEL->L1    = (double *)HPL_PTR( PANEL->WORK, dalign );
-      
+
       PANEL->dlindxA = (int *) (PANEL->dL1 + JB * JB);
       PANEL->lindxA  = (int *) (PANEL->L1 + JB * JB);
       PANEL->dlindxAU = PANEL->dlindxA  + 2*JB;
@@ -326,7 +326,7 @@ void HPL_pdpanel_init
 
       PANEL->DINFO = ((double*) PANEL->lindxA)  + lpiv + ipivlen;
       PANEL->dDINFO= ((double*) PANEL->dlindxA) + lpiv + ipivlen;
-      
+
       *(PANEL->DINFO) = 0.0;
       PANEL->U     = ( nprow > 1 ? PANEL->DINFO + 1: NULL );
       PANEL->dU    = ( nprow > 1 ? PANEL->dDINFO+ 1: NULL );
@@ -334,14 +334,14 @@ void HPL_pdpanel_init
    else
    {                                        /* space for L2, L1, DPIV */
       ml2 = ( myrow == icurrow ? mp - JB : mp ); ml2 = Mmax( 0, ml2 );
-      
-      itmp1 = JB*JB + lpiv;  //L1, integer arrays
+
+      itmp1 = JB*JB + lpiv + ipivlen;  //L1, integer arrays
       PANEL->len = ml2*JB + itmp1;
 
 #ifdef HPL_COPY_L
-      lwork = ALGO->align + PANEL->len + ipivlen + 1;
+      lwork = ALGO->align + PANEL->len  + 1;
 #else
-      lwork = ALGO->align + ( mycol == icurcol ? itmp1 : PANEL->len ) + ipivlen + 1;
+      lwork = ALGO->align + ( mycol == icurcol ? itmp1 : PANEL->len ) + 1;
 #endif
       if( nprow > 1 )                                 /* space for U */
       {
@@ -436,7 +436,7 @@ void HPL_pdpanel_init
       PANEL->dU    = ( nprow > 1 ? PANEL->dDINFO + 1: NULL );
    }
 /*
- * If nprow is 1, we just allocate an array of JB integers to store the 
+ * If nprow is 1, we just allocate an array of JB integers to store the
  * pivot IDs during factoring, and a scratch array of mp integers.
  * When nprow > 1, we allocate the space for the index arrays immediate-
  * ly. The exact size of this array depends on the swapping routine that
