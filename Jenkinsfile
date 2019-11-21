@@ -10,7 +10,7 @@ def artifacts = [
   repoPath + '/HPL.out'
 ]
 
-def nodes = ['t1h2-rtg2','pavii1','p47-2']   // Supported: pavii1, p47-2, t1h2-rtg2
+def nodes = ['t1h2-rtg2','pavii1']   // Supported: pavii1, p47-2, t1h2-rtg2
 def ROCm = ['2.10rc']        // Supported: 2.4-2.9
 def os = ['ubuntu-18.04'] // Supported: ubuntu-18.04, centos-7
 
