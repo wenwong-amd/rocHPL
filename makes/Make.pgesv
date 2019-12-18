@@ -117,8 +117,8 @@ HPL_pdupdateTN.o       : ../HPL_pdupdateTN.c       $(INCdep)
 	$(CC) -o $@ -c $(CCFLAGS)  ../HPL_pdupdateTN.c
 HPL_pdupdateTT.o       : ../HPL_pdupdateTT.c       $(INCdep)
 	$(CC) -o $@ -c $(CCFLAGS)  ../HPL_pdupdateTT.c
-HPL_pdtrsv.o           : ../HPL_pdtrsv.c           $(INCdep)
-	$(CC) -o $@ -c $(CCFLAGS)  ../HPL_pdtrsv.c
+HPL_pdtrsv.o           : ../HPL_pdtrsv.cpp           $(INCdep)
+	$(HIPCC) -o $@ -c $(CCFLAGS)  ../HPL_pdtrsv.cpp
 HPL_pdgesv0.o          : ../HPL_pdgesv0.c          $(INCdep)
 	$(CC) -o $@ -c $(CCFLAGS)  ../HPL_pdgesv0.c
 HPL_pdgesvK1.o         : ../HPL_pdgesvK1.c         $(INCdep)

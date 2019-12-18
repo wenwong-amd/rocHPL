@@ -48,6 +48,20 @@
  * Include files
  */
 #include "hpl.h"
+#include <hip/hip_runtime.h>
+
+#define BLOCK_SIZE 512
+__global__ void setZero(const int N,
+                        double* __restrict__ X) {
+   const int t = threadIdx.x;
+   const int b = blockIdx.x;
+   const size_t id = b * BLOCK_SIZE + t; //row id
+
+   if (id<N) {
+      X[id] = 0.0;
+   }
+}
+
 
 #ifdef STDC_HEADERS
 void HPL_pdtrsv
@@ -181,7 +195,13 @@ void HPL_pdtrsv
    Rmsgid = ( Rmsgid + 2 >
               MSGID_END_PTRSV ? MSGID_BEGIN_PTRSV : Rmsgid + 2 );
    if( mycol != Alcol ) {
-      if (Anp) hipMemsetAsync(dXC, 0, Anp*sizeof(double), stream);
+      if (Anp) {
+         size_t grid_size = (Anp + BLOCK_SIZE-1)/BLOCK_SIZE;
+
+         hipLaunchKernelGGL((setZero), dim3(grid_size), dim3(BLOCK_SIZE), 0, stream,
+                            Anp, dXC);
+         //hipMemsetAsync(dXC, 0, Anp*sizeof(double), stream);
+      }
    }
 /*
  * Set up lookahead
