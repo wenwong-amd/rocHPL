@@ -83,7 +83,7 @@ HPLlib       = $(LIBdir)/libhpl.a
 # used. The variable MPdir is only used for defining MPinc and MPlib.
 #
 MPdir        ?= /usr/lib/openmpi
-MPICC        = mpic++.openmpi
+MPICC        = $(MPdir)/bin/mpic++
 MPinc        = $(MPdir)/include
 MPlib        = $(shell $(MPICC) --showme:link)
 #
