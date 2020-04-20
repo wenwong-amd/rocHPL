@@ -67,7 +67,7 @@ ARCH         = ROCM_UCX
 # - HPL Directory Structure / HPL library ------------------------------
 # ----------------------------------------------------------------------
 #
-HPL_ROOT    ?= $(HOME)/HPL-ROCm
+HPL_ROOT    ?= $(HOME)/HPL/HPL-ROCm
 TOPdir       = $(HPL_ROOT)
 INCdir       = $(TOPdir)/include
 BINdir       = $(TOPdir)/bin/$(ARCH)
@@ -82,7 +82,7 @@ HPLlib       = $(LIBdir)/libhpl.a
 # header files,  MPlib  is defined  to be the name of  the library to be
 # used. The variable MPdir is only used for defining MPinc and MPlib.
 #
-MPdir        = $(HPL_ROOT)/../local/openmpi
+MPdir        = /data/common/gcc-5.4.0/openmpi-4.0.2
 MPICC        = $(MPdir)/bin/mpic++
 MPinc        = $(MPdir)/include
 MPlib        = $(shell $(MPICC) --showme:link)
@@ -184,7 +184,8 @@ HPL_DEFS     = $(F2CDEFS) $(HPL_OPTS) $(HPL_INCLUDES)
 # ----------------------------------------------------------------------
 #
 CC           = $(MPICC)
-HIPCC        = ${ROCMdir}/bin/hipcc -I$(MPinc)
+HIPCCFLAGS   = -ffp-contract=fast -funsafe-math-optimizations -ffast-math
+HIPCC        = ${ROCMdir}/bin/hipcc $(HIPCCFLAGS) -I$(MPinc)
 CCNOOPT      = $(HPL_DEFS)
 CCFLAGS      = $(HPL_DEFS) -O3 -g -std=c++11
 #
