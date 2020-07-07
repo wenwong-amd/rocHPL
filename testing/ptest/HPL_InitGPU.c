@@ -70,6 +70,8 @@ void  HPL_InitGPU(){
   rocblas_create_handle(&handle);
   rocblas_set_pointer_mode(handle, rocblas_pointer_mode_host);
 
+  rocblas_initialize();
+
   hipStreamCreate(&computeStream);
   hipStreamCreate(&dataStream);
 
