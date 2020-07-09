@@ -295,6 +295,9 @@ void HPL_pdtest
          HPL_fprintf( TEST->outfp,
              "HPL_pdgesv() end time   %s\n", ctime( &current_time_end ) );
       }
+#ifdef HPL_PROGRESS_REPORT
+      printf("Final Score:    %7.4e GFLOPS \n", Gflops);
+#endif
    }
 #ifdef HPL_DETAILED_TIMING
    HPL_ptimer_combine( GRID->all_comm, HPL_AMAX_PTIME, HPL_WALL_PTIME,
@@ -489,6 +492,13 @@ void HPL_pdtest
          HPL_fprintf( TEST->outfp, "%s%18.6f\n",
          "||b||_oo . . . . . . . . . . . . . . . . . . . = ", BnormI );
       }
+
+#ifdef HPL_PROGRESS_REPORT
+      if (resid1 < TEST->thrsh)
+        printf("Residual Check: PASSED \n");
+      else
+        printf("Residual Check: FAILED \n");
+#endif
    }
 
    if( dvptr ) hipFree( dvptr );
