@@ -1,36 +1,36 @@
-/* 
- * -- High Performance Computing Linpack Benchmark (HPL)                
- *    HPL - 2.2 - February 24, 2016                          
- *    Antoine P. Petitet                                                
- *    University of Tennessee, Knoxville                                
- *    Innovative Computing Laboratory                                 
- *    (C) Copyright 2000-2008 All Rights Reserved                       
- *                                                                      
- * -- Copyright notice and Licensing terms:                             
- *                                                                      
+/*
+ * -- High Performance Computing Linpack Benchmark (HPL)
+ *    HPL - 2.2 - February 24, 2016
+ *    Antoine P. Petitet
+ *    University of Tennessee, Knoxville
+ *    Innovative Computing Laboratory
+ *    (C) Copyright 2000-2008 All Rights Reserved
+ *
+ * -- Copyright notice and Licensing terms:
+ *
  * Redistribution  and  use in  source and binary forms, with or without
  * modification, are  permitted provided  that the following  conditions
- * are met:                                                             
- *                                                                      
+ * are met:
+ *
  * 1. Redistributions  of  source  code  must retain the above copyright
- * notice, this list of conditions and the following disclaimer.        
- *                                                                      
+ * notice, this list of conditions and the following disclaimer.
+ *
  * 2. Redistributions in binary form must reproduce  the above copyright
  * notice, this list of conditions,  and the following disclaimer in the
- * documentation and/or other materials provided with the distribution. 
- *                                                                      
+ * documentation and/or other materials provided with the distribution.
+ *
  * 3. All  advertising  materials  mentioning  features  or  use of this
- * software must display the following acknowledgement:                 
+ * software must display the following acknowledgement:
  * This  product  includes  software  developed  at  the  University  of
- * Tennessee, Knoxville, Innovative Computing Laboratory.             
- *                                                                      
+ * Tennessee, Knoxville, Innovative Computing Laboratory.
+ *
  * 4. The name of the  University,  the name of the  Laboratory,  or the
  * names  of  its  contributors  may  not  be used to endorse or promote
  * products  derived   from   this  software  without  specific  written
- * permission.                                                          
- *                                                                      
- * -- Disclaimer:                                                       
- *                                                                      
+ * permission.
+ *
+ * -- Disclaimer:
+ *
  * THIS  SOFTWARE  IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES,  INCLUDING,  BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -41,14 +41,18 @@
  * DATA OR PROFITS; OR BUSINESS INTERRUPTION)  HOWEVER CAUSED AND ON ANY
  * THEORY OF LIABILITY, WHETHER IN CONTRACT,  STRICT LIABILITY,  OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * ---------------------------------------------------------------------
- */ 
+ */
 /*
  * Include files
  */
 #include "hpl.h"
 #include <hip/hip_runtime.h>
+#include <cassert>
+
+#define assertm(exp, msg) assert(((void)msg, exp))
+
 /*
  * Define default value for unrolling factor
  */
@@ -108,28 +112,35 @@ __global__ void dlaswp01T_1(const int                  M,
    }
 }
 
-#define BLOCK_SIZE 512
+#define BLOCK_SIZE 1024
 
 /* Perform any local row swaps of A */
 __global__ void dlaswp01T_2(const int                  M,
                             const int                  N,
                                   double *__restrict__ A,
                             const int                  LDA,
-                                  double *__restrict__ U,
-                            const int                  LDU,
                             const int    *__restrict__ LINDXA,
                             const int    *__restrict__ LINDXAU) {
 
-   const int n = threadIdx.x + BLOCK_SIZE * blockIdx.x;
+   __shared__ double s_A[BLOCK_SIZE];
 
-   if (n<N) {
-      for (int i=0;i<M;i++) {
-         const int ipa  = LINDXA[i];
-         const int ipau = LINDXAU[i];
+   const int n = blockIdx.x;
+   const int m = threadIdx.x;
 
-         if (ipau<0) { //swap into A
-            A[-ipau+n*((size_t)LDA)] = A[ipa+n*((size_t)LDA)];
-         }
+   int ipau, ipa;
+
+   if (m<M) {
+      ipau = LINDXAU[m];
+      ipa  = LINDXA[m];
+
+      //read in
+      s_A[m] = (ipau<0) ? A[ipa+n*((size_t)LDA)] : 0.0;
+   }
+   __syncthreads();
+
+   if (m<M) {
+      if (ipau<0) { //swap into A
+         A[-ipau+n*((size_t)LDA)] = s_A[m];
       }
    }
 }
@@ -159,7 +170,7 @@ void HPL_dlaswp01T
    const int *                      LINDXAU;
 #endif
 {
-/* 
+/*
  * Purpose
  * =======
  *
@@ -215,7 +226,7 @@ void HPL_dlaswp01T
  *         -LINDXAU[i] within A.
  *
  * ---------------------------------------------------------------------
- */ 
+ */
 /*
  * .. Local Variables ..
  */
@@ -230,8 +241,10 @@ void HPL_dlaswp01T
    hipLaunchKernelGGL((dlaswp01T_1), grid_size, block_size, 0, stream,
                            M, N, A, LDA, U, LDU, LINDXA, LINDXAU);
 
-   hipLaunchKernelGGL((dlaswp01T_2), dim3((N+BLOCK_SIZE-1)/BLOCK_SIZE), BLOCK_SIZE, 0, stream,
-                           M, N, A, LDA, U, LDU, LINDXA, LINDXAU);
+   assertm(M<=BLOCK_SIZE, "NB too large in HPL_dlaswp01T");
+
+   hipLaunchKernelGGL((dlaswp01T_2), N, M, 0, stream,
+                           M, N, A, LDA, LINDXA, LINDXAU);
 
 //original
 #if 0
@@ -345,4 +358,4 @@ void HPL_dlaswp01T
 /*
  * End of HPL_dlaswp01T
  */
-} 
+}
