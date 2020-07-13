@@ -1,36 +1,36 @@
-/* 
- * -- High Performance Computing Linpack Benchmark (HPL)                
- *    HPL - 2.2 - February 24, 2016                          
- *    Antoine P. Petitet                                                
- *    University of Tennessee, Knoxville                                
- *    Innovative Computing Laboratory                                 
- *    (C) Copyright 2000-2008 All Rights Reserved                       
- *                                                                      
- * -- Copyright notice and Licensing terms:                             
- *                                                                      
+/*
+ * -- High Performance Computing Linpack Benchmark (HPL)
+ *    HPL - 2.2 - February 24, 2016
+ *    Antoine P. Petitet
+ *    University of Tennessee, Knoxville
+ *    Innovative Computing Laboratory
+ *    (C) Copyright 2000-2008 All Rights Reserved
+ *
+ * -- Copyright notice and Licensing terms:
+ *
  * Redistribution  and  use in  source and binary forms, with or without
  * modification, are  permitted provided  that the following  conditions
- * are met:                                                             
- *                                                                      
+ * are met:
+ *
  * 1. Redistributions  of  source  code  must retain the above copyright
- * notice, this list of conditions and the following disclaimer.        
- *                                                                      
+ * notice, this list of conditions and the following disclaimer.
+ *
  * 2. Redistributions in binary form must reproduce  the above copyright
  * notice, this list of conditions,  and the following disclaimer in the
- * documentation and/or other materials provided with the distribution. 
- *                                                                      
+ * documentation and/or other materials provided with the distribution.
+ *
  * 3. All  advertising  materials  mentioning  features  or  use of this
- * software must display the following acknowledgement:                 
+ * software must display the following acknowledgement:
  * This  product  includes  software  developed  at  the  University  of
- * Tennessee, Knoxville, Innovative Computing Laboratory.             
- *                                                                      
+ * Tennessee, Knoxville, Innovative Computing Laboratory.
+ *
  * 4. The name of the  University,  the name of the  Laboratory,  or the
  * names  of  its  contributors  may  not  be used to endorse or promote
  * products  derived   from   this  software  without  specific  written
- * permission.                                                          
- *                                                                      
- * -- Disclaimer:                                                       
- *                                                                      
+ * permission.
+ *
+ * -- Disclaimer:
+ *
  * THIS  SOFTWARE  IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES,  INCLUDING,  BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -41,9 +41,9 @@
  * DATA OR PROFITS; OR BUSINESS INTERRUPTION)  HOWEVER CAUSED AND ON ANY
  * THEORY OF LIABILITY, WHETHER IN CONTRACT,  STRICT LIABILITY,  OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * ---------------------------------------------------------------------
- */ 
+ */
 /*
  * Include files
  */
@@ -66,7 +66,7 @@ void HPL_pdupdateTN
    const int                        NN;
 #endif
 {
-/* 
+/*
  * Purpose
  * =======
  *
@@ -96,7 +96,7 @@ void HPL_pdupdateTN
  *         position. NN must be at least zero.
  *
  * ---------------------------------------------------------------------
- */ 
+ */
 /*
  * .. Local Variables ..
  */
@@ -114,7 +114,7 @@ void HPL_pdupdateTN
 #ifdef HPL_DETAILED_TIMING
    HPL_ptimer( HPL_TIMING_UPDATE );
 #endif
-   nb = PANEL->nb; jb = PANEL->jb; n = PANEL->nq; lda = PANEL->lda;
+   nb = PANEL->nb; jb = PANEL->jb; n = PANEL->nq; lda = PANEL->dlda;
    if( NN >= 0 ) n = Mmin( NN, n );
 /*
  * There is nothing to update, enforce the panel broadcast.
@@ -144,9 +144,9 @@ void HPL_pdupdateTN
    if( PANEL->grid->nprow == 1 )
    {
       Aptr = PANEL->dA;       L2ptr = PANEL->dL2;   L1ptr = PANEL->dL1;
-      ldl2 = PANEL->ldl2;     dipiv  = PANEL->dipiv;
+      ldl2 = PANEL->dldl2;     dipiv  = PANEL->dipiv;
 
-      mp   = PANEL->mp - jb; iroff = PANEL->ii;   nq0   = 0; 
+      mp   = PANEL->mp - jb; iroff = PANEL->ii;   nq0   = 0;
 /*
  * So far we have not updated anything -  test availability of the panel
  * to be forwarded - If detected forward it and finish the update in one
@@ -176,9 +176,9 @@ void HPL_pdupdateTN
                        L2ptr, ldl2, Aptr, lda, &one,
                        Mptr( Aptr, jb, 0, lda ), lda );
 
-         Aptr = Mptr( Aptr, 0, nn, lda ); nq0 += nn; 
+         Aptr = Mptr( Aptr, 0, nn, lda ); nq0 += nn;
 
-         (void) HPL_bcast( PBCST, &test ); 
+         (void) HPL_bcast( PBCST, &test );
       }
 /*
  * The panel has been forwarded at that point, finish the update
@@ -228,7 +228,7 @@ void HPL_pdupdateTN
  */
       nq0 = 0; curr = ( PANEL->grid->myrow == PANEL->prow ? 1 : 0 );
       Aptr = PANEL->dA; L2ptr = PANEL->dL2;  L1ptr = PANEL->dL1;
-      Uptr = PANEL->dU; ldl2 = PANEL->ldl2;
+      Uptr = PANEL->dU; ldl2 = PANEL->dldl2;
       mp   = PANEL->mp - ( curr != 0 ? jb : 0 );
 /*
  * Broadcast has not occured yet, spliting the computational part
@@ -266,7 +266,7 @@ void HPL_pdupdateTN
          Uptr = Mptr( Uptr, 0, nn, LDU );
          Aptr = Mptr( Aptr, 0, nn, lda ); nq0 += nn;
 
-         (void) HPL_bcast( PBCST, &test ); 
+         (void) HPL_bcast( PBCST, &test );
       }
 /*
  * The panel has been forwarded at that point, finish the update

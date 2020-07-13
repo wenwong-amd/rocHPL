@@ -67,7 +67,7 @@ void HPL_pdpanel_SendToHost
 
 	 if (PANEL->mp>0)
 	   hipMemcpy2DAsync(PANEL->A,  PANEL->lda*sizeof(double),
-	                    PANEL->dA, PANEL->lda*sizeof(double),
+	                    PANEL->dA, PANEL->dlda*sizeof(double),
 	                    PANEL->mp*sizeof(double), jb,
 	                    hipMemcpyDeviceToHost, dataStream);
 

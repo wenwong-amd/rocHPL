@@ -209,7 +209,8 @@ void HPL_pdpanel_init
    PANEL->nq      = nq;      /* local # of cols of trailing part of A */
    PANEL->ii      = ii;      /* local row index of trailing part of A */
    PANEL->jj      = jj;      /* local col index of trailing part of A */
-   PANEL->lda     = A->ld;            /* local leading dim of array A */
+   PANEL->lda     = Mmax(1,mp);       /* local leading dim of array A */
+   PANEL->dlda    = A->ld;            /* local leading dim of array A */
    PANEL->prow    = icurrow; /* proc row owning 1st row of trailing A */
    PANEL->pcol    = icurcol; /* proc col owning 1st col of trailing A */
    PANEL->msgid   = TAG;     /* message id to be used for panel bcast */
@@ -218,6 +219,7 @@ void HPL_pdpanel_init
  * next panel
  */
    PANEL->ldl2    = 0;               /* local leading dim of array L2 */
+   PANEL->dldl2   = 0;               /* local leading dim of array L2 */
    PANEL->len     = 0;           /* length of the buffer to broadcast */
 /*
  * Figure out the exact amount of workspace  needed by the factorization
@@ -307,7 +309,8 @@ void HPL_pdpanel_init
  * Initialize the pointers of the panel structure  -  Always re-use A in
  * the only process column
  */
-      PANEL->ldl2  = A->ld;
+      PANEL->ldl2  = Mmax(1,mp);
+      PANEL->dldl2 = A->ld;
       PANEL->dL2   = PANEL->dA + ( myrow == icurrow ? JB : 0 );
       PANEL->L2    = PANEL->A  + ( myrow == icurrow ? JB : 0 );
       PANEL->dL1   = (double *)HPL_PTR( PANEL->dWORK, dalign );
@@ -398,12 +401,14 @@ void HPL_pdpanel_init
       PANEL->L2    = (double *)HPL_PTR( PANEL->WORK, dalign );
       PANEL->L1    = PANEL->L2 + ml2 * JB;
       PANEL->ldl2  = Mmax( 1, ml2 );
+      PANEL->dldl2  = Mmax( 1, ml2 );
 #else
       if( mycol == icurcol )
       {
          PANEL->L2   = PANEL->A + ( myrow == icurrow ? JB : 0 );
          PANEL->dL2  = PANEL->dA + ( myrow == icurrow ? JB : 0 );
-         PANEL->ldl2 = A->ld;
+         PANEL->ldl2  = mp;
+         PANEL->dldl2 = A->ld;
          PANEL->L1   = (double *)HPL_PTR( PANEL->WORK, dalign );
          PANEL->dL1   = (double *)HPL_PTR( PANEL->dWORK, dalign );
       }
@@ -414,7 +419,8 @@ void HPL_pdpanel_init
 
          PANEL->L2   = (double *)HPL_PTR( PANEL->WORK, dalign );
          PANEL->L1   = PANEL->L2 + ml2 * JB;
-         PANEL->ldl2 = Mmax( 1, ml2 );
+         PANEL->ldl2  = Mmax( 1, ml2 );
+         PANEL->dldl2 = Mmax( 1, ml2 );
       }
 #endif
 

@@ -150,7 +150,7 @@ void HPL_pdlaswp01N
    dU     = PANEL->dU;
 
    iflag  = PANEL->IWORK;
-   lda   = PANEL->lda; icurrow = PANEL->prow;
+   lda   = PANEL->dlda; icurrow = PANEL->prow;
 /*
  * Compute ipID (if not already done for this panel). lindxA and lindxAU
  * are of length at most 2*jb - iplen is of size nprow+1, ipmap, ipmapm1
@@ -160,19 +160,19 @@ void HPL_pdlaswp01N
  * i.e. 4 + 9*jb + 3*nprow + max(2*jb, nprow+1);
  */
    k = (int)((unsigned int)(jb) << 1);  ipl = iflag + 1; ipID = ipl + 1;
-   ipA     = ipID + ((unsigned int)(k) << 1); 
+   ipA     = ipID + ((unsigned int)(k) << 1);
    iplen = ipA + 1;
    ipmap = iplen + nprow + 1;
-   ipmapm1 = ipmap + nprow; 
+   ipmapm1 = ipmap + nprow;
    iwork = ipmapm1 + nprow;
-   
+
    lindxA  = PANEL->lindxA;
    lindxAU = PANEL->lindxAU;
    permU   = PANEL->permU;
 
    dlindxA  = PANEL->dlindxA;
    dlindxAU = PANEL->dlindxAU;
-   dpermU   = PANEL->dpermU; 
+   dpermU   = PANEL->dpermU;
    dpermU_ex = dpermU + jb;
 
    if( *iflag == -1 )    /* no index arrays have been computed so far */

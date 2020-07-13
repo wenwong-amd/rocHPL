@@ -116,7 +116,7 @@ void HPL_pdupdateNN
 #endif
    nb = PANEL->nb; jb = PANEL->jb; n = PANEL->nq;
 
-   lda = PANEL->lda;
+   lda = PANEL->dlda;
 
    if( NN >= 0 ) n = Mmin( NN, n );
 /*
@@ -150,7 +150,7 @@ void HPL_pdupdateNN
       L1ptr = PANEL->dL1;
       L2ptr = PANEL->dL2;
 
-      ldl2 = PANEL->ldl2;
+      ldl2 = PANEL->dldl2;
       mp   = PANEL->mp - jb; iroff = PANEL->ii;   nq0   = 0;
 
       dipiv = PANEL->dipiv; //already updated and on device
@@ -240,7 +240,7 @@ void HPL_pdupdateNN
       L1ptr = PANEL->dL1;
       Uptr = PANEL->dU;
 
-      ldl2 = PANEL->ldl2;
+      ldl2 = PANEL->dldl2;
       mp   = PANEL->mp - ( curr != 0 ? jb : 0 );
 /*
  * Broadcast has not occured yet, spliting the computational part

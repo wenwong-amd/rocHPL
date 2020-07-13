@@ -99,13 +99,13 @@ void HPL_pdpanel_SendToDevice
       int *ipiv     = PANEL->ipiv;
       int *ipiv_ex  = PANEL->ipiv+jb;
       int *upiv     = PANEL->IWORK + jb; //scratch space
- 
+
       for( i = 0; i < jb; i++ ) { ipiv[i] -= PANEL->ii; } //shift
       HPL_unroll_ipiv(PANEL->mp, jb, ipiv, ipiv_ex, upiv);
- 
+
       int *dipiv    = PANEL->dipiv;
       int *dipiv_ex = PANEL->dipiv+jb;
- 
+
       hipMemcpy2DAsync(dipiv, jb*sizeof(int),
                        upiv,  jb*sizeof(int),
                        jb*sizeof(int), 1,
@@ -199,10 +199,10 @@ void HPL_pdpanel_SendToDevice
    if( PANEL->grid->mycol == PANEL->pcol ) {
       // A  = Mptr( PANEL->A,  0, -jb, PANEL->lda );
       A  = Mptr( PANEL->A,  0, 0, PANEL->lda );
-      dA = Mptr( PANEL->dA, 0, -jb, PANEL->lda );
+      dA = Mptr( PANEL->dA, 0, -jb, PANEL->dlda );
 
       if (PANEL->mp>0)
-        hipMemcpy2DAsync(dA, PANEL->lda*sizeof(double),
+        hipMemcpy2DAsync(dA, PANEL->dlda*sizeof(double),
                           A,  PANEL->lda*sizeof(double),
                           PANEL->mp*sizeof(double), jb,
                           hipMemcpyHostToDevice, dataStream);
@@ -210,14 +210,14 @@ void HPL_pdpanel_SendToDevice
       if (PANEL->grid->npcol>1) {//L2 is its own array
         if( PANEL->grid->myrow == PANEL->prow ) {
           if ((PANEL->mp-jb)>0)
-            hipMemcpy2DAsync(PANEL->dL2, PANEL->ldl2*sizeof(double),
-                              Mptr( PANEL->dA, jb, -jb, PANEL->lda ),  PANEL->lda*sizeof(double),
+            hipMemcpy2DAsync(PANEL->dL2, PANEL->dldl2*sizeof(double),
+                              Mptr( PANEL->dA, jb, -jb, PANEL->dlda ),  PANEL->dlda*sizeof(double),
                               (PANEL->mp-jb)*sizeof(double), jb,
                               hipMemcpyDeviceToDevice, dataStream);
         } else {
           if ((PANEL->mp)>0)
-            hipMemcpy2DAsync(PANEL->dL2, PANEL->ldl2*sizeof(double),
-                              Mptr( PANEL->dA, 0, -jb, PANEL->lda ),  PANEL->lda*sizeof(double),
+            hipMemcpy2DAsync(PANEL->dL2, PANEL->dldl2*sizeof(double),
+                              Mptr( PANEL->dA, 0, -jb, PANEL->dlda ),  PANEL->dlda*sizeof(double),
                               (PANEL->mp)*sizeof(double), jb,
                               hipMemcpyDeviceToDevice, dataStream);
         }
@@ -235,7 +235,7 @@ void HPL_pdpanel_SendToDevice
       //L2+L1 were recieved via MPI, send them to device
       ml2 = ( PANEL->grid->myrow == PANEL->prow ? PANEL->mp - jb : PANEL->mp );
       if (ml2>0)
-        hipMemcpy2DAsync(PANEL->dL2, PANEL->ldl2*sizeof(double),
+        hipMemcpy2DAsync(PANEL->dL2, PANEL->dldl2*sizeof(double),
                          PANEL->L2,  PANEL->ldl2*sizeof(double),
                          ml2*sizeof(double), jb,
                          hipMemcpyHostToDevice, dataStream);
