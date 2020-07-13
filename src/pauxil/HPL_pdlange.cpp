@@ -112,18 +112,37 @@ __global__ void norm1(const int N, const int M,
                       const double* __restrict__ A,
                       const int LDA,
                             double* __restrict__ work) {
-   const int t = threadIdx.x;
-   const int b = blockIdx.x;
-   const size_t id = b * BLOCK_SIZE + t; //column id
 
-   if (id<N) {
-      double norm = 0.0;
-      //this is an ugly access, and a big loop
-      for (int i=0; i<M; i++) {
-         norm += fabs(A[((size_t)i)+id*LDA]);
-      }
-      work[id] = norm;
+   __shared__ double s_norm1[BLOCK_SIZE];
+
+   const int t = threadIdx.x;
+   const int n = blockIdx.x;
+
+   s_norm1[t] = 0.0;
+   for (size_t id = t; id < M ; id += BLOCK_SIZE ) {
+      s_norm1[t] += fabs( A[id + n*((size_t)LDA)] );
    }
+
+   __syncthreads();
+
+   for (int k = BLOCK_SIZE / 2; k > 0; k /= 2 ) {
+      if ( t < k ) {
+         s_norm1[t] += s_norm1[t + k];
+      }
+      __syncthreads();
+   }
+
+   if (t==0)
+      work[n] = s_norm1[0];
+
+   // if (id<N) {
+   //    double norm = 0.0;
+   //    //this is an ugly access, and a big loop
+   //    for (int i=0; i<M; i++) {
+   //       norm += fabs(A[((size_t)i)+id*LDA]);
+   //    }
+   //    work[id] = norm;
+   // }
 }
 
 __global__ void norminf(const int N, const int M,
@@ -296,8 +315,7 @@ double HPL_pdlange
             rocblas_dasum(handle, mp, A, 1, work);
          } else {
             hipMalloc(&dwork, nq*sizeof(double));
-            size_t grid_size = (nq + BLOCK_SIZE-1)/BLOCK_SIZE;
-            hipLaunchKernelGGL((norm1), dim3(grid_size), dim3(BLOCK_SIZE), 0, 0,
+            hipLaunchKernelGGL((norm1), dim3(nq), dim3(BLOCK_SIZE), 0, 0,
                                 nq, mp, A, LDA, dwork);
             hipMemcpy(work, dwork, nq*sizeof(double), hipMemcpyDeviceToHost);
          }
