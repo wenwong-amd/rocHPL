@@ -50,6 +50,11 @@
 #include "hpl.h"
 #include <hip/hip_runtime.h>
 
+/* NC: UCX bug in pdtrsv workaround */
+#ifdef GPU_AWARE_MPI
+#undef GPU_AWARE_MPI
+#endif
+
 #define BLOCK_SIZE 512
 __global__ void setZero(const int N,
                         double* __restrict__ X) {
@@ -163,7 +168,7 @@ void HPL_pdtrsv
    Alcol = tmp1 - ( tmp1 / npcol ) * npcol;
    kb    = n    - tmp1 * nb;
 
-   Aptr = (double *)(A); 
+   Aptr = (double *)(A);
    //XC = Mptr( Aptr, 0, Anq, lda );
 
    dAptr = (double *)(dA); dXC = Mptr( dAptr, 0, Anq, lda );
@@ -227,10 +232,9 @@ void HPL_pdtrsv
       dAprev = ( dAptr -= lda * kb ); dXdprev = ( dXd = dXR + Anq );
       if( myrow == Alrow )
       {
-         const double one = 1.0;
-         rocblas_dtrsm(handle, rocblas_side_left, rocblas_fill_upper,
+         rocblas_dtrsv(handle, rocblas_fill_upper,
                       rocblas_operation_none, rocblas_diagonal_non_unit,
-                       kb, 1, &one, dAptr+Anp, lda, dXC+Anp, kb);
+                       kb, dAptr+Anp, lda, dXC+Anp, 1);
          rocblas_dcopy(handle, kb, dXC+Anp, 1, dXd, 1 );
       }
    }
@@ -267,16 +271,16 @@ void HPL_pdtrsv
                hipDeviceSynchronize();
                (void) HPL_send( dXdprev, kbprev, MModSub1( myrow, nprow ),
                                 Cmsgid, Ccomm );
-#else               
+#else
                if (kbprev) hipMemcpy(Xdprev, dXdprev, kbprev*sizeof(double), hipMemcpyDeviceToHost);
                (void) HPL_send( Xdprev, kbprev, MModSub1( myrow, nprow ),
                                 Cmsgid, Ccomm );
-#endif               
+#endif
             }
          }
          else
          {
-#ifdef GPU_AWARE_MPI            
+#ifdef GPU_AWARE_MPI
             (void) HPL_recv( dXdprev, kbprev, MModAdd1( myrow, nprow ),
                              Cmsgid, Ccomm );
 #else
@@ -313,11 +317,11 @@ void HPL_pdtrsv
  */
          if( ( myrow != rowprev ) &&
              ( myrow != MModAdd1( rowprev, nprow ) ) ) {
-#ifdef GPU_AWARE_MPI            
+#ifdef GPU_AWARE_MPI
             hipDeviceSynchronize();
             (void) HPL_send( dXdprev, kbprev, MModSub1( myrow, nprow ),
                              Cmsgid, Ccomm );
-#else 
+#else
             if (kbprev) hipMemcpy(Xdprev, dXdprev, kbprev*sizeof(double), hipMemcpyDeviceToHost);
             (void) HPL_send( Xdprev, kbprev, MModSub1( myrow, nprow ),
                              Cmsgid, Ccomm );
@@ -332,9 +336,9 @@ void HPL_pdtrsv
  */
          if( n1pprev > 0 )
          {
-#ifdef GPU_AWARE_MPI   
+#ifdef GPU_AWARE_MPI
             (void) HPL_recv( dW, n1pprev, colprev, Rmsgid, Rcomm );
-#else 
+#else
             (void) HPL_recv( W, n1pprev, colprev, Rmsgid, Rcomm );
             if (n1pprev) hipMemcpy(dW, W, n1pprev*sizeof(double), hipMemcpyHostToDevice);
 #endif
@@ -347,10 +351,9 @@ void HPL_pdtrsv
  */
       if( ( mycol == Alcol ) && ( myrow == Alrow ) )
       {
-         const double one = 1.0;
-         rocblas_dtrsm(handle, rocblas_side_left, rocblas_fill_upper,
+         rocblas_dtrsv(handle, rocblas_fill_upper,
                       rocblas_operation_none, rocblas_diagonal_non_unit,
-                       kb, 1, &one, dAptr+Anp, lda, dXC+Anp, kb);
+                       kb, dAptr+Anp, lda, dXC+Anp, 1);
          rocblas_dcopy(handle, kb, dXC+Anp, 1, dXR+Anq, 1 );
       }
 /*

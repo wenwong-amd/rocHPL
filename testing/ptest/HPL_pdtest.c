@@ -212,12 +212,14 @@ void HPL_pdtest
    Mnumroc( Anp, mat.n, mat.nb, mat.nb, myrow, 0, nprow );
    int n1 = ( npcol - 1 ) * mat.nb; n1 = Mmax( n1, mat.nb );
    size_t nn = Mmin( n1, Anp );
-#ifdef GPU_AWARE_MPI
-   hipMalloc((void**)&(mat.dW), nn * sizeof( double ));
 
-   if( mat.dW == NULL)
-      { HPL_pabort( __LINE__, "HPL_pdtest", "pdtest Memory allocation failed" ); }
-#else
+/* NC: UCX bug in pdtrsv workaround */
+// #ifdef GPU_AWARE_MPI
+//    hipMalloc((void**)&(mat.dW), nn * sizeof( double ));
+
+//    if( mat.dW == NULL)
+//       { HPL_pabort( __LINE__, "HPL_pdtest", "pdtest Memory allocation failed" ); }
+// #else
    hipMalloc((void**)&(mat.dW), nn * sizeof( double ));
    hipHostMalloc((void**)&(mat.W), nn * sizeof( double ), 0);
    hipHostMalloc(&(mat.XR), mat.nq*sizeof(double), 0);
@@ -225,7 +227,7 @@ void HPL_pdtest
 
    if( mat.W == NULL || mat.dW == NULL || mat.XR==NULL || mat.XC==NULL)
       { HPL_pabort( __LINE__, "HPL_pdtest", "pdtest Memory allocation failed" ); }
-#endif
+// #endif
 
 /*
  * Solve linear system
@@ -293,6 +295,9 @@ void HPL_pdtest
          HPL_fprintf( TEST->outfp,
              "HPL_pdgesv() end time   %s\n", ctime( &current_time_end ) );
       }
+#ifdef HPL_PROGRESS_REPORT
+      printf("Final Score:    %7.4e GFLOPS \n", Gflops);
+#endif
    }
 #ifdef HPL_DETAILED_TIMING
    HPL_ptimer_combine( GRID->all_comm, HPL_AMAX_PTIME, HPL_WALL_PTIME,
@@ -487,6 +492,13 @@ void HPL_pdtest
          HPL_fprintf( TEST->outfp, "%s%18.6f\n",
          "||b||_oo . . . . . . . . . . . . . . . . . . . = ", BnormI );
       }
+
+#ifdef HPL_PROGRESS_REPORT
+      if (resid1 < TEST->thrsh)
+        printf("Residual Check: PASSED \n");
+      else
+        printf("Residual Check: FAILED \n");
+#endif
    }
 
    if( dvptr ) hipFree( dvptr );
@@ -494,11 +506,12 @@ void HPL_pdtest
    if( Bptr  ) hipHostFree( Bptr  );
 
 if( mat.dW  )hipFree( mat.dW  );
-#ifndef GPU_AWARE_MPI
+/* NC: UCX bug in pdtrsv workaround */
+// #ifndef GPU_AWARE_MPI
    if( mat.W   )hipHostFree( mat.W  );
    if( mat.XR  )hipHostFree( mat.XR  );
    if( mat.XC  )hipHostFree( mat.XC  );
-#endif
+// #endif
 /*
  * End of HPL_pdtest
  */
