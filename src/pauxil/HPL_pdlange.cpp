@@ -134,15 +134,6 @@ __global__ void norm1(const int N, const int M,
 
    if (t==0)
       work[n] = s_norm1[0];
-
-   // if (id<N) {
-   //    double norm = 0.0;
-   //    //this is an ugly access, and a big loop
-   //    for (int i=0; i<M; i++) {
-   //       norm += fabs(A[((size_t)i)+id*LDA]);
-   //    }
-   //    work[id] = norm;
-   // }
 }
 
 __global__ void norminf(const int N, const int M,
