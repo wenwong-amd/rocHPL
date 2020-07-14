@@ -50,11 +50,6 @@
 #include "hpl.h"
 #include <hip/hip_runtime.h>
 
-/* NC: UCX bug in pdtrsv workaround */
-#ifdef GPU_AWARE_MPI
-#undef GPU_AWARE_MPI
-#endif
-
 #define BLOCK_SIZE 512
 __global__ void setZero(const int N,
                         double* __restrict__ X) {

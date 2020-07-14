@@ -213,13 +213,13 @@ void HPL_pdtest
    int n1 = ( npcol - 1 ) * mat.nb; n1 = Mmax( n1, mat.nb );
    size_t nn = Mmin( n1, Anp );
 
-/* NC: UCX bug in pdtrsv workaround */
-// #ifdef GPU_AWARE_MPI
-//    hipMalloc((void**)&(mat.dW), nn * sizeof( double ));
 
-//    if( mat.dW == NULL)
-//       { HPL_pabort( __LINE__, "HPL_pdtest", "pdtest Memory allocation failed" ); }
-// #else
+#ifdef GPU_AWARE_MPI
+   hipMalloc((void**)&(mat.dW), nn * sizeof( double ));
+
+   if( mat.dW == NULL)
+      { HPL_pabort( __LINE__, "HPL_pdtest", "pdtest Memory allocation failed" ); }
+#else
    hipMalloc((void**)&(mat.dW), nn * sizeof( double ));
    hipHostMalloc((void**)&(mat.W), nn * sizeof( double ), 0);
    hipHostMalloc(&(mat.XR), mat.nq*sizeof(double), 0);
@@ -227,7 +227,7 @@ void HPL_pdtest
 
    if( mat.W == NULL || mat.dW == NULL || mat.XR==NULL || mat.XC==NULL)
       { HPL_pabort( __LINE__, "HPL_pdtest", "pdtest Memory allocation failed" ); }
-// #endif
+#endif
 
 /*
  * Solve linear system
@@ -506,12 +506,12 @@ void HPL_pdtest
    if( Bptr  ) hipHostFree( Bptr  );
 
 if( mat.dW  )hipFree( mat.dW  );
-/* NC: UCX bug in pdtrsv workaround */
-// #ifndef GPU_AWARE_MPI
+
+#ifndef GPU_AWARE_MPI
    if( mat.W   )hipHostFree( mat.W  );
    if( mat.XR  )hipHostFree( mat.XR  );
    if( mat.XC  )hipHostFree( mat.XC  );
-// #endif
+#endif
 /*
  * End of HPL_pdtest
  */
