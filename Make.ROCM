@@ -99,7 +99,15 @@ ROCMinc        = $(ROCMdir)/include
 ROCMlib        = $(ROCMdir)/lib
 HIPCC          = $(ROCM_DIR)/bin/hipcc
 HIPinc         = $(shell $(ROCMdir)/bin/hipconfig --cpp_config)
-HIPlib         = -L$(ROCM_DIR)/hip/lib/ -lhip_hcc
+
+hipCompiler = $(shell $(ROCMdir)/bin/hipconfig --compiler)
+
+HIPlib         = -L$(ROCM_DIR)/hip/lib/
+ifeq ($(hipCompiler),hcc)
+  HIPlib += -lhip_hcc
+else ifeq ($(hipCompiler),clang)
+  HIPlib += -lamdhip64
+endif
 #
 # ----------------------------------------------------------------------
 # - Linear Algebra library (BLAS or VSIPL) -----------------------------
