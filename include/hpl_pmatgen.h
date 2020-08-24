@@ -56,28 +56,18 @@
 #include "hpl_pmisc.h"
 #include "hpl_pauxil.h"
 
-#if __cplusplus
-extern "C" {
-#endif
 /*
  * ---------------------------------------------------------------------
  * Function prototypes
  * ---------------------------------------------------------------------
  */
-void                             HPL_pdmatgen
-STDC_ARGS( (
-   const HPL_T_grid *,
-   const int,
-   const int,
-   const int,
-   double *,
-   const int,
-   const int
-) );
-
-#if __cplusplus
-}
-#endif
+void HPL_pdmatgen(const HPL_T_grid*,
+                  const int,
+                  const int,
+                  const int,
+                  double*,
+                  const int,
+                  const int);
 
 #endif
 /*

@@ -53,73 +53,63 @@
 #include "hpl_pmisc.h"
 #include "hpl_grid.h"
 
-#if __cplusplus
-extern "C" {
-#endif
 /*
  * ---------------------------------------------------------------------
  * Data Structures
  * ---------------------------------------------------------------------
  */
-typedef struct HPL_S_panel
-{
-   struct HPL_S_grid   * grid;             /* ptr to the process grid */
-   struct HPL_S_palg   * algo;          /* ptr to the algo parameters */
-   struct HPL_S_pmat   * pmat;         /* ptr to the local array info */
-   double              * A;              /* ptr to trailing part of A */
-   double              * dA;             /* ptr to trailing part of A */
-   double              * WORK;                          /* work space */
-   double              * dWORK;             /* device-copy work space */
-   double              * L2;                              /* ptr to L */
-   double              * L1;       /* ptr to jb x jb upper block of A */
-   double              * dL2;                             /* ptr to L */
-   double              * dL1;      /* ptr to jb x jb upper block of A */
-   double              * DINFO;      /* ptr to replicated scalar info */
-   double              * dDINFO;     /* ptr to replicated scalar info */
-   int                 * ipiv;
-   int                 * dipiv;
-   int                 * lindxA;
-   int                 * dlindxA;
-   int                 * lindxAU;
-   int                 * dlindxAU;
-   int                 * permU;
-   int                 * dpermU;
-   double              * U;                               /* ptr to U */
-   double              * dU;                              /* ptr to U */
-   int                 * IWORK;     /* integer workspace for swapping */
-   void                * buffers[2];       /* buffers for panel bcast */
-   int                 counts [2];          /* counts for panel bcast */
-   MPI_Datatype        dtypes [2];      /* data types for panel bcast */
-   MPI_Request         request[1];        /* requests for panel bcast */
-   MPI_Status          status [1];          /* status for panel bcast */
-   int                 nb;            /* distribution blocking factor */
-   int                 jb;                             /* panel width */
-   int                 m;   /* global # of rows of trailing part of A */
-   int                 n;   /* global # of cols of trailing part of A */
-   int                 ia;  /* global row index of trailing part of A */
-   int                 ja;  /* global col index of trailing part of A */
-   int                 mp;   /* local # of rows of trailing part of A */
-   int                 nq;   /* local # of cols of trailing part of A */
-   int                 ii;   /* local row index of trailing part of A */
-   int                 jj;   /* local col index of trailing part of A */
-   int                 lda;           /* local leading dim of array A */
-   int                 dlda;          /* local leading dim of array A */
-   int                 prow;  /* proc. row owning 1st row of trail. A */
-   int                 pcol;  /* proc. col owning 1st col of trail. A */
-   int                 msgid;           /* message id for panel bcast */
-   int                 ldl2;         /* local leading dim of array L2 */
-   int                 dldl2;        /* local leading dim of array L2 */
-   int                 len;      /* length of the buffer to broadcast */
-   unsigned int        max_pinned_work_size;   /* largest size of pinned A space */
-   unsigned int        max_work_size;   /* largest size of WORK space */
-   unsigned int        max_iwork_size; /* largest size of IWORK space */
-   unsigned int        free_work_now;         /* should we deallocate */
-#ifdef HPL_CALL_VSIPL
-   vsip_block_d        * Ablock;                           /* A block */
-   vsip_block_d        * L1block;                         /* L1 block */
-   vsip_block_d        * L2block;                         /* L2 block */
-   vsip_block_d        * Ublock;                           /* U block */
-#endif
+typedef struct HPL_S_panel {
+  struct HPL_S_grid* grid;   /* ptr to the process grid */
+  struct HPL_S_palg* algo;   /* ptr to the algo parameters */
+  struct HPL_S_pmat* pmat;   /* ptr to the local array info */
+  double*            A;      /* ptr to trailing part of A */
+  double*            dA;     /* ptr to trailing part of A */
+  double*            WORK;   /* work space */
+  double*            dWORK;  /* device-copy work space */
+  double*            L2;     /* ptr to L */
+  double*            L1;     /* ptr to jb x jb upper block of A */
+  double*            dL2;    /* ptr to L */
+  double*            dL1;    /* ptr to jb x jb upper block of A */
+  double*            DINFO;  /* ptr to replicated scalar info */
+  double*            dDINFO; /* ptr to replicated scalar info */
+  int*               ipiv;
+  int*               dipiv;
+  int*               lindxA;
+  int*               dlindxA;
+  int*               lindxAU;
+  int*               dlindxAU;
+  int*               permU;
+  int*               dpermU;
+  double*            U;          /* ptr to U */
+  double*            dU;         /* ptr to U */
+  int*               IWORK;      /* integer workspace for swapping */
+  void*              buffers[2]; /* buffers for panel bcast */
+  int                counts[2];  /* counts for panel bcast */
+  MPI_Datatype       dtypes[2];  /* data types for panel bcast */
+  MPI_Request        request[1]; /* requests for panel bcast */
+  MPI_Status         status[1];  /* status for panel bcast */
+  int                nb;         /* distribution blocking factor */
+  int                jb;         /* panel width */
+  int                m;          /* global # of rows of trailing part of A */
+  int                n;          /* global # of cols of trailing part of A */
+  int                ia;         /* global row index of trailing part of A */
+  int                ja;         /* global col index of trailing part of A */
+  int                mp;         /* local # of rows of trailing part of A */
+  int                nq;         /* local # of cols of trailing part of A */
+  int                ii;         /* local row index of trailing part of A */
+  int                jj;         /* local col index of trailing part of A */
+  int                lda;        /* local leading dim of array A */
+  int                dlda;       /* local leading dim of array A */
+  int                prow;       /* proc. row owning 1st row of trail. A */
+  int                pcol;       /* proc. col owning 1st col of trail. A */
+  int                msgid;      /* message id for panel bcast */
+  int                ldl2;       /* local leading dim of array L2 */
+  int                dldl2;      /* local leading dim of array L2 */
+  int                len;        /* length of the buffer to broadcast */
+  unsigned int       max_pinned_work_size; /* largest size of pinned A space */
+  unsigned int       max_work_size;        /* largest size of WORK space */
+  unsigned int       max_iwork_size;       /* largest size of IWORK space */
+  unsigned int       free_work_now;        /* should we deallocate */
 } HPL_T_panel;
 
 /*
@@ -129,52 +119,30 @@ typedef struct HPL_S_panel
  */
 #include "hpl_pgesv.h"
 
-void                             HPL_pdpanel_new
-STDC_ARGS( (
-   HPL_T_grid *,
-   HPL_T_palg *,
-   const int,
-   const int,
-   const int,
-   HPL_T_pmat *,
-   const int,
-   const int,
-   const int,
-   HPL_T_panel * *
-) );
-void                             HPL_pdpanel_init
-STDC_ARGS( (
-   HPL_T_grid *,
-   HPL_T_palg *,
-   const int,
-   const int,
-   const int,
-   HPL_T_pmat *,
-   const int,
-   const int,
-   const int,
-   HPL_T_panel *
-) );
-int                              HPL_pdpanel_disp
-STDC_ARGS( (
-   HPL_T_panel * *
-) );
-int                              HPL_pdpanel_free
-STDC_ARGS( (
-   HPL_T_panel *
-) );
-void                              HPL_pdpanel_SendToHost
-STDC_ARGS( (
-   HPL_T_panel *
-) );
-void                              HPL_pdpanel_SendToDevice
-STDC_ARGS( (
-   HPL_T_panel *
-) );
-
-#if __cplusplus
-}
-#endif
+void HPL_pdpanel_new(HPL_T_grid*,
+                     HPL_T_palg*,
+                     const int,
+                     const int,
+                     const int,
+                     HPL_T_pmat*,
+                     const int,
+                     const int,
+                     const int,
+                     HPL_T_panel**);
+void HPL_pdpanel_init(HPL_T_grid*,
+                      HPL_T_palg*,
+                      const int,
+                      const int,
+                      const int,
+                      HPL_T_pmat*,
+                      const int,
+                      const int,
+                      const int,
+                      HPL_T_panel*);
+int  HPL_pdpanel_disp(HPL_T_panel**);
+int  HPL_pdpanel_free(HPL_T_panel*);
+void HPL_pdpanel_SendToHost(HPL_T_panel*);
+void HPL_pdpanel_SendToDevice(HPL_T_panel*);
 
 #endif
 /*

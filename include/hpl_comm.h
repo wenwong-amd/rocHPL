@@ -53,121 +53,69 @@
 #include "hpl_pmisc.h"
 #include "hpl_panel.h"
 
-#if __cplusplus
-extern "C" {
-#endif
-
 /*
  * ---------------------------------------------------------------------
  * #typedefs and data structures
  * ---------------------------------------------------------------------
  */
-typedef enum
-{
-   HPL_1RING         = 401,                        /* Increasing ring */
-   HPL_1RING_M       = 402,             /* Increasing ring (modified) */
-   HPL_2RING         = 403,                      /* Increasing 2-ring */
-   HPL_2RING_M       = 404,           /* Increasing 2-ring (modified) */
-   HPL_BLONG         = 405,                         /* long broadcast */
-   HPL_BLONG_M       = 406,              /* long broadcast (modified) */
-   HPL_IBCST         = 407                               /* MPI IBCST */
+typedef enum {
+  HPL_1RING   = 401, /* Increasing ring */
+  HPL_1RING_M = 402, /* Increasing ring (modified) */
+  HPL_2RING   = 403, /* Increasing 2-ring */
+  HPL_2RING_M = 404, /* Increasing 2-ring (modified) */
+  HPL_BLONG   = 405, /* long broadcast */
+  HPL_BLONG_M = 406, /* long broadcast (modified) */
+  HPL_IBCST   = 407  /* MPI IBCST */
 } HPL_T_TOP;
 /*
  * ---------------------------------------------------------------------
  * #define macro constants
  * ---------------------------------------------------------------------
  */
-#define    HPL_FAILURE            0
-#define    HPL_SUCCESS            1
-#define    HPL_KEEP_TESTING       2
+#define HPL_FAILURE 0
+#define HPL_SUCCESS 1
+#define HPL_KEEP_TESTING 2
 /*
  * ---------------------------------------------------------------------
  * comm function prototypes
  * ---------------------------------------------------------------------
  */
-int                              HPL_send
-STDC_ARGS( (
-   double *,
-   int,
-   int,
-   int,
-   MPI_Comm
-) );
-int                              HPL_recv
-STDC_ARGS( (
-   double *,
-   int,
-   int,
-   int,
-   MPI_Comm
-) );
-int                              HPL_sdrv
-STDC_ARGS( (
-   double *,
-   int,
-   int,
-   double *,
-   int,
-   int,
-   int,
-   MPI_Comm
-) );
-int                              HPL_binit
-STDC_ARGS( (
-   HPL_T_panel *
-) );
-int                              HPL_bcast
-STDC_ARGS( (
-   HPL_T_panel *,
-   int *
-) );
-int                              HPL_bwait
-STDC_ARGS( (
-   HPL_T_panel *
-) );
-int                              HPL_packL
-STDC_ARGS( (
-   HPL_T_panel *,
-   const int,
-   const int,
-   const int
-) );
-void                             HPL_copyL
-STDC_ARGS( (
-   HPL_T_panel *
-) );
+int  HPL_send(double*, int, int, int, MPI_Comm);
+int  HPL_recv(double*, int, int, int, MPI_Comm);
+int  HPL_sdrv(double*, int, int, double*, int, int, int, MPI_Comm);
+int  HPL_binit(HPL_T_panel*);
+int  HPL_bcast(HPL_T_panel*, int*);
+int  HPL_bwait(HPL_T_panel*);
+int  HPL_packL(HPL_T_panel*, const int, const int, const int);
+void HPL_copyL(HPL_T_panel*);
 
-int HPL_binit_1ring STDC_ARGS( ( HPL_T_panel *        ) );
-int HPL_bcast_1ring STDC_ARGS( ( HPL_T_panel *, int * ) );
-int HPL_bwait_1ring STDC_ARGS( ( HPL_T_panel *        ) );
+int HPL_binit_1ring(HPL_T_panel*);
+int HPL_bcast_1ring(HPL_T_panel*, int*);
+int HPL_bwait_1ring(HPL_T_panel*);
 
-int HPL_binit_1rinM STDC_ARGS( ( HPL_T_panel *        ) );
-int HPL_bcast_1rinM STDC_ARGS( ( HPL_T_panel *, int * ) );
-int HPL_bwait_1rinM STDC_ARGS( ( HPL_T_panel *        ) );
+int HPL_binit_1rinM(HPL_T_panel*);
+int HPL_bcast_1rinM(HPL_T_panel*, int*);
+int HPL_bwait_1rinM(HPL_T_panel*);
 
-int HPL_binit_2ring STDC_ARGS( ( HPL_T_panel *        ) );
-int HPL_bcast_2ring STDC_ARGS( ( HPL_T_panel *, int * ) );
-int HPL_bwait_2ring STDC_ARGS( ( HPL_T_panel *        ) );
+int HPL_binit_2ring(HPL_T_panel*);
+int HPL_bcast_2ring(HPL_T_panel*, int*);
+int HPL_bwait_2ring(HPL_T_panel*);
 
-int HPL_binit_2rinM STDC_ARGS( ( HPL_T_panel *        ) );
-int HPL_bcast_2rinM STDC_ARGS( ( HPL_T_panel *, int * ) );
-int HPL_bwait_2rinM STDC_ARGS( ( HPL_T_panel *        ) );
+int HPL_binit_2rinM(HPL_T_panel*);
+int HPL_bcast_2rinM(HPL_T_panel*, int*);
+int HPL_bwait_2rinM(HPL_T_panel*);
 
-int HPL_binit_blong STDC_ARGS( ( HPL_T_panel *        ) );
-int HPL_bcast_blong STDC_ARGS( ( HPL_T_panel *, int * ) );
-int HPL_bwait_blong STDC_ARGS( ( HPL_T_panel *        ) );
+int HPL_binit_blong(HPL_T_panel*);
+int HPL_bcast_blong(HPL_T_panel*, int*);
+int HPL_bwait_blong(HPL_T_panel*);
 
-int HPL_binit_blonM STDC_ARGS( ( HPL_T_panel *        ) );
-int HPL_bcast_blonM STDC_ARGS( ( HPL_T_panel *, int * ) );
-int HPL_bwait_blonM STDC_ARGS( ( HPL_T_panel *        ) );
+int HPL_binit_blonM(HPL_T_panel*);
+int HPL_bcast_blonM(HPL_T_panel*, int*);
+int HPL_bwait_blonM(HPL_T_panel*);
 
-int HPL_binit_ibcst STDC_ARGS( ( HPL_T_panel *        ) );
-int HPL_bcast_ibcst STDC_ARGS( ( HPL_T_panel *, int * ) );
-int HPL_bwait_ibcst STDC_ARGS( ( HPL_T_panel *        ) );
-
-#if __cplusplus
-}
-#endif
+int HPL_binit_ibcst(HPL_T_panel*);
+int HPL_bcast_ibcst(HPL_T_panel*, int*);
+int HPL_bwait_ibcst(HPL_T_panel*);
 
 #endif
 /*

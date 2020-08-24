@@ -52,52 +52,45 @@
  */
 #include "hpl_pmisc.h"
 
-#if __cplusplus
-extern "C" {
-#endif
-
 /*
  * ---------------------------------------------------------------------
  * #define macro constants
  * ---------------------------------------------------------------------
  */
-#define    HPL_NPTIMER             64
-#define    HPL_PTIMER_STARTFLAG   5.0
-#define    HPL_PTIMER_ERROR      -1.0
+#define HPL_NPTIMER 64
+#define HPL_PTIMER_STARTFLAG 5.0
+#define HPL_PTIMER_ERROR -1.0
 /*
  * ---------------------------------------------------------------------
  * type definitions
  * ---------------------------------------------------------------------
  */
-typedef enum
-{  HPL_WALL_PTIME = 101, HPL_CPU_PTIME  = 102 } HPL_T_PTIME;
+typedef enum { HPL_WALL_PTIME = 101, HPL_CPU_PTIME = 102 } HPL_T_PTIME;
 
-typedef enum
-{ HPL_AMAX_PTIME  = 201, HPL_AMIN_PTIME = 202, HPL_SUM_PTIME  = 203 }
-HPL_T_PTIME_OP;
+typedef enum {
+  HPL_AMAX_PTIME = 201,
+  HPL_AMIN_PTIME = 202,
+  HPL_SUM_PTIME  = 203
+} HPL_T_PTIME_OP;
 /*
  * ---------------------------------------------------------------------
  * Function prototypes
  * ---------------------------------------------------------------------
  */
-double          HPL_ptimer_cputime   STDC_ARGS(     ( void      ) );
-double          HPL_ptimer_walltime  STDC_ARGS(     ( void      ) );
+double HPL_ptimer_cputime(void);
+double HPL_ptimer_walltime(void);
 
-void            HPL_ptimer           STDC_ARGS(     ( const int ) );
-void            HPL_ptimer_boot      STDC_ARGS(     ( void      ) );
-void            HPL_ptimer_combine
-STDC_ARGS(
-(  MPI_Comm comm,   const HPL_T_PTIME_OP,             const HPL_T_PTIME,
-   const int,       const int,       double * ) );
-void            HPL_ptimer_disable   STDC_ARGS(     ( void      ) );
-void            HPL_ptimer_enable    STDC_ARGS(     ( void      ) );
-double          HPL_ptimer_inquire
-STDC_ARGS(
-(  const HPL_T_PTIME,                const int ) );
-
-#if __cplusplus
-}
-#endif
+void   HPL_ptimer(const int);
+void   HPL_ptimer_boot(void);
+void   HPL_ptimer_combine(MPI_Comm comm,
+                          const HPL_T_PTIME_OP,
+                          const HPL_T_PTIME,
+                          const int,
+                          const int,
+                          double*);
+void   HPL_ptimer_disable(void);
+void   HPL_ptimer_enable(void);
+double HPL_ptimer_inquire(const HPL_T_PTIME, const int);
 
 #endif
 /*

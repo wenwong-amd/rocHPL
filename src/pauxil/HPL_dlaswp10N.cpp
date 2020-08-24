@@ -1,150 +1,103 @@
-/* 
- * -- High Performance Computing Linpack Benchmark (HPL)                
- *    HPL - 2.2 - February 24, 2016                          
- *    Antoine P. Petitet                                                
- *    University of Tennessee, Knoxville                                
- *    Innovative Computing Laboratory                                 
- *    (C) Copyright 2000-2008 All Rights Reserved                       
- *                                                                      
- * -- Copyright notice and Licensing terms:                             
- *                                                                      
- * Redistribution  and  use in  source and binary forms, with or without
- * modification, are  permitted provided  that the following  conditions
- * are met:                                                             
- *                                                                      
- * 1. Redistributions  of  source  code  must retain the above copyright
- * notice, this list of conditions and the following disclaimer.        
- *                                                                      
- * 2. Redistributions in binary form must reproduce  the above copyright
- * notice, this list of conditions,  and the following disclaimer in the
- * documentation and/or other materials provided with the distribution. 
- *                                                                      
- * 3. All  advertising  materials  mentioning  features  or  use of this
- * software must display the following acknowledgement:                 
- * This  product  includes  software  developed  at  the  University  of
- * Tennessee, Knoxville, Innovative Computing Laboratory.             
- *                                                                      
- * 4. The name of the  University,  the name of the  Laboratory,  or the
- * names  of  its  contributors  may  not  be used to endorse or promote
- * products  derived   from   this  software  without  specific  written
- * permission.                                                          
- *                                                                      
- * -- Disclaimer:                                                       
- *                                                                      
- * THIS  SOFTWARE  IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES,  INCLUDING,  BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE UNIVERSITY
- * OR  CONTRIBUTORS  BE  LIABLE FOR ANY  DIRECT,  INDIRECT,  INCIDENTAL,
- * SPECIAL,  EXEMPLARY,  OR  CONSEQUENTIAL DAMAGES  (INCLUDING,  BUT NOT
- * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA OR PROFITS; OR BUSINESS INTERRUPTION)  HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT,  STRICT LIABILITY,  OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
+/* ---------------------------------------------------------------------
+ * -- High Performance Computing Linpack Benchmark (HPL)
+ *    HPL - 2.2 - February 24, 2016
+ *    Antoine P. Petitet
+ *    University of Tennessee, Knoxville
+ *    Innovative Computing Laboratory
+ *    (C) Copyright 2000-2008 All Rights Reserved
+ *
+ *    Modified by: Noel Chalmers
+ *    (C) 2018-2020 Advanced Micro Devices, Inc.
+ *    See the rocHPL/LICENCE file for details.
+ *
+ *    SPDX-License-Identifier: (BSD-3-Clause)
  * ---------------------------------------------------------------------
- */ 
-/*
- * Include files
  */
+
 #include "hpl.h"
 #include <hip/hip_runtime.h>
 /*
  * Define default value for unrolling factor
  */
 #ifndef HPL_LASWP10N_DEPTH
-#define    HPL_LASWP10N_DEPTH       32
-#define    HPL_LASWP10N_LOG2_DEPTH   5
+#define HPL_LASWP10N_DEPTH 32
+#define HPL_LASWP10N_LOG2_DEPTH 5
 #endif
 
 #define BLOCK_SIZE 512
 
-__global__ void dlaswp10N(const int M, const int N,
-                     double* __restrict__ A,
-                     const int LDA,
-                     const int* __restrict__ IPIV) {
+__global__ void dlaswp10N(const int M,
+                          const int N,
+                          double* __restrict__ A,
+                          const int LDA,
+                          const int* __restrict__ IPIV) {
 
-   const int m = threadIdx.x + BLOCK_SIZE * blockIdx.x;
+  const int m = threadIdx.x + BLOCK_SIZE * blockIdx.x;
 
-   if (m<M) {
-      for (int i=0;i<N;i++) {
-         const int ip = IPIV[i];
+  if(m < M) {
+    for(int i = 0; i < N; i++) {
+      const int ip = IPIV[i];
 
-         if (ip!=i) {
-            //swap
-            const double Ai  = A[m+i*((size_t)LDA)];
-            const double Aip = A[m+ip*((size_t)LDA)];
-            A[m+i*((size_t)LDA)]  = Aip;
-            A[m+ip*((size_t)LDA)] = Ai;
-         }
+      if(ip != i) {
+        // swap
+        const double Ai           = A[m + i * ((size_t)LDA)];
+        const double Aip          = A[m + ip * ((size_t)LDA)];
+        A[m + i * ((size_t)LDA)]  = Aip;
+        A[m + ip * ((size_t)LDA)] = Ai;
       }
-   }
+    }
+  }
 }
 
-#ifdef STDC_HEADERS
-void HPL_dlaswp10N
-(
-   const int                        M,
-   const int                        N,
-   double *                         A,
-   const int                        LDA,
-   const int *                      IPIV
-)
-#else
-void HPL_dlaswp10N
-( M, N, A, LDA, IPIV )
-   const int                        M;
-   const int                        N;
-   double *                         A;
-   const int                        LDA;
-   const int *                      IPIV;
-#endif
-{
-/* 
- * Purpose
- * =======
- *
- * HPL_dlaswp10N performs a sequence  of  local column interchanges on a
- * matrix A.  One column interchange is initiated  for columns 0 through
- * N-1 of A.
- *
- * Arguments
- * =========
- *
- * M       (local input)                 const int
- *         __arg0__
- *
- * N       (local input)                 const int
- *         On entry,  M  specifies  the number of rows of the array A. M
- *         must be at least zero.
- *
- * A       (local input/output)          double *
- *         On entry, N specifies the number of columns of the array A. N
- *         must be at least zero.
- *
- * LDA     (local input)                 const int
- *         On entry, A  points to an  array of  dimension (LDA,N).  This
- *         array contains the columns onto which the interchanges should
- *         be applied. On exit, A contains the permuted matrix.
- *
- * IPIV    (local input)                 const int *
- *         On entry, LDA specifies the leading dimension of the array A.
- *         LDA must be at least MAX(1,M).
- *
- * ---------------------------------------------------------------------
- */ 
+void HPL_dlaswp10N(const int  M,
+                   const int  N,
+                   double*    A,
+                   const int  LDA,
+                   const int* IPIV) {
+  /*
+   * Purpose
+   * =======
+   *
+   * HPL_dlaswp10N performs a sequence  of  local column interchanges on a
+   * matrix A.  One column interchange is initiated  for columns 0 through
+   * N-1 of A.
+   *
+   * Arguments
+   * =========
+   *
+   * M       (local input)                 const int
+   *         __arg0__
+   *
+   * N       (local input)                 const int
+   *         On entry,  M  specifies  the number of rows of the array A. M
+   *         must be at least zero.
+   *
+   * A       (local input/output)          double *
+   *         On entry, N specifies the number of columns of the array A. N
+   *         must be at least zero.
+   *
+   * LDA     (local input)                 const int
+   *         On entry, A  points to an  array of  dimension (LDA,N).  This
+   *         array contains the columns onto which the interchanges should
+   *         be applied. On exit, A contains the permuted matrix.
+   *
+   * IPIV    (local input)                 const int *
+   *         On entry, LDA specifies the leading dimension of the array A.
+   *         LDA must be at least MAX(1,M).
+   *
+   * ---------------------------------------------------------------------
+   */
 
+  if((M <= 0) || (N <= 0)) return;
 
-   if( ( M <= 0 ) || ( N <= 0 ) ) return;
+  hipStream_t stream;
+  rocblas_get_stream(handle, &stream);
 
-   hipStream_t stream;
-   rocblas_get_stream(handle, &stream);
+  dim3 grid_size((M + BLOCK_SIZE - 1) / BLOCK_SIZE);
+  hipLaunchKernelGGL(
+      (dlaswp10N), grid_size, dim3(BLOCK_SIZE), 0, stream, M, N, A, LDA, IPIV);
 
-   dim3 grid_size((M+BLOCK_SIZE-1)/BLOCK_SIZE);
-   hipLaunchKernelGGL((dlaswp10N), grid_size, dim3(BLOCK_SIZE), 0, stream,
-                              M, N, A, LDA, IPIV);
-
-//original
+// original
 #if 0
 /*
  * .. Local Variables ..
@@ -171,20 +124,20 @@ void HPL_dlaswp10N
          for( i = 0; i < mu; i += incA, a0 += incA, a1 += incA )
          {
             r = *a0;    *a0    = *a1;    *a1    = r;
-#if ( HPL_LASWP10N_DEPTH >  1 )
+#if(HPL_LASWP10N_DEPTH > 1)
             r = a0[ 1]; a0[ 1] = a1[ 1]; a1[ 1] = r;
 #endif
-#if ( HPL_LASWP10N_DEPTH >  2 )
+#if(HPL_LASWP10N_DEPTH > 2)
             r = a0[ 2]; a0[ 2] = a1[ 2]; a1[ 2] = r;
             r = a0[ 3]; a0[ 3] = a1[ 3]; a1[ 3] = r;
 #endif
-#if ( HPL_LASWP10N_DEPTH >  4 )
+#if(HPL_LASWP10N_DEPTH > 4)
             r = a0[ 4]; a0[ 4] = a1[ 4]; a1[ 4] = r;
             r = a0[ 5]; a0[ 5] = a1[ 5]; a1[ 5] = r;
             r = a0[ 6]; a0[ 6] = a1[ 6]; a1[ 6] = r;
             r = a0[ 7]; a0[ 7] = a1[ 7]; a1[ 7] = r;
 #endif
-#if ( HPL_LASWP10N_DEPTH >  8 )
+#if(HPL_LASWP10N_DEPTH > 8)
             r = a0[ 8]; a0[ 8] = a1[ 8]; a1[ 8] = r;
             r = a0[ 9]; a0[ 9] = a1[ 9]; a1[ 9] = r;
             r = a0[10]; a0[10] = a1[10]; a1[10] = r;
@@ -194,7 +147,7 @@ void HPL_dlaswp10N
             r = a0[14]; a0[14] = a1[14]; a1[14] = r;
             r = a0[15]; a0[15] = a1[15]; a1[15] = r;
 #endif
-#if ( HPL_LASWP10N_DEPTH > 16 )
+#if(HPL_LASWP10N_DEPTH > 16)
             r = a0[16]; a0[16] = a1[16]; a1[16] = r;
             r = a0[17]; a0[17] = a1[17]; a1[17] = r;
             r = a0[18]; a0[18] = a1[18]; a1[18] = r;
@@ -219,7 +172,4 @@ void HPL_dlaswp10N
       }
    }
 #endif
-/*
- * End of HPL_dlaswp10N
- */
 }

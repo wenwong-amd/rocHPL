@@ -61,300 +61,162 @@
 #include "hpl_panel.h"
 #include "hpl_pfact.h"
 
-#if __cplusplus
-extern "C" {
-#endif
 /*
  * ---------------------------------------------------------------------
  * #typedefs and data structures
  * ---------------------------------------------------------------------
  */
-typedef enum
-{
-   HPL_SWAP00        = 451,                      /* Use HPL_pdlaswp00 */
-   HPL_SWAP01        = 452,                      /* Use HPL_pdlaswp01 */
-   HPL_SW_MIX        = 453, /* Use HPL_pdlaswp00_ for small number of */
-                            /* columns, and HPL_pdlaswp01_ otherwise. */
-   HPL_NO_SWP        = 499
+typedef enum {
+  HPL_SWAP00 = 451, /* Use HPL_pdlaswp00 */
+  HPL_SWAP01 = 452, /* Use HPL_pdlaswp01 */
+  HPL_SW_MIX = 453, /* Use HPL_pdlaswp00_ for small number of */
+                    /* columns, and HPL_pdlaswp01_ otherwise. */
+  HPL_NO_SWP = 499
 } HPL_T_SWAP;
 
-typedef struct HPL_S_palg
-{
-   HPL_T_TOP           btopo;               /* row broadcast topology */
-   int                 depth;                     /* look-ahead depth */
-   int                 nbdiv;            /* recursive division factor */
-   int                 nbmin;         /* recursion stopping criterium */
-   HPL_T_FACT          pfact;                   /* panel fact variant */
-   HPL_T_FACT          rfact;               /* recursive fact variant */
-   HPL_T_PFA_FUN       pffun;              /* panel fact function ptr */
-   HPL_T_RFA_FUN       rffun;          /* recursive fact function ptr */
-   HPL_T_UPD_FUN       upfun;                      /* update function */
-   HPL_T_SWAP          fswap;                   /* Swapping algorithm */
-   int                 fsthr;                   /* Swapping threshold */
-   int                 equil;                        /* Equilibration */
-   int                 align;              /* data alignment constant */
+typedef struct HPL_S_palg {
+  HPL_T_TOP     btopo; /* row broadcast topology */
+  int           depth; /* look-ahead depth */
+  int           nbdiv; /* recursive division factor */
+  int           nbmin; /* recursion stopping criterium */
+  HPL_T_FACT    pfact; /* panel fact variant */
+  HPL_T_FACT    rfact; /* recursive fact variant */
+  HPL_T_PFA_FUN pffun; /* panel fact function ptr */
+  HPL_T_RFA_FUN rffun; /* recursive fact function ptr */
+  HPL_T_UPD_FUN upfun; /* update function */
+  HPL_T_SWAP    fswap; /* Swapping algorithm */
+  int           fsthr; /* Swapping threshold */
+  int           equil; /* Equilibration */
+  int           align; /* data alignment constant */
 } HPL_T_palg;
 
-typedef struct HPL_S_pmat
-{
-#ifdef HPL_CALL_VSIPL
-   vsip_block_d        * block;
-#endif
-   double              * A;            /* pointer to local piece of A */
-   double              *dA;            /* pointer to local piece of A */
-   double              * X;             /* pointer to solution vector */
-   double              *dX;             /* pointer to solution vector */
-   int                 n;                      /* global problem size */
-   int                 nb;                         /* blocking factor */
-   int                 ld;                 /* local leading dimension */
-   int                 mp;                    /* local number of rows */
-   int                 nq;                 /* local number of columns */
-   int                 info;                    /* computational flag */
-   double              *XR;
-   double              *XC;
-   double              *dXR;
-   double              *dXC;
-   double              *W;
-   double              *dW;
+typedef struct HPL_S_pmat {
+  double* A;    /* pointer to local piece of A */
+  double* dA;   /* pointer to local piece of A */
+  double* X;    /* pointer to solution vector */
+  double* dX;   /* pointer to solution vector */
+  int     n;    /* global problem size */
+  int     nb;   /* blocking factor */
+  int     ld;   /* local leading dimension */
+  int     mp;   /* local number of rows */
+  int     nq;   /* local number of columns */
+  int     info; /* computational flag */
+  double* XR;
+  double* XC;
+  double* dXR;
+  double* dXC;
+  double* W;
+  double* dW;
 } HPL_T_pmat;
 /*
  * ---------------------------------------------------------------------
  * #define macro constants
  * ---------------------------------------------------------------------
  */
-#define    MSGID_BEGIN_PFACT   1001              /* message id ranges */
-#define    MSGID_END_PFACT     2000
-#define    MSGID_BEGIN_FACT    2001
-#define    MSGID_END_FACT      3000
-#define    MSGID_BEGIN_PTRSV   3001
-#define    MSGID_END_PTRSV     4000
+#define MSGID_BEGIN_PFACT 1001 /* message id ranges */
+#define MSGID_END_PFACT 2000
+#define MSGID_BEGIN_FACT 2001
+#define MSGID_END_FACT 3000
+#define MSGID_BEGIN_PTRSV 3001
+#define MSGID_END_PTRSV 4000
 
-#define    MSGID_BEGIN_COLL    9001
-#define    MSGID_END_COLL     10000
+#define MSGID_BEGIN_COLL 9001
+#define MSGID_END_COLL 10000
 /*
  * ---------------------------------------------------------------------
  * #define macros definitions
  * ---------------------------------------------------------------------
  */
-#define    MNxtMgid( id_, beg_, end_ ) \
-                             (( (id_)+1 > (end_) ?  (beg_) : (id_)+1 ))
+#define MNxtMgid(id_, beg_, end_) (((id_) + 1 > (end_) ? (beg_) : (id_) + 1))
 /*
  * ---------------------------------------------------------------------
  * Function prototypes
  * ---------------------------------------------------------------------
  */
-void                             HPL_pipid
-STDC_ARGS( (
-   HPL_T_panel *,
-   int *,
-   int *
-) );
-void                             HPL_plindx0
-STDC_ARGS( (
-   HPL_T_panel *,
-   const int,
-   int *,
-   int *,
-   int *,
-   int *
-) );
-void                             HPL_pdlaswp00N
-STDC_ARGS( (
-   HPL_T_panel *,
-   int *,
-   HPL_T_panel *,
-   const int
-) );
-void                             HPL_pdlaswp00T
-STDC_ARGS( (
-   HPL_T_panel *,
-   int *,
-   HPL_T_panel *,
-   const int
-) );
+void HPL_pipid(HPL_T_panel*, int*, int*);
+void HPL_plindx0(HPL_T_panel*, const int, int*, int*, int*, int*);
+void HPL_pdlaswp00N(HPL_T_panel*, int*, HPL_T_panel*, const int);
+void HPL_pdlaswp00T(HPL_T_panel*, int*, HPL_T_panel*, const int);
 
-void                             HPL_perm
-STDC_ARGS( (
-   const int,
-   int *,
-   int *,
-   int *
-) );
-void                             HPL_logsort
-STDC_ARGS( (
-   const int,
-   const int,
-   int *,
-   int *,
-   int *
-) );
-void                             HPL_plindx10
-STDC_ARGS( (
-   HPL_T_panel *,
-   const int,
-   const int *,
-   int *,
-   int *,
-   int *
-) );
-void                             HPL_plindx1
-STDC_ARGS( (
-   HPL_T_panel *,
-   const int,
-   const int *,
-   int *,
-   int *,
-   int *,
-   int *,
-   int *,
-   int *,
-   int *,
-   int *
-) );
-void                             HPL_spreadN
-STDC_ARGS( (
-   HPL_T_panel *,
-   int *,
-   HPL_T_panel *,
-   const enum HPL_SIDE,
-   const int,
-   double *,
-   const int,
-   const int,
-   const int *,
-   const int *,
-   const int *
-) );
-void                             HPL_spreadT
-STDC_ARGS( (
-   HPL_T_panel *,
-   int *,
-   HPL_T_panel *,
-   const enum HPL_SIDE,
-   const int,
-   double *,
-   const int,
-   const int,
-   const int *,
-   const int *,
-   const int *
-) );
-void                             HPL_equil
-STDC_ARGS( (
-   HPL_T_panel *,
-   int *,
-   HPL_T_panel *,
-   const enum HPL_TRANS,
-   const int,
-   double *,
-   const int,
-   int *,
-   const int *,
-   const int *,
-   int *
-) );
-void                             HPL_rollN
-STDC_ARGS( (
-   HPL_T_panel *,
-   int *,
-   HPL_T_panel *,
-   const int,
-   double *,
-   const int,
-   const int *,
-   const int *,
-   const int *
-) );
-void                             HPL_rollT
-STDC_ARGS( (
-   HPL_T_panel *,
-   int *,
-   HPL_T_panel *,
-   const int,
-   double *,
-   const int,
-   const int *,
-   const int *,
-   const int *
-) );
-void                             HPL_pdlaswp01N
-STDC_ARGS( (
-   HPL_T_panel *,
-   int *,
-   HPL_T_panel *,
-   const int
-) );
-void                             HPL_pdlaswp01T
-STDC_ARGS( (
-   HPL_T_panel *,
-   int *,
-   HPL_T_panel *,
-   const int
-) );
+void HPL_perm(const int, int*, int*, int*);
+void HPL_logsort(const int, const int, int*, int*, int*);
+void HPL_plindx1(HPL_T_panel*, const int, const int*, int*, int*, int*);
+void HPL_plindx1(HPL_T_panel*,
+                 const int,
+                 const int*,
+                 int*,
+                 int*,
+                 int*,
+                 int*,
+                 int*,
+                 int*,
+                 int*,
+                 int*);
+void HPL_spreadN(HPL_T_panel*,
+                 int*,
+                 HPL_T_panel*,
+                 const enum HPL_SIDE,
+                 const int,
+                 double*,
+                 const int,
+                 const int,
+                 const int*,
+                 const int*,
+                 const int*);
+void HPL_spreadT(HPL_T_panel*,
+                 int*,
+                 HPL_T_panel*,
+                 const enum HPL_SIDE,
+                 const int,
+                 double*,
+                 const int,
+                 const int,
+                 const int*,
+                 const int*,
+                 const int*);
+void HPL_equil(HPL_T_panel*,
+               int*,
+               HPL_T_panel*,
+               const enum HPL_TRANS,
+               const int,
+               double*,
+               const int,
+               int*,
+               const int*,
+               const int*,
+               int*);
+void HPL_rollN(HPL_T_panel*,
+               int*,
+               HPL_T_panel*,
+               const int,
+               double*,
+               const int,
+               const int*,
+               const int*,
+               const int*);
+void HPL_rollT(HPL_T_panel*,
+               int*,
+               HPL_T_panel*,
+               const int,
+               double*,
+               const int,
+               const int*,
+               const int*,
+               const int*);
+void HPL_pdlaswp01N(HPL_T_panel*, int*, HPL_T_panel*, const int);
+void HPL_pdlaswp01T(HPL_T_panel*, int*, HPL_T_panel*, const int);
 
-void                             HPL_pdupdateNN
-STDC_ARGS( (
-   HPL_T_panel *,
-   int *,
-   HPL_T_panel *,
-   const int
-) );
-void                             HPL_pdupdateNT
-STDC_ARGS( (
-   HPL_T_panel *,
-   int *,
-   HPL_T_panel *,
-   const int
-) );
-void                             HPL_pdupdateTN
-STDC_ARGS( (
-   HPL_T_panel *,
-   int *,
-   HPL_T_panel *,
-   const int
-) );
-void                             HPL_pdupdateTT
-STDC_ARGS( (
-   HPL_T_panel *,
-   int *,
-   HPL_T_panel *,
-   const int
-) );
+void HPL_pdupdateNN(HPL_T_panel*, int*, HPL_T_panel*, const int);
+void HPL_pdupdateNT(HPL_T_panel*, int*, HPL_T_panel*, const int);
+void HPL_pdupdateTN(HPL_T_panel*, int*, HPL_T_panel*, const int);
+void HPL_pdupdateTT(HPL_T_panel*, int*, HPL_T_panel*, const int);
 
-void                             HPL_pdgesv0
-STDC_ARGS( (
-   HPL_T_grid *,
-   HPL_T_palg *,
-   HPL_T_pmat *
-) );
-void                             HPL_pdgesvK1
-STDC_ARGS( (
-   HPL_T_grid *,
-   HPL_T_palg *,
-   HPL_T_pmat *
-) );
-void                             HPL_pdgesvK2
-STDC_ARGS( (
-   HPL_T_grid *,
-   HPL_T_palg *,
-   HPL_T_pmat *
-) );
-void                             HPL_pdgesv
-STDC_ARGS( (
-   HPL_T_grid *,
-   HPL_T_palg *,
-   HPL_T_pmat *
-) );
+void HPL_pdgesv0(HPL_T_grid*, HPL_T_palg*, HPL_T_pmat*);
+void HPL_pdgesvK1(HPL_T_grid*, HPL_T_palg*, HPL_T_pmat*);
+void HPL_pdgesvK2(HPL_T_grid*, HPL_T_palg*, HPL_T_pmat*);
+void HPL_pdgesv(HPL_T_grid*, HPL_T_palg*, HPL_T_pmat*);
 
-void                             HPL_pdtrsv
-STDC_ARGS( (
-   HPL_T_grid *,
-   HPL_T_pmat *
-) );
-
-#if __cplusplus
-}
-#endif
+void HPL_pdtrsv(HPL_T_grid*, HPL_T_pmat*);
 
 #endif
 /*

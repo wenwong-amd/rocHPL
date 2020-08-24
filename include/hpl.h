@@ -50,33 +50,8 @@
  * HPL default compile options that can overridden in the Make.<arch>
  * ---------------------------------------------------------------------
  */
-#ifndef HPL_NO_MPI_DATATYPE         /* Use MPI user-defined data type */
-#define HPL_USE_MPI_DATATYPE
-#endif
-
-#ifndef HPL_COPY_L  /* do not copy L, use MPI user-defined data types */
-#define HPL_NO_COPY_L
-#endif
-
-#ifndef HPL_DETAILED_TIMING         /* Do not enable detailed timings */
+#ifndef HPL_DETAILED_TIMING /* Do not enable detailed timings */
 #define HPL_NO_DETAILED_TIMING
-#endif
-
-// Check supported options in ROCM port
-#ifdef HPL_CALL_VSIPL
-#error "HPL_CALL_VSIPL not supported"
-#endif
-#ifdef HPL_USE_MPI_DATATYPE
-#error "HPL_USE_MPI_DATATYPE not supported"
-#endif
-#ifdef HPL_NO_COPY_L
-#error "HPL_NO_COPY_L not supported"
-#endif
-
-#ifndef HPL_CALL_VSIPL          /* Call the Fortran 77 BLAS interface */
-#ifndef HPL_CALL_CBLAS                       /* there can be only one */
-#define HPL_CALL_FBLAS
-#endif
 #endif
 /*
  * ---------------------------------------------------------------------
@@ -103,7 +78,6 @@
 #include "hpl_ptimer.h"
 #include "hpl_pmatgen.h"
 #include "hpl_ptest.h"
-
 
 #endif
 /*

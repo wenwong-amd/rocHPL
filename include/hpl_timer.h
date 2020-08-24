@@ -52,44 +52,33 @@
  */
 #include "hpl_misc.h"
 
-#if __cplusplus
-extern "C" {
-#endif
-
 /*
  * ---------------------------------------------------------------------
  * #define macro constants
  * ---------------------------------------------------------------------
  */
-#define    HPL_NTIMER              64
-#define    HPL_TIMER_STARTFLAG    5.0
-#define    HPL_TIMER_ERROR       -1.0
+#define HPL_NTIMER 64
+#define HPL_TIMER_STARTFLAG 5.0
+#define HPL_TIMER_ERROR -1.0
 /*
  * ---------------------------------------------------------------------
  * type definitions
  * ---------------------------------------------------------------------
  */
-typedef enum
-{  HPL_WALL_TIME = 101, HPL_CPU_TIME  = 102 } HPL_T_TIME;
+typedef enum { HPL_WALL_TIME = 101, HPL_CPU_TIME = 102 } HPL_T_TIME;
 /*
  * ---------------------------------------------------------------------
  * Function prototypes
  * ---------------------------------------------------------------------
  */
-double          HPL_timer_cputime    STDC_ARGS(     ( void      ) );
-double          HPL_timer_walltime   STDC_ARGS(     ( void      ) );
+double HPL_timer_cputime(void);
+double HPL_timer_walltime(void);
 
-void            HPL_timer            STDC_ARGS(     ( const int ) );
-void            HPL_timer_boot       STDC_ARGS(     ( void      ) );
-void            HPL_timer_enable     STDC_ARGS(     ( void      ) );
-void            HPL_timer_disable    STDC_ARGS(     ( void      ) );
-double          HPL_timer_inquire
-STDC_ARGS(
-(  const HPL_T_TIME,                 const int ) );
-
-#if __cplusplus
-}
-#endif
+void   HPL_timer(const int);
+void   HPL_timer_boot(void);
+void   HPL_timer_enable(void);
+void   HPL_timer_disable(void);
+double HPL_timer_inquire(const HPL_T_TIME, const int);
 
 #endif
 /*

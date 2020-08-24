@@ -58,165 +58,42 @@
 #include "hpl_pauxil.h"
 #include "hpl_panel.h"
 
-#if __cplusplus
-extern "C" {
-#endif
 /*
  * ---------------------------------------------------------------------
  * #typedefs and data structures
  * ---------------------------------------------------------------------
  */
-typedef void (*HPL_T_PFA_FUN)
-(  HPL_T_panel *,   const int,       const int,       const int,
-   double * );
-typedef void (*HPL_T_RFA_FUN)
-(  HPL_T_panel *,   const int,       const int,       const int,
-   double * );
-typedef void (*HPL_T_UPD_FUN)
-(  HPL_T_panel *,   int *,           HPL_T_panel *,   const int );
+typedef void (
+    *HPL_T_PFA_FUN)(HPL_T_panel*, const int, const int, const int, double*);
+typedef void (
+    *HPL_T_RFA_FUN)(HPL_T_panel*, const int, const int, const int, double*);
+typedef void (*HPL_T_UPD_FUN)(HPL_T_panel*, int*, HPL_T_panel*, const int);
 /*
  * ---------------------------------------------------------------------
  * Function prototypes
  * ---------------------------------------------------------------------
  */
-void                             HPL_dlocmax
-STDC_ARGS( (
-   HPL_T_panel *,
-   const int,
-   const int,
-   const int,
-   double *
-) );
+void HPL_dlocmax(HPL_T_panel*, const int, const int, const int, double*);
 
-void                             HPL_dlocswpN
-STDC_ARGS( (
-   HPL_T_panel *,
-   const int,
-   const int,
-   double *
-) );
-void                             HPL_dlocswpT
-STDC_ARGS( (
-   HPL_T_panel *,
-   const int,
-   const int,
-   double *
-) );
-void                             HPL_pdmxswp
-STDC_ARGS( (
-   HPL_T_panel *,
-   const int,
-   const int,
-   const int,
-   double *
-) );
+void HPL_dlocswpN(HPL_T_panel*, const int, const int, double*);
+void HPL_dlocswpT(HPL_T_panel*, const int, const int, double*);
+void HPL_pdmxswp(HPL_T_panel*, const int, const int, const int, double*);
 
-void                             HPL_pdpancrN
-STDC_ARGS( (
-   HPL_T_panel *,
-   const int,
-   const int,
-   const int,
-   double *
-) );
-void                             HPL_pdpancrT
-STDC_ARGS( (
-   HPL_T_panel *,
-   const int,
-   const int,
-   const int,
-   double *
-) );
-void                             HPL_pdpanllN
-STDC_ARGS( (
-   HPL_T_panel *,
-   const int,
-   const int,
-   const int,
-   double *
-) );
-void                             HPL_pdpanllT
-STDC_ARGS( (
-   HPL_T_panel *,
-   const int,
-   const int,
-   const int,
-   double *
-) );
-void                             HPL_pdpanrlN
-STDC_ARGS( (
-   HPL_T_panel *,
-   const int,
-   const int,
-   const int,
-   double *
-) );
-void                             HPL_pdpanrlT
-STDC_ARGS( (
-   HPL_T_panel *,
-   const int,
-   const int,
-   const int,
-   double *
-) );
+void HPL_pdpancrN(HPL_T_panel*, const int, const int, const int, double*);
+void HPL_pdpancrT(HPL_T_panel*, const int, const int, const int, double*);
+void HPL_pdpanllN(HPL_T_panel*, const int, const int, const int, double*);
+void HPL_pdpanllT(HPL_T_panel*, const int, const int, const int, double*);
+void HPL_pdpanrlN(HPL_T_panel*, const int, const int, const int, double*);
+void HPL_pdpanrlT(HPL_T_panel*, const int, const int, const int, double*);
 
-void                             HPL_pdrpancrN
-STDC_ARGS( (
-   HPL_T_panel *,
-   const int,
-   const int,
-   const int,
-   double *
-) );
-void                             HPL_pdrpancrT
-STDC_ARGS( (
-   HPL_T_panel *,
-   const int,
-   const int,
-   const int,
-   double *
-) );
-void                             HPL_pdrpanllN
-STDC_ARGS( (
-   HPL_T_panel *,
-   const int,
-   const int,
-   const int,
-   double *
-) );
-void                             HPL_pdrpanllT
-STDC_ARGS( (
-   HPL_T_panel *,
-   const int,
-   const int,
-   const int,
-   double *
-) );
-void                             HPL_pdrpanrlN
-STDC_ARGS( (
-   HPL_T_panel *,
-   const int,
-   const int,
-   const int,
-   double *
-) );
-void                             HPL_pdrpanrlT
-STDC_ARGS( (
-   HPL_T_panel *,
-   const int,
-   const int,
-   const int,
-   double *
-) );
+void HPL_pdrpancrN(HPL_T_panel*, const int, const int, const int, double*);
+void HPL_pdrpancrT(HPL_T_panel*, const int, const int, const int, double*);
+void HPL_pdrpanllN(HPL_T_panel*, const int, const int, const int, double*);
+void HPL_pdrpanllT(HPL_T_panel*, const int, const int, const int, double*);
+void HPL_pdrpanrlN(HPL_T_panel*, const int, const int, const int, double*);
+void HPL_pdrpanrlT(HPL_T_panel*, const int, const int, const int, double*);
 
-void                             HPL_pdfact
-STDC_ARGS( (
-   HPL_T_panel *
-) );
-
-#if __cplusplus
-}
-#endif
+void HPL_pdfact(HPL_T_panel*);
 
 #endif
 /*

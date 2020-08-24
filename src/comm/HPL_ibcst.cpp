@@ -1,4 +1,4 @@
-/*
+/* ---------------------------------------------------------------------
  * -- High Performance Computing Linpack Benchmark (HPL)
  *    HPL - 2.2 - February 24, 2016
  *    Antoine P. Petitet
@@ -6,192 +6,84 @@
  *    Innovative Computing Laboratory
  *    (C) Copyright 2000-2008 All Rights Reserved
  *
- * -- Copyright notice and Licensing terms:
+ *    Modified by: Noel Chalmers
+ *    (C) 2018-2020 Advanced Micro Devices, Inc.
+ *    See the rocHPL/LICENCE file for details.
  *
- * Redistribution  and  use in  source and binary forms, with or without
- * modification, are  permitted provided  that the following  conditions
- * are met:
- *
- * 1. Redistributions  of  source  code  must retain the above copyright
- * notice, this list of conditions and the following disclaimer.
- *
- * 2. Redistributions in binary form must reproduce  the above copyright
- * notice, this list of conditions,  and the following disclaimer in the
- * documentation and/or other materials provided with the distribution.
- *
- * 3. All  advertising  materials  mentioning  features  or  use of this
- * software must display the following acknowledgement:
- * This  product  includes  software  developed  at  the  University  of
- * Tennessee, Knoxville, Innovative Computing Laboratory.
- *
- * 4. The name of the  University,  the name of the  Laboratory,  or the
- * names  of  its  contributors  may  not  be used to endorse or promote
- * products  derived   from   this  software  without  specific  written
- * permission.
- *
- * -- Disclaimer:
- *
- * THIS  SOFTWARE  IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES,  INCLUDING,  BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE UNIVERSITY
- * OR  CONTRIBUTORS  BE  LIABLE FOR ANY  DIRECT,  INDIRECT,  INCIDENTAL,
- * SPECIAL,  EXEMPLARY,  OR  CONSEQUENTIAL DAMAGES  (INCLUDING,  BUT NOT
- * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA OR PROFITS; OR BUSINESS INTERRUPTION)  HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT,  STRICT LIABILITY,  OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *    SPDX-License-Identifier: (BSD-3-Clause)
  * ---------------------------------------------------------------------
  */
-/*
- * Include files
- */
+
 #include "hpl.h"
 
-#ifdef HPL_NO_MPI_DATATYPE  /* The user insists to not use MPI types */
-#ifndef HPL_COPY_L       /* and also want to avoid the copy of L ... */
-#define HPL_COPY_L   /* well, sorry, can not do that: force the copy */
-#endif
-#endif
+int HPL_binit_ibcst(HPL_T_panel* PANEL) {
 
-#ifdef STDC_HEADERS
-int HPL_binit_ibcst
-(
-   HPL_T_panel *              PANEL
-)
-#else
-int HPL_binit_ibcst( PANEL )
-   HPL_T_panel *              PANEL;
-#endif
-{
-#ifdef HPL_USE_MPI_DATATYPE
-/*
- * .. Local Variables ..
- */
-   int                        ierr;
-#endif
-/* ..
- * .. Executable Statements ..
- */
-   if( PANEL == NULL )           { return( HPL_SUCCESS ); }
-   if( PANEL->grid->npcol <= 1 ) { return( HPL_SUCCESS ); }
-#ifdef HPL_USE_MPI_DATATYPE
-#ifdef HPL_COPY_L
-/*
- * Copy the panel into a contiguous buffer
- */
-   HPL_copyL( PANEL );
-#endif
-/*
- * Create the MPI user-defined data type
- */
-   ierr = HPL_packL( PANEL, 0, PANEL->len, 0 );
+  if(PANEL == NULL) { return (HPL_SUCCESS); }
+  if(PANEL->grid->npcol <= 1) { return (HPL_SUCCESS); }
 
-   return( ( ierr == MPI_SUCCESS ? HPL_SUCCESS : HPL_FAILURE ) );
-#else
-/*
- * Force the copy of the panel into a contiguous buffer
- */
-   HPL_copyL( PANEL );
+  /*
+   * Force the copy of the panel into a contiguous buffer
+   */
+  HPL_copyL(PANEL);
 
-   return( HPL_SUCCESS );
-#endif
+  return (HPL_SUCCESS);
 }
-
-#ifdef HPL_USE_MPI_DATATYPE
-
-#define   _M_BUFF     PANEL->buffers[0]
-#define   _M_COUNT    PANEL->counts[0]
-#define   _M_TYPE     PANEL->dtypes[0]
-
-#else
 
 #if defined(GPU_AWARE_MPI)
-#define   _M_BUFF     (void *)(PANEL->dL2)
+#define _M_BUFF (void*)(PANEL->dL2)
 #else
-#define   _M_BUFF     (void *)(PANEL->L2)
+#define _M_BUFF (void*)(PANEL->L2)
 #endif
 
-#define   _M_COUNT    PANEL->len
-#define   _M_TYPE     MPI_DOUBLE
+#define _M_COUNT PANEL->len
+#define _M_TYPE MPI_DOUBLE
 
 #endif
 
-static MPI_Request request = MPI_REQUEST_NULL;
+static MPI_Request request  = MPI_REQUEST_NULL;
 static MPI_Request request2 = MPI_REQUEST_NULL;
 
-#ifdef STDC_HEADERS
-int HPL_bcast_ibcst
-(
-   HPL_T_panel                * PANEL,
-   int                        * IFLAG
-)
-#else
-int HPL_bcast_ibcst( PANEL, IFLAG )
-   HPL_T_panel                * PANEL;
-   int                        * IFLAG;
-#endif
-{
-/*
- * .. Local Variables ..
- */
-   MPI_Comm                   comm;
-   int                        ierr, ierr2, go, next, msgid, prev, rank, root,
-                              size;
-/* ..
- * .. Executable Statements ..
- */
-   if( PANEL == NULL ) { *IFLAG = HPL_SUCCESS; return( HPL_SUCCESS ); }
-   if( ( size = PANEL->grid->npcol ) <= 1 )
-   {                     *IFLAG = HPL_SUCCESS; return( HPL_SUCCESS ); }
+int HPL_bcast_ibcst(HPL_T_panel* PANEL, int* IFLAG) {
 
-   rank = PANEL->grid->mycol; comm  = PANEL->grid->row_comm;
-   root = PANEL->pcol;        msgid = PANEL->msgid;
+  MPI_Comm comm;
+  int      ierr, ierr2, go, next, msgid, prev, rank, root, size;
 
-   ierr = MPI_Ibcast( _M_BUFF, _M_COUNT, _M_TYPE, root, comm, &request);
-   ierr2 = MPI_Ibcast( PANEL->ipiv, PANEL->jb, MPI_INT, root, comm, &request2);
-/*
- * If the message was received and being forwarded,  return HPL_SUCCESS.
- * If an error occured in an MPI call, return HPL_FAILURE.
- */
-   *IFLAG = ( ierr == MPI_SUCCESS ? HPL_SUCCESS : HPL_FAILURE );
-   *IFLAG = ( ierr2 == MPI_SUCCESS ? *IFLAG : HPL_FAILURE );
+  if(PANEL == NULL) {
+    *IFLAG = HPL_SUCCESS;
+    return (HPL_SUCCESS);
+  }
+  if((size = PANEL->grid->npcol) <= 1) {
+    *IFLAG = HPL_SUCCESS;
+    return (HPL_SUCCESS);
+  }
 
-   return( *IFLAG );
+  rank  = PANEL->grid->mycol;
+  comm  = PANEL->grid->row_comm;
+  root  = PANEL->pcol;
+  msgid = PANEL->msgid;
+
+  ierr  = MPI_Ibcast(_M_BUFF, _M_COUNT, _M_TYPE, root, comm, &request);
+  ierr2 = MPI_Ibcast(PANEL->ipiv, PANEL->jb, MPI_INT, root, comm, &request2);
+  /*
+   * If the message was received and being forwarded,  return HPL_SUCCESS.
+   * If an error occured in an MPI call, return HPL_FAILURE.
+   */
+  *IFLAG = (ierr == MPI_SUCCESS ? HPL_SUCCESS : HPL_FAILURE);
+  *IFLAG = (ierr2 == MPI_SUCCESS ? *IFLAG : HPL_FAILURE);
+
+  return (*IFLAG);
 }
 
-#ifdef STDC_HEADERS
-int HPL_bwait_ibcst
-(
-   HPL_T_panel *              PANEL
-)
-#else
-int HPL_bwait_ibcst( PANEL )
-   HPL_T_panel *              PANEL;
-#endif
-{
-#ifdef HPL_USE_MPI_DATATYPE
-/*
- * .. Local Variables ..
- */
-   int                        ierr;
-#endif
-/* ..
- * .. Executable Statements ..
- */
-   if( PANEL == NULL )           { return( HPL_SUCCESS ); }
-   if( PANEL->grid->npcol <= 1 ) { return( HPL_SUCCESS ); }
+int HPL_bwait_ibcst(HPL_T_panel* PANEL) {
+  int ierr1, ierr2;
 
-   MPI_Wait(&request, MPI_STATUS_IGNORE);
-   MPI_Wait(&request2, MPI_STATUS_IGNORE);
-/*
- * Release the arrays of request / status / data-types and buffers
- */
-#ifdef HPL_USE_MPI_DATATYPE
-   ierr = MPI_Type_free( &PANEL->dtypes[0] );
-   return( ( ierr == MPI_SUCCESS ? HPL_SUCCESS : HPL_FAILURE ) );
-#else
-   return( HPL_SUCCESS );
-#endif
+  if(PANEL == NULL) { return (HPL_SUCCESS); }
+  if(PANEL->grid->npcol <= 1) { return (HPL_SUCCESS); }
+
+  ierr1 = MPI_Wait(&request, MPI_STATUS_IGNORE);
+  ierr2 = MPI_Wait(&request2, MPI_STATUS_IGNORE);
+
+  return ((ierr1 == MPI_SUCCESS
+               ? (ierr2 == MPI_SUCCESS ? HPL_SUCCESS : HPL_FAILURE)
+               : HPL_FAILURE));
 }

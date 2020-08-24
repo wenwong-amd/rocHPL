@@ -54,40 +54,43 @@
 #include "hpl_blas.h"
 #include "hpl_auxil.h"
 
-#if __cplusplus
-extern "C" {
-#endif
 /*
  * ---------------------------------------------------------------------
  * #typedefs and data structures
  * ---------------------------------------------------------------------
  */
-typedef enum
-{
-   HPL_LEFT_LOOKING  = 301,           /* Left looking lu fact variant */
-   HPL_CROUT         = 302,                  /* Crout lu fact variant */
-   HPL_RIGHT_LOOKING = 303           /* Right looking lu fact variant */
+typedef enum {
+  HPL_LEFT_LOOKING  = 301, /* Left looking lu fact variant */
+  HPL_CROUT         = 302, /* Crout lu fact variant */
+  HPL_RIGHT_LOOKING = 303  /* Right looking lu fact variant */
 } HPL_T_FACT;
 /*
  * ---------------------------------------------------------------------
  * Function prototypes
  * ---------------------------------------------------------------------
  */
-void              HPL_dgesv
-STDC_ARGS(
-(  const int,       const int,       const int,       const HPL_T_FACT,
-   const HPL_T_FACT,                 const int,       double *,
-   const int,       int * ) );
-void              HPL_ipid
-STDC_ARGS(
-(  const int,       double *,        int *,           int *,
-   int *,           int *,           int *,           int *,
-   const int,       const int,       const int,       const int,
-   const int ) );
-
-#if __cplusplus
-}
-#endif
+void HPL_dgesv(const int,
+               const int,
+               const int,
+               const HPL_T_FACT,
+               const HPL_T_FACT,
+               const int,
+               double*,
+               const int,
+               int*);
+void HPL_ipid(const int,
+              double*,
+              int*,
+              int*,
+              int*,
+              int*,
+              int*,
+              int*,
+              const int,
+              const int,
+              const int,
+              const int,
+              const int);
 
 #endif
 /*

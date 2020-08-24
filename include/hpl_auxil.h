@@ -57,21 +57,23 @@
  * typedef definitions
  * ---------------------------------------------------------------------
  */
-typedef enum
-{ HPL_NORM_A = 800, HPL_NORM_1 = 801, HPL_NORM_I = 802 } HPL_T_NORM;
+typedef enum {
+  HPL_NORM_A = 800,
+  HPL_NORM_1 = 801,
+  HPL_NORM_I = 802
+} HPL_T_NORM;
 
-typedef enum
-{
-   HPL_MACH_EPS   = 900,                /* relative machine precision */
-   HPL_MACH_SFMIN = 901, /* safe minimum st 1/sfmin does not overflow */
-   HPL_MACH_BASE  = 902,                /* base = base of the machine */
-   HPL_MACH_PREC  = 903,                          /* prec  = eps*base */
-   HPL_MACH_MLEN  = 904,   /* number of (base) digits in the mantissa */
-   HPL_MACH_RND   = 905,        /* 1.0 if rounding occurs in addition */
-   HPL_MACH_EMIN  = 906,   /* min exponent before (gradual) underflow */
-   HPL_MACH_RMIN  = 907,        /* underflow threshold base**(emin-1) */
-   HPL_MACH_EMAX  = 908,          /* largest exponent before overflow */
-   HPL_MACH_RMAX  = 909  /* overflow threshold - (base**emax)*(1-eps) */
+typedef enum {
+  HPL_MACH_EPS   = 900, /* relative machine precision */
+  HPL_MACH_SFMIN = 901, /* safe minimum st 1/sfmin does not overflow */
+  HPL_MACH_BASE  = 902, /* base = base of the machine */
+  HPL_MACH_PREC  = 903, /* prec  = eps*base */
+  HPL_MACH_MLEN  = 904, /* number of (base) digits in the mantissa */
+  HPL_MACH_RND   = 905, /* 1.0 if rounding occurs in addition */
+  HPL_MACH_EMIN  = 906, /* min exponent before (gradual) underflow */
+  HPL_MACH_RMIN  = 907, /* underflow threshold base**(emin-1) */
+  HPL_MACH_EMAX  = 908, /* largest exponent before overflow */
+  HPL_MACH_RMAX  = 909  /* overflow threshold - (base**emax)*(1-eps) */
 
 } HPL_T_MACH;
 /*
@@ -79,84 +81,40 @@ typedef enum
  * Function prototypes
  * ---------------------------------------------------------------------
  */
-#if __cplusplus
-extern "C" {
-#endif
-
-void                             HPL_fprintf
-STDC_ARGS( (
-   FILE *,
-   const char *,
-   ...
-) );
-void                             HPL_warn
-STDC_ARGS( (
-   FILE *,
-   int,
-   const char *,
-   const char *,
-   ...
-) );
-void                             HPL_abort
-STDC_ARGS( (
-   int,
-   const char *,
-   const char *,
-   ...
-) );
-void                             HPL_dlacpy
-STDC_ARGS( (
-   const int,
-   const int,
-   const double *,
-   const int,
-   double *,
-   const int
-) );
-void                             HPL_dlatcpy
-STDC_ARGS( (
-   const int,
-   const int,
-   const double *,
-   const int,
-   double *,
-   const int
-) );
-void                             HPL_dlatcpy_gpu
-STDC_ARGS( (
-   const int,
-   const int,
-   const double *,
-   const int,
-   double *,
-   const int
-) );
-void                             HPL_dlaprnt
-STDC_ARGS( (
-   const int,
-   const int,
-   double *,
-   const int,
-   const int,
-   const int,
-   const char *
-) );
-double                           HPL_dlange
-STDC_ARGS( (
-   const HPL_T_NORM,
-   const int,
-   const int,
-   const double *,
-   const int
-) );
-double                           HPL_dlamch
-STDC_ARGS( (
-   const HPL_T_MACH
-) );
-
-#if __cplusplus
-}
-#endif
+void   HPL_fprintf(FILE*, const char*, ...);
+void   HPL_warn(FILE*, int, const char*, const char*, ...);
+void   HPL_abort(int, const char*, const char*, ...);
+void   HPL_dlacpy(const int,
+                  const int,
+                  const double*,
+                  const int,
+                  double*,
+                  const int);
+void   HPL_dlatcpy(const int,
+                   const int,
+                   const double*,
+                   const int,
+                   double*,
+                   const int);
+void   HPL_dlatcpy_gpu(const int,
+                       const int,
+                       const double*,
+                       const int,
+                       double*,
+                       const int);
+void   HPL_dlaprnt(const int,
+                   const int,
+                   double*,
+                   const int,
+                   const int,
+                   const int,
+                   const char*);
+double HPL_dlange(const HPL_T_NORM,
+                  const int,
+                  const int,
+                  const double*,
+                  const int);
+double HPL_dlamch(const HPL_T_MACH);
 
 #endif
 /*

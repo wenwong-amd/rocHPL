@@ -58,30 +58,37 @@
 #include "hpl_matgen.h"
 #include "hpl_timer.h"
 
-#if __cplusplus
-extern "C" {
-#endif
-
 /*
  * ---------------------------------------------------------------------
  * Function prototypes
  * ---------------------------------------------------------------------
  */
-void            HPL_dinfo
-STDC_ARGS(
-(  FILE * *,        int *,           int *,           int *,
-   HPL_T_FACT *,    int *,           int *,           int *,
-   int *,           int *,           HPL_T_FACT *,    int *,
-   double *,        double * ) );
-void            HPL_dtest
-STDC_ARGS(
-(  FILE *,          const int,       const int,       const int,
-   HPL_T_FACT,      HPL_T_FACT,      const int,       const double,
-   const double,    int *,           int *,           int * ) );
-
-#if __cplusplus
-}
-#endif
+void HPL_dinfo(FILE**,
+               int*,
+               int*,
+               int*,
+               HPL_T_FACT*,
+               int*,
+               int*,
+               int*,
+               int*,
+               int*,
+               HPL_T_FACT*,
+               int*,
+               double*,
+               double*);
+void HPL_dtest(FILE*,
+               const int,
+               const int,
+               const int,
+               HPL_T_FACT,
+               HPL_T_FACT,
+               const int,
+               const double,
+               const double,
+               int*,
+               int*,
+               int*);
 
 #endif
 /*

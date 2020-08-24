@@ -1,4 +1,4 @@
-/*
+/* ---------------------------------------------------------------------
  * -- High Performance Computing Linpack Benchmark (HPL)
  *    HPL - 2.2 - February 24, 2016
  *    Antoine P. Petitet
@@ -6,337 +6,386 @@
  *    Innovative Computing Laboratory
  *    (C) Copyright 2000-2008 All Rights Reserved
  *
- * -- Copyright notice and Licensing terms:
+ *    Modified by: Noel Chalmers
+ *    (C) 2018-2020 Advanced Micro Devices, Inc.
+ *    See the rocHPL/LICENCE file for details.
  *
- * Redistribution  and  use in  source and binary forms, with or without
- * modification, are  permitted provided  that the following  conditions
- * are met:
- *
- * 1. Redistributions  of  source  code  must retain the above copyright
- * notice, this list of conditions and the following disclaimer.
- *
- * 2. Redistributions in binary form must reproduce  the above copyright
- * notice, this list of conditions,  and the following disclaimer in the
- * documentation and/or other materials provided with the distribution.
- *
- * 3. All  advertising  materials  mentioning  features  or  use of this
- * software must display the following acknowledgement:
- * This  product  includes  software  developed  at  the  University  of
- * Tennessee, Knoxville, Innovative Computing Laboratory.
- *
- * 4. The name of the  University,  the name of the  Laboratory,  or the
- * names  of  its  contributors  may  not  be used to endorse or promote
- * products  derived   from   this  software  without  specific  written
- * permission.
- *
- * -- Disclaimer:
- *
- * THIS  SOFTWARE  IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES,  INCLUDING,  BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE UNIVERSITY
- * OR  CONTRIBUTORS  BE  LIABLE FOR ANY  DIRECT,  INDIRECT,  INCIDENTAL,
- * SPECIAL,  EXEMPLARY,  OR  CONSEQUENTIAL DAMAGES  (INCLUDING,  BUT NOT
- * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA OR PROFITS; OR BUSINESS INTERRUPTION)  HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT,  STRICT LIABILITY,  OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *    SPDX-License-Identifier: (BSD-3-Clause)
  * ---------------------------------------------------------------------
  */
-/*
- * Include files
- */
+
 #include "hpl.h"
 
-#ifdef STDC_HEADERS
-void HPL_pdupdateNN
-(
-   HPL_T_panel *                    PBCST,
-   int *                            IFLAG,
-   HPL_T_panel *                    PANEL,
-   const int                        NN
-)
-#else
-void HPL_pdupdateNN
-( PBCST, IFLAG, PANEL, NN )
-   HPL_T_panel *                    PBCST;
-   int *                            IFLAG;
-   HPL_T_panel *                    PANEL;
-   const int                        NN;
-#endif
-{
-/*
- * Purpose
- * =======
- *
- * HPL_pdupdateNN broadcast - forward the panel PBCST and simultaneously
- * applies the row interchanges and updates part of the trailing  (using
- * the panel PANEL) submatrix.
- *
- * Arguments
- * =========
- *
- * PBCST   (local input/output)          HPL_T_panel *
- *         On entry,  PBCST  points to the data structure containing the
- *         panel (to be broadcast) information.
- *
- * IFLAG   (local output)                int *
- *         On exit,  IFLAG  indicates  whether or not  the broadcast has
- *         been completed when PBCST is not NULL on entry. In that case,
- *         IFLAG is left unchanged.
- *
- * PANEL   (local input/output)          HPL_T_panel *
- *         On entry,  PANEL  points to the data structure containing the
- *         panel (to be updated) information.
- *
- * NN      (local input)                 const int
- *         On entry, NN specifies  the  local  number  of columns of the
- *         trailing  submatrix  to be updated  starting  at the  current
- *         position. NN must be at least zero.
- *
- * ---------------------------------------------------------------------
- */
-/*
- * .. Local Variables ..
- */
-   double                    * Aptr, * L1ptr, * L2ptr, * Uptr, * dpiv;
-   int                       * dipiv;
+void HPL_pdupdateNN(HPL_T_panel* PBCST,
+                    int*         IFLAG,
+                    HPL_T_panel* PANEL,
+                    const int    NN) {
+  /*
+   * Purpose
+   * =======
+   *
+   * HPL_pdupdateNN broadcast - forward the panel PBCST and simultaneously
+   * applies the row interchanges and updates part of the trailing  (using
+   * the panel PANEL) submatrix.
+   *
+   * Arguments
+   * =========
+   *
+   * PBCST   (local input/output)          HPL_T_panel *
+   *         On entry,  PBCST  points to the data structure containing the
+   *         panel (to be broadcast) information.
+   *
+   * IFLAG   (local output)                int *
+   *         On exit,  IFLAG  indicates  whether or not  the broadcast has
+   *         been completed when PBCST is not NULL on entry. In that case,
+   *         IFLAG is left unchanged.
+   *
+   * PANEL   (local input/output)          HPL_T_panel *
+   *         On entry,  PANEL  points to the data structure containing the
+   *         panel (to be updated) information.
+   *
+   * NN      (local input)                 const int
+   *         On entry, NN specifies  the  local  number  of columns of the
+   *         trailing  submatrix  to be updated  starting  at the  current
+   *         position. NN must be at least zero.
+   *
+   * ---------------------------------------------------------------------
+   */
 
-   int                       curr, i, iroff, jb, lda, ldl2, mp, n, nb,
-                             nq0, nn, test;
-   static int                tswap = 0;
-   static HPL_T_SWAP         fswap = HPL_NO_SWP;
-#define LDU                  jb
+  double *Aptr, *L1ptr, *L2ptr, *Uptr, *dpiv;
+  int*    dipiv;
+
+  int               curr, i, iroff, jb, lda, ldl2, mp, n, nb, nq0, nn, test;
+  static int        tswap = 0;
+  static HPL_T_SWAP fswap = HPL_NO_SWP;
+#define LDU jb
 /* ..
  * .. Executable Statements ..
  */
 #ifdef HPL_DETAILED_TIMING
-   HPL_ptimer( HPL_TIMING_UPDATE );
+  HPL_ptimer(HPL_TIMING_UPDATE);
 #endif
-   nb = PANEL->nb; jb = PANEL->jb; n = PANEL->nq;
+  nb = PANEL->nb;
+  jb = PANEL->jb;
+  n  = PANEL->nq;
 
-   lda = PANEL->dlda;
+  lda = PANEL->dlda;
 
-   if( NN >= 0 ) n = Mmin( NN, n );
-/*
- * There is nothing to update, enforce the panel broadcast.
- */
-   if( ( n <= 0 ) || ( jb <= 0 ) )
-   {
-      if( PBCST != NULL )
-      {
-         do { (void) HPL_bcast( PBCST, IFLAG ); }
-         while( *IFLAG != HPL_SUCCESS );
-      }
+  if(NN >= 0) n = Mmin(NN, n);
+  /*
+   * There is nothing to update, enforce the panel broadcast.
+   */
+  if((n <= 0) || (jb <= 0)) {
+    if(PBCST != NULL) {
+      do { (void)HPL_bcast(PBCST, IFLAG); } while(*IFLAG != HPL_SUCCESS);
+    }
 #ifdef HPL_DETAILED_TIMING
-      HPL_ptimer( HPL_TIMING_UPDATE );
+    HPL_ptimer(HPL_TIMING_UPDATE);
 #endif
-      return;
-   }
-/*
- * Enable/disable the column panel probing mechanism
- */
-   (void) HPL_bcast( PBCST, &test );
+    return;
+  }
+  /*
+   * Enable/disable the column panel probing mechanism
+   */
+  (void)HPL_bcast(PBCST, &test);
 
-   hipStream_t stream;
-   rocblas_get_stream(handle, &stream);
-/*
- * 1 x Q case
- */
-   if( PANEL->grid->nprow == 1 )
-   {
-      Aptr = PANEL->dA;
-      L1ptr = PANEL->dL1;
-      L2ptr = PANEL->dL2;
+  hipStream_t stream;
+  rocblas_get_stream(handle, &stream);
+  /*
+   * 1 x Q case
+   */
+  if(PANEL->grid->nprow == 1) {
+    Aptr  = PANEL->dA;
+    L1ptr = PANEL->dL1;
+    L2ptr = PANEL->dL2;
 
-      ldl2 = PANEL->dldl2;
-      mp   = PANEL->mp - jb; iroff = PANEL->ii;   nq0   = 0;
+    ldl2  = PANEL->dldl2;
+    mp    = PANEL->mp - jb;
+    iroff = PANEL->ii;
+    nq0   = 0;
 
-      dipiv = PANEL->dipiv; //already updated and on device
-/*
- * So far we have not updated anything -  test availability of the panel
- * to be forwarded - If detected forward it and finish the update in one
- * step.
- */
-      while ( test == HPL_KEEP_TESTING )
-      {
-         nn = n - nq0; nn = Mmin( nb, nn );
+    dipiv = PANEL->dipiv; // already updated and on device
+    /*
+     * So far we have not updated anything -  test availability of the panel
+     * to be forwarded - If detected forward it and finish the update in one
+     * step.
+     */
+    while(test == HPL_KEEP_TESTING) {
+      nn = n - nq0;
+      nn = Mmin(nb, nn);
 /*
  * Update nb columns at a time
  */
 #ifdef HPL_DETAILED_TIMING
-         HPL_ptimer( HPL_TIMING_LASWP );
-         HPL_dlaswp00N( jb, nn, Aptr, lda, dipiv );
-         HPL_ptimer( HPL_TIMING_LASWP );
+      HPL_ptimer(HPL_TIMING_LASWP);
+      HPL_dlaswp00N(jb, nn, Aptr, lda, dipiv);
+      HPL_ptimer(HPL_TIMING_LASWP);
 #else
-         HPL_dlaswp00N( jb, nn, Aptr, lda, dipiv );
+      HPL_dlaswp00N(jb, nn, Aptr, lda, dipiv);
 #endif
-        const double one = 1.0;
-        rocblas_dtrsm(handle, rocblas_side_left, rocblas_fill_lower,
-                      rocblas_operation_none, rocblas_diagonal_unit,
-                      jb, nn, &one, L1ptr, jb, Aptr, lda);
+      const double one = 1.0;
+      rocblas_dtrsm(handle,
+                    rocblas_side_left,
+                    rocblas_fill_lower,
+                    rocblas_operation_none,
+                    rocblas_diagonal_unit,
+                    jb,
+                    nn,
+                    &one,
+                    L1ptr,
+                    jb,
+                    Aptr,
+                    lda);
 
+      const double mone = -1.0;
+      rocblas_dgemm(handle,
+                    rocblas_operation_none,
+                    rocblas_operation_none,
+                    mp,
+                    nn,
+                    jb,
+                    &mone,
+                    L2ptr,
+                    ldl2,
+                    Aptr,
+                    lda,
+                    &one,
+                    Mptr(Aptr, jb, 0, lda),
+                    lda);
+
+      Aptr = Mptr(Aptr, 0, nn, lda);
+      nq0 += nn;
+
+      (void)HPL_bcast(PBCST, &test);
+    }
+    /*
+     * The panel has been forwarded at that point, finish the update
+     */
+    if((nn = n - nq0) > 0) {
+#ifdef HPL_DETAILED_TIMING
+      HPL_ptimer(HPL_TIMING_LASWP);
+      HPL_dlaswp00N(jb, nn, Aptr, lda, dipiv);
+      HPL_ptimer(HPL_TIMING_LASWP);
+#else
+      HPL_dlaswp00N(jb, nn, Aptr, lda, dipiv);
+#endif
+      const double one = 1.0;
+      rocblas_dtrsm(handle,
+                    rocblas_side_left,
+                    rocblas_fill_lower,
+                    rocblas_operation_none,
+                    rocblas_diagonal_unit,
+                    jb,
+                    nn,
+                    &one,
+                    L1ptr,
+                    jb,
+                    Aptr,
+                    lda);
+
+#ifdef HPL_DETAILED_TIMING
+      hipEventRecord(dgemmStart, stream);
+#endif
+      const double mone = -1.0;
+      rocblas_dgemm(handle,
+                    rocblas_operation_none,
+                    rocblas_operation_none,
+                    mp,
+                    nn,
+                    jb,
+                    &mone,
+                    L2ptr,
+                    ldl2,
+                    Aptr,
+                    lda,
+                    &one,
+                    Mptr(Aptr, jb, 0, lda),
+                    lda);
+#ifdef HPL_DETAILED_TIMING
+      hipEventRecord(dgemmStop, stream);
+#endif
+    }
+  } else /* nprow > 1 ... */
+  {
+    /*
+     * Selection of the swapping algorithm - swap:broadcast U.
+     */
+    if(fswap == HPL_NO_SWP) {
+      fswap = PANEL->algo->fswap;
+      tswap = PANEL->algo->fsthr;
+    }
+
+    if((fswap == HPL_SWAP01) || ((fswap == HPL_SW_MIX) && (n > tswap))) {
+      HPL_pdlaswp01N(PBCST, &test, PANEL, n);
+    } else {
+      HPL_pdlaswp00N(PBCST, &test, PANEL, n);
+    }
+
+    /*
+     * Compute redundantly row block of U and update trailing submatrix
+     */
+    nq0   = 0;
+    curr  = (PANEL->grid->myrow == PANEL->prow ? 1 : 0);
+    Aptr  = PANEL->dA;
+    L2ptr = PANEL->dL2;
+    L1ptr = PANEL->dL1;
+    Uptr  = PANEL->dU;
+
+    ldl2 = PANEL->dldl2;
+    mp   = PANEL->mp - (curr != 0 ? jb : 0);
+    /*
+     * Broadcast has not occured yet, spliting the computational part
+     */
+    while(test == HPL_KEEP_TESTING) {
+      nn = n - nq0;
+      nn = Mmin(nb, nn);
+
+      const double one = 1.0;
+      rocblas_dtrsm(handle,
+                    rocblas_side_left,
+                    rocblas_fill_lower,
+                    rocblas_operation_none,
+                    rocblas_diagonal_unit,
+                    jb,
+                    nn,
+                    &one,
+                    L1ptr,
+                    jb,
+                    Uptr,
+                    LDU);
+      if(curr != 0) {
         const double mone = -1.0;
-        rocblas_dgemm(handle, rocblas_operation_none, rocblas_operation_none,
-                      mp, nn, jb, &mone,
-                      L2ptr, ldl2, Aptr, lda, &one,
-                      Mptr( Aptr, jb, 0, lda ), lda );
-
-         Aptr = Mptr( Aptr, 0, nn, lda ); nq0 += nn;
-
-         (void) HPL_bcast( PBCST, &test );
+        rocblas_dgemm(handle,
+                      rocblas_operation_none,
+                      rocblas_operation_none,
+                      mp,
+                      nn,
+                      jb,
+                      &mone,
+                      L2ptr,
+                      ldl2,
+                      Uptr,
+                      LDU,
+                      &one,
+                      Mptr(Aptr, jb, 0, lda),
+                      lda);
+        if(nn)
+          hipMemcpy2DAsync(Aptr,
+                           lda * sizeof(double),
+                           Uptr,
+                           LDU * sizeof(double),
+                           jb * sizeof(double),
+                           nn,
+                           hipMemcpyDeviceToDevice,
+                           stream);
+      } else {
+        const double mone = -1.0;
+        rocblas_dgemm(handle,
+                      rocblas_operation_none,
+                      rocblas_operation_none,
+                      mp,
+                      nn,
+                      jb,
+                      &mone,
+                      L2ptr,
+                      ldl2,
+                      Uptr,
+                      LDU,
+                      &one,
+                      Aptr,
+                      lda);
       }
-/*
- * The panel has been forwarded at that point, finish the update
- */
-      if( ( nn = n - nq0 ) > 0 )
-      {
-#ifdef HPL_DETAILED_TIMING
-         HPL_ptimer( HPL_TIMING_LASWP );
-         HPL_dlaswp00N( jb, nn, Aptr, lda, dipiv );
-         HPL_ptimer( HPL_TIMING_LASWP );
-#else
-         HPL_dlaswp00N( jb, nn, Aptr, lda, dipiv );
-#endif
-        const double one = 1.0;
-        rocblas_dtrsm(handle, rocblas_side_left, rocblas_fill_lower,
-                      rocblas_operation_none, rocblas_diagonal_unit,
-                      jb, nn, &one, L1ptr, jb, Aptr, lda);
+      Uptr = Mptr(Uptr, 0, nn, LDU);
+      Aptr = Mptr(Aptr, 0, nn, lda);
+      nq0 += nn;
 
+      (void)HPL_bcast(PBCST, &test);
+    }
+    /*
+     * The panel has been forwarded at that point, finish the update
+     */
+    if((nn = n - nq0) > 0) {
+      const double one = 1.0;
+      rocblas_dtrsm(handle,
+                    rocblas_side_left,
+                    rocblas_fill_lower,
+                    rocblas_operation_none,
+                    rocblas_diagonal_unit,
+                    jb,
+                    nn,
+                    &one,
+                    L1ptr,
+                    jb,
+                    Uptr,
+                    LDU);
+      if(curr != 0) {
 #ifdef HPL_DETAILED_TIMING
-       hipEventRecord(dgemmStart, stream);
+        hipEventRecord(dgemmStart, stream);
 #endif
-       const double mone = -1.0;
-       rocblas_dgemm(handle, rocblas_operation_none, rocblas_operation_none,
-                     mp, nn, jb, &mone,
-                     L2ptr, ldl2, Aptr, lda, &one,
-                     Mptr( Aptr, jb, 0, lda ), lda );
+        const double mone = -1.0;
+        rocblas_dgemm(handle,
+                      rocblas_operation_none,
+                      rocblas_operation_none,
+                      mp,
+                      nn,
+                      jb,
+                      &mone,
+                      L2ptr,
+                      ldl2,
+                      Uptr,
+                      LDU,
+                      &one,
+                      Mptr(Aptr, jb, 0, lda),
+                      lda);
 #ifdef HPL_DETAILED_TIMING
-       hipEventRecord(dgemmStop, stream);
+        hipEventRecord(dgemmStop, stream);
+#endif
+        if(nn)
+          hipMemcpy2DAsync(Aptr,
+                           lda * sizeof(double),
+                           Uptr,
+                           LDU * sizeof(double),
+                           jb * sizeof(double),
+                           nn,
+                           hipMemcpyDeviceToDevice,
+                           stream);
+      } else {
+#ifdef HPL_DETAILED_TIMING
+        hipEventRecord(dgemmStart, stream);
+#endif
+        const double mone = -1.0;
+        rocblas_dgemm(handle,
+                      rocblas_operation_none,
+                      rocblas_operation_none,
+                      mp,
+                      nn,
+                      jb,
+                      &mone,
+                      L2ptr,
+                      ldl2,
+                      Uptr,
+                      LDU,
+                      &one,
+                      Aptr,
+                      lda);
+#ifdef HPL_DETAILED_TIMING
+        hipEventRecord(dgemmStop, stream);
 #endif
       }
-   }
-   else                        /* nprow > 1 ... */
-   {
-/*
- * Selection of the swapping algorithm - swap:broadcast U.
- */
-      if( fswap == HPL_NO_SWP )
-      { fswap = PANEL->algo->fswap; tswap = PANEL->algo->fsthr; }
+    }
+  }
 
-      if( (   fswap == HPL_SWAP01 ) ||
-          ( ( fswap == HPL_SW_MIX ) && ( n > tswap ) ) )
-      { HPL_pdlaswp01N( PBCST, &test, PANEL, n ); }
-      else
-      { HPL_pdlaswp00N( PBCST, &test, PANEL, n ); }
+  PANEL->dA = Mptr(PANEL->dA, 0, n, lda);
+  // PANEL->A = Mptr( PANEL->A, 0, n, lda );
+  PANEL->nq -= n;
+  PANEL->jj += n;
 
-/*
- * Compute redundantly row block of U and update trailing submatrix
- */
-      nq0 = 0; curr = ( PANEL->grid->myrow == PANEL->prow ? 1 : 0 );
-      Aptr = PANEL->dA;
-      L2ptr = PANEL->dL2;
-      L1ptr = PANEL->dL1;
-      Uptr = PANEL->dU;
-
-      ldl2 = PANEL->dldl2;
-      mp   = PANEL->mp - ( curr != 0 ? jb : 0 );
-/*
- * Broadcast has not occured yet, spliting the computational part
- */
-      while ( test == HPL_KEEP_TESTING )
-      {
-         nn = n - nq0; nn = Mmin( nb, nn );
-
-         const double one = 1.0;
-         rocblas_dtrsm(handle, rocblas_side_left, rocblas_fill_lower,
-                       rocblas_operation_none, rocblas_diagonal_unit,
-                       jb, nn, &one, L1ptr, jb, Uptr, LDU);
-         if( curr != 0 )
-         {
-            const double mone = -1.0;
-            rocblas_dgemm(handle, rocblas_operation_none, rocblas_operation_none,
-                          mp, nn, jb, &mone,
-                          L2ptr, ldl2, Uptr, LDU, &one,
-                          Mptr( Aptr, jb, 0, lda ), lda );
-            if(nn)
-              hipMemcpy2DAsync(Aptr, lda*sizeof(double),
-                               Uptr, LDU*sizeof(double),
-                               jb*sizeof(double), nn,
-                               hipMemcpyDeviceToDevice, stream);
-         }
-         else
-         {
-            const double mone = -1.0;
-            rocblas_dgemm(handle, rocblas_operation_none, rocblas_operation_none,
-                          mp, nn, jb, &mone,
-                          L2ptr, ldl2, Uptr, LDU, &one,
-                          Aptr, lda );
-         }
-         Uptr = Mptr( Uptr, 0, nn, LDU );
-         Aptr = Mptr( Aptr, 0, nn, lda ); nq0 += nn;
-
-         (void) HPL_bcast( PBCST, &test );
-      }
-/*
- * The panel has been forwarded at that point, finish the update
- */
-      if( ( nn = n - nq0 ) > 0 )
-      {
-         const double one = 1.0;
-         rocblas_dtrsm(handle, rocblas_side_left, rocblas_fill_lower,
-                       rocblas_operation_none, rocblas_diagonal_unit,
-                       jb, nn, &one, L1ptr, jb, Uptr, LDU);
-         if( curr != 0 )
-         {
+  /*
+   * return the outcome of the probe  (should always be  HPL_SUCCESS,  the
+   * panel broadcast is enforced in that routine).
+   */
+  if(PBCST != NULL) *IFLAG = test;
 #ifdef HPL_DETAILED_TIMING
-            hipEventRecord(dgemmStart, stream);
+  HPL_ptimer(HPL_TIMING_UPDATE);
 #endif
-            const double mone = -1.0;
-            rocblas_dgemm(handle, rocblas_operation_none, rocblas_operation_none,
-                          mp, nn, jb, &mone,
-                          L2ptr, ldl2, Uptr, LDU, &one,
-                          Mptr( Aptr, jb, 0, lda ), lda );
-#ifdef HPL_DETAILED_TIMING
-            hipEventRecord(dgemmStop, stream);
-#endif
-            if(nn)
-              hipMemcpy2DAsync(Aptr, lda*sizeof(double),
-                               Uptr, LDU*sizeof(double),
-                               jb*sizeof(double), nn,
-                               hipMemcpyDeviceToDevice, stream);
-         }
-         else
-         {
-#ifdef HPL_DETAILED_TIMING
-            hipEventRecord(dgemmStart, stream);
-#endif
-            const double mone = -1.0;
-            rocblas_dgemm(handle, rocblas_operation_none, rocblas_operation_none,
-                          mp, nn, jb, &mone,
-                          L2ptr, ldl2, Uptr, LDU, &one,
-                          Aptr, lda );
-#ifdef HPL_DETAILED_TIMING
-            hipEventRecord(dgemmStop, stream);
-#endif
-         }
-      }
-   }
-
-   PANEL->dA = Mptr( PANEL->dA, 0, n, lda );
-   // PANEL->A = Mptr( PANEL->A, 0, n, lda );
-   PANEL->nq -= n; PANEL->jj += n;
-
-/*
- * return the outcome of the probe  (should always be  HPL_SUCCESS,  the
- * panel broadcast is enforced in that routine).
- */
-   if( PBCST != NULL ) *IFLAG = test;
-#ifdef HPL_DETAILED_TIMING
-   HPL_ptimer( HPL_TIMING_UPDATE );
-#endif
-/*
- * End of HPL_pdupdateNN
- */
 }
