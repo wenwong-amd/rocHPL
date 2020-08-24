@@ -1,12 +1,6 @@
 /* ---------------------------------------------------------------------
  * -- High Performance Computing Linpack Benchmark (HPL)
- *    HPL - 2.2 - February 24, 2016
- *    Antoine P. Petitet
- *    University of Tennessee, Knoxville
- *    Innovative Computing Laboratory
- *    (C) Copyright 2000-2008 All Rights Reserved
- *
- *    Modified by: Noel Chalmers
+ *    Noel Chalmers
  *    (C) 2018-2020 Advanced Micro Devices, Inc.
  *    See the rocHPL/LICENCE file for details.
  *
