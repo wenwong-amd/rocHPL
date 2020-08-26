@@ -115,7 +115,7 @@ void HPL_pdpanel_init(HPL_T_grid*  GRID,
   size_t numpinnedbytes = A->ld * JB * sizeof(double);
   if(PANEL->max_pinned_work_size < (size_t)(numpinnedbytes)) {
     if(PANEL->A) { hipHostFree(PANEL->A); }
-#ifdef VERBOSE_PRINT
+#ifdef HPL_VERBOSE_PRINT
     if((myrow == 0) && (mycol == 0)) {
       printf("Allocating %g GBs of storage on CPU...",
              ((double)numpinnedbytes) / (1024 * 1024 * 1024));
@@ -128,7 +128,7 @@ void HPL_pdpanel_init(HPL_T_grid*  GRID,
           __LINE__, "HPL_pdpanel_init", "Panel Host Memory allocation failed");
       return;
     }
-#ifdef VERBOSE_PRINT
+#ifdef HPL_VERBOSE_PRINT
     if((myrow == 0) && (mycol == 0)) { printf("done.\n"); }
 #endif
     PANEL->max_pinned_work_size = (size_t)(numpinnedbytes);
@@ -230,7 +230,7 @@ void HPL_pdpanel_init(HPL_T_grid*  GRID,
       // (size_t)4095)/(size_t)4096)*(size_t)4096;
       size_t numbytes = (size_t)(lwork) * sizeof(double);
 
-#ifdef VERBOSE_PRINT
+#ifdef HPL_VERBOSE_PRINT
       if((myrow == 0) && (mycol == 0)) {
         printf("Allocating %g GBs of storage on CPU...",
                ((double)numbytes) / (1024 * 1024 * 1024));
@@ -246,7 +246,7 @@ void HPL_pdpanel_init(HPL_T_grid*  GRID,
                    "Panel Host Memory allocation failed");
       }
 
-#ifdef VERBOSE_PRINT
+#ifdef HPL_VERBOSE_PRINT
       if((myrow == 0) && (mycol == 0)) {
         printf("done.\n");
         printf("Allocating %g GBs of storage on GPU...",
@@ -261,7 +261,7 @@ void HPL_pdpanel_init(HPL_T_grid*  GRID,
                    "HPL_pdpanel_init",
                    "Panel Device Memory allocation failed");
       }
-#ifdef VERBOSE_PRINT
+#ifdef HPL_VERBOSE_PRINT
       if((myrow == 0) && (mycol == 0)) printf("done.\n");
 #endif
       PANEL->max_work_size = (size_t)(lwork) * sizeof(double);
@@ -321,7 +321,7 @@ void HPL_pdpanel_init(HPL_T_grid*  GRID,
       // (size_t)4095)/(size_t)4096)*(size_t)4096;
       size_t numbytes = (size_t)(lwork) * sizeof(double);
 
-#ifdef VERBOSE_PRINT
+#ifdef HPL_VERBOSE_PRINT
       if((myrow == 0) && (mycol == 0)) {
         printf("Allocating %g GBs of storage on CPU...",
                ((double)numbytes) / (1024 * 1024 * 1024));
@@ -337,7 +337,7 @@ void HPL_pdpanel_init(HPL_T_grid*  GRID,
                    "Panel Host Memory allocation failed");
       }
 
-#ifdef VERBOSE_PRINT
+#ifdef HPL_VERBOSE_PRINT
       if((myrow == 0) && (mycol == 0)) {
         printf("done.\n");
         printf("Allocating %g GBs of storage on GPU...",
@@ -352,7 +352,7 @@ void HPL_pdpanel_init(HPL_T_grid*  GRID,
                    "HPL_pdpanel_init",
                    "Panel Device Memory allocation failed");
       }
-#ifdef VERBOSE_PRINT
+#ifdef HPL_VERBOSE_PRINT
       if((myrow == 0) && (mycol == 0)) printf("done.\n");
 #endif
       PANEL->max_work_size = (size_t)(lwork) * sizeof(double);

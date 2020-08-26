@@ -41,3 +41,6 @@ build
 # doc directory
 docBin
 _build
+
+#third-party software
+tpl/

@@ -126,7 +126,7 @@ void HPL_pdtest(HPL_T_test* TEST,
                      (size_t)4096) *
                     (size_t)4096;
 
-#ifdef VERBOSE_PRINT
+#ifdef HPL_VERBOSE_PRINT
   if((myrow == 0) && (mycol == 0)) {
     printf("Allocating %g GBs of storage on GPU...",
            ((double)numbytes) / (1024 * 1024 * 1024));
@@ -150,7 +150,7 @@ void HPL_pdtest(HPL_T_test* TEST,
     (TEST->kskip)++;
     return;
   }
-#ifdef VERBOSE_PRINT
+#ifdef HPL_VERBOSE_PRINT
   if((myrow == 0) && (mycol == 0)) printf("done.\n");
 #endif
 

@@ -23,8 +23,12 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-# The ROCm platform requires Ubuntu 16.04 or Fedora 24, which has cmake 3.5
-cmake_minimum_required(VERSION 3.5 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.10 FATAL_ERROR)
+
+option(HPL_VERBOSE_PRINT   "Enable printing to terminal during run" ON)
+option(HPL_PROGRESS_REPORT "Enable printing progess report to terminal during run" ON)
+option(HPL_DETAILED_TIMING "Enable detailed timers during run" ON)
+option(GPU_AWARE_MPI "Enable use of GPU-Aware MPI functionality" OFF)
 
 set(CMAKE_INSTALL_PREFIX "/opt/rocm" CACHE PATH "Install path prefix, prepended onto install directories")
 
@@ -76,11 +80,6 @@ set(AMDGPU_TARGETS gfx900;gfx906;gfx908 CACHE STRING "List of specific machine t
 # This tells cmake to create a compile_commands.json file that can be used with clang tooling or vim
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-# Configure a header file to pass the rocALUTION version
-# configure_file("${CMAKE_CURRENT_SOURCE_DIR}/Version.hpp.in"
-#                "${PROJECT_BINARY_DIR}/include/Version.hpp"
-# )
-
 # HPL sources
 file(GLOB_RECURSE rochpl_source RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "src/*.cpp")
 
@@ -94,7 +93,7 @@ foreach(i ${rochpl_device_source})
 endforeach()
 
 # HIP flags workaround while target_compile_options does not work
-# list(APPEND HIP_HIPCC_FLAGS "-Wno-unused-command-line-argument -Wno-duplicate-decl-specifier")
+list(APPEND HIP_HIPCC_FLAGS "-Wno-unused-command-line-argument")
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
   list(APPEND HIP_HIPCC_FLAGS "-g")
@@ -111,12 +110,20 @@ if(HPL_DEBUG)
   target_compile_definitions(rochpl PRIVATE HPL_DEBUG)
 endif()
 
-if(HPL_DETAILED_DEBUG)
-  target_compile_definitions(rochpl PRIVATE HPL_DETAILED_DEBUG)
+if(HPL_VERBOSE_PRINT)
+  target_compile_definitions(rochpl PRIVATE HPL_VERBOSE_PRINT)
 endif()
 
 if(HPL_DETAILED_TIMING)
   target_compile_definitions(rochpl PRIVATE HPL_DETAILED_TIMING)
+endif()
+
+if(HPL_PROGRESS_REPORT)
+  target_compile_definitions(rochpl PRIVATE HPL_PROGRESS_REPORT)
+endif()
+
+if(GPU_AWARE_MPI)
+  target_compile_definitions(rochpl PRIVATE GPU_AWARE_MPI)
 endif()
 
 # Target include directories
@@ -138,14 +145,27 @@ if(HPL_OPENMP)
 endif()
 
 # Target link libraries
-target_link_libraries(rochpl PRIVATE ${BLAS_LIBRARIES})
+target_link_libraries(rochpl PRIVATE BLAS::BLAS)
 target_link_libraries(rochpl PRIVATE roc::rocblas)
 target_link_libraries(rochpl PRIVATE roc::rocrand)
 
 # Target properties
+set_target_properties(rochpl PROPERTIES OUTPUT_NAME "rochpl.exe")
 set_target_properties(rochpl PROPERTIES VERSION ${rochpl_VERSION})
 set_target_properties(rochpl PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 set_target_properties(rochpl PROPERTIES DEBUG_POSTFIX "-d")
+
+# Configure a header file to pass the rocHPL version
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/include/hpl_version.h.in"
+               "${PROJECT_BINARY_DIR}/include/hpl_version.h")
+
+# Configure run script
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/scripts/rochpl.in"
+               "${PROJECT_BINARY_DIR}/rochpl")
+
+#move input file
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/scripts/HPL.dat
+     DESTINATION ${CMAKE_BINARY_DIR})
 
 # Install targets
 rocm_install_targets(TARGETS rochpl

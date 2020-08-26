@@ -47,19 +47,31 @@
 #define HPL_H
 /*
  * ---------------------------------------------------------------------
- * HPL default compile options that can overridden in the Make.<arch>
+ * HPL default compile options that can overridden in the cmake
  * ---------------------------------------------------------------------
  */
 #ifndef HPL_DETAILED_TIMING /* Do not enable detailed timings */
 #define HPL_NO_DETAILED_TIMING
 #endif
+
+//Always need this now
+#define HPL_COPY_L
+
 /*
  * ---------------------------------------------------------------------
  * Include files
  * ---------------------------------------------------------------------
  */
+//NC: hipcc in ROCm 3.7 complains if __HIP_PLATFORM_HCC__ is defined in the
+// compile line
+#ifdef __HIPCC__
+#ifdef __HIP_PLATFORM_HCC__
+#undef __HIP_PLATFORM_HCC__
+#endif
+#endif
 #include "hip/hip_runtime_api.h"
 
+#include "hpl_version.h"
 #include "hpl_misc.h"
 #include "hpl_blas.h"
 #include "hpl_auxil.h"

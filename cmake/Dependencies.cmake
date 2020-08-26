@@ -28,11 +28,21 @@
 # Git
 find_package(Git REQUIRED)
 
-set(BLA_VENDOR OpenBLAS)
-find_package(BLAS REQUIRED)
-
-# Add some paths
-list(APPEND CMAKE_PREFIX_PATH /opt/rocm/hip /opt/rocm)
+#Look in our tpl folder first for a BLAS lib
+# For some reason cmake doesn't let us manually specify a search path in FindBLAS,
+# so let's add our own library if we find one in tpl
+# set(BLA_VENDOR OpenBLAS)
+set(BLAS_LIBRARIES)
+find_library(BLAS_LIBRARIES NAMES openblas
+             PATHS ${CMAKE_CURRENT_SOURCE_DIR}/tpl/openblas
+             NO_DEFAULT_PATH)
+if (BLAS_LIBRARIES)
+  message("-- Found BLAS: ${BLAS_LIBRARIES}")
+else()
+  find_package(BLAS REQUIRED)
+endif()
+add_library(BLAS::BLAS IMPORTED INTERFACE)
+set_property(TARGET BLAS::BLAS PROPERTY INTERFACE_LINK_LIBRARIES "${BLAS_LIBRARIES}")
 
 # Find OpenMP package
 find_package(OpenMP)
@@ -40,32 +50,13 @@ if (NOT OPENMP_FOUND)
   message("-- OpenMP not found. Compiling WITHOUT OpenMP support.")
 else()
   option(HPL_OPENMP "Compile WITH OpenMP support." ON)
-  if(NOT TARGET OpenMP::OpenMP_CXX)
-    # cmake fix for cmake <= 3.9
-    find_package(Threads REQUIRED)
-    add_library(OpenMP::OpenMP_CXX IMPORTED INTERFACE)
-    set_property(TARGET OpenMP::OpenMP_CXX PROPERTY INTERFACE_COMPILE_OPTIONS ${OpenMP_CXX_FLAGS})
-    set_property(TARGET OpenMP::OpenMP_CXX PROPERTY INTERFACE_LINK_LIBRARIES ${OpenMP_CXX_FLAGS} Threads::Threads)
-  endif()
 endif()
 
 # MPI
 find_package(MPI REQUIRED)
 
-if(NOT TARGET MPI::MPI_CXX)
-  # cmake fix for cmake <= 3.9
-  add_library(MPI::MPI_CXX IMPORTED INTERFACE)
-  set_property(TARGET MPI::MPI_CXX PROPERTY INTERFACE_COMPILE_OPTIONS "${MPI_CXX_COMPILE_OPTIONS}")
-  set_property(TARGET MPI::MPI_CXX PROPERTY INTERFACE_COMPILE_DEFINITIONS "${MPI_CXX_COMPILE_DEFINITIONS}")
-  set_property(TARGET MPI::MPI_CXX PROPERTY INTERFACE_LINK_LIBRARIES "")
-  if(MPI_CXX_LINK_FLAGS)
-    set_property(TARGET MPI::MPI_CXX APPEND PROPERTY INTERFACE_LINK_LIBRARIES "${MPI_CXX_LINK_FLAGS}")
-  endif()
-  if(MPI_CXX_LIBRARIES)
-    set_property(TARGET MPI::MPI_CXX APPEND PROPERTY INTERFACE_LINK_LIBRARIES "${MPI_CXX_LIBRARIES}")
-  endif()
-  set_property(TARGET MPI::MPI_CXX PROPERTY INTERFACE_INCLUDE_DIRECTORIES "${MPI_CXX_INCLUDE_DIRS}")
-endif()
+# Add some paths
+list(APPEND CMAKE_PREFIX_PATH /opt/rocm/hip /opt/rocm)
 
 # Find HIP package
 find_package(HIP REQUIRED)

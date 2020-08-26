@@ -70,7 +70,7 @@ void HPL_InitGPU() {
   int deviceCount;
   hipGetDeviceCount(&deviceCount);
 
-#ifdef VERBOSE_PRINT
+#ifdef HPL_VERBOSE_PRINT
   printf("Assigning device %d on node %s to rank %d \n",
          localRank % deviceCount,
          host_name,
