@@ -32,8 +32,6 @@ int HPL_binit_ibcst(HPL_T_panel* PANEL) {
 #define _M_COUNT PANEL->len
 #define _M_TYPE MPI_DOUBLE
 
-#endif
-
 static MPI_Request request  = MPI_REQUEST_NULL;
 static MPI_Request request2 = MPI_REQUEST_NULL;
 

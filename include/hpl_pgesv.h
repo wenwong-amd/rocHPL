@@ -140,7 +140,7 @@ void HPL_pdlaswp00T(HPL_T_panel*, int*, HPL_T_panel*, const int);
 
 void HPL_perm(const int, int*, int*, int*);
 void HPL_logsort(const int, const int, int*, int*, int*);
-void HPL_plindx1(HPL_T_panel*, const int, const int*, int*, int*, int*);
+void HPL_plindx10(HPL_T_panel*, const int, const int*, int*, int*, int*);
 void HPL_plindx1(HPL_T_panel*,
                  const int,
                  const int*,

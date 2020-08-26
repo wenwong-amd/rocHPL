@@ -16,26 +16,13 @@
 
 #include "hpl.h"
 
-void      HPL_indxg2lp(int*      IL,
-                       int*      PROC,
-                       const int IG,
-                       const int INB,
-                       const int NB,
-                       const int SRCPROC,
-                       const int NPROCS) void HPL_indxg2lp(IL,
-                                                      PROC,
-                                                      IG,
-                                                      INB,
-                                                      NB,
-                                                      SRCPROC,
-                                                      NPROCS) int* IL;
-int*      PROC;
-const int IG;
-const int INB;
-const int NB;
-const int SRCPROC;
-const int NPROCS;
-{
+void HPL_indxg2lp(int*      IL,
+                  int*      PROC,
+                  const int IG,
+                  const int INB,
+                  const int NB,
+                  const int SRCPROC,
+                  const int NPROCS) {
   /*
    * Purpose
    * =======

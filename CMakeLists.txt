@@ -26,13 +26,7 @@
 # The ROCm platform requires Ubuntu 16.04 or Fedora 24, which has cmake 3.5
 cmake_minimum_required(VERSION 3.5 FATAL_ERROR)
 
-# Consider removing this in the future
-# This should appear before the project command, because it does not use FORCE
-if(WIN32)
-  set(CMAKE_INSTALL_PREFIX "${PROJECT_BINARY_DIR}/package" CACHE PATH "Install path prefix, prepended onto install directories")
-else()
-  set(CMAKE_INSTALL_PREFIX "/opt/rocm" CACHE PATH "Install path prefix, prepended onto install directories")
-endif()
+set(CMAKE_INSTALL_PREFIX "/opt/rocm" CACHE PATH "Install path prefix, prepended onto install directories")
 
 # CMake modules
 list(APPEND CMAKE_MODULE_PATH
@@ -69,15 +63,11 @@ option(HPL_DETAILED_TIMING "Enable detail timers" OFF)
 option(HPL_REFERENCE "Build reference mode" OFF)
 option(BUILD_TEST "Build rocHPL single-node test" OFF)
 
-# Optimization options
-option(OPT_MEMMGMT "Build with memory management module" ON)
-option(OPT_DEFRAG "Build with memory management defragmentation" ON)
-
 # Dependencies
 include(cmake/Dependencies.cmake)
 
 # Setup version
-rocm_setup_version(VERSION 0.7.3)
+rocm_setup_version(VERSION 0.1)
 
 # AMD targets
 set(AMDGPU_TARGETS gfx900;gfx906;gfx908 CACHE STRING "List of specific machine types for library to target")
@@ -87,143 +77,74 @@ set(AMDGPU_TARGETS gfx900;gfx906;gfx908 CACHE STRING "List of specific machine t
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Configure a header file to pass the rocALUTION version
-configure_file("${CMAKE_CURRENT_SOURCE_DIR}/Version.hpp.in"
-               "${PROJECT_BINARY_DIR}/include/Version.hpp"
-)
-
-# HPL HIP sources
-set(rochpl_hip_source
-  ComputeDotProduct.cpp
-  ComputeSPMV.cpp
-  ComputeSYMGS.cpp
-  ComputeProlongation.cpp
-  ComputeResidual.cpp
-  ComputeRestriction.cpp
-  ComputeWAXPBY.cpp
-  ExchangeHalo.cpp
-  GenerateCoarseProblem.cpp
-  GenerateProblem.cpp
-  init.cpp
-  MultiColoring.cpp
-  Permute.cpp
-  SetupHalo.cpp
-  SparseMatrix.cpp
-  TestCG.cpp
-)
+# configure_file("${CMAKE_CURRENT_SOURCE_DIR}/Version.hpp.in"
+#                "${PROJECT_BINARY_DIR}/include/Version.hpp"
+# )
 
 # HPL sources
-set(rochpl_source
-  CG.cpp
-  CG_ref.cpp
-  CheckAspectRatio.cpp
-  CheckProblem.cpp
-  ComputeDotProduct_ref.cpp
-  ComputeMG.cpp
-  ComputeMG_ref.cpp
-  ComputeOptimalShapeXYZ.cpp
-  ComputeProlongation_ref.cpp
-  ComputeRestriction_ref.cpp
-  ComputeSPMV_ref.cpp
-  ComputeSYMGS_ref.cpp
-  ComputeWAXPBY_ref.cpp
-  GenerateGeometry.cpp
-  Memory.cpp
-  MixedBaseCounter.cpp
-  OptimizeProblem.cpp
-  OutputFile.cpp
-  ReadHpcgDat.cpp
-  ReportResults.cpp
-  TestNorms.cpp
-  TestSymmetry.cpp
-  WriteProblem.cpp
-  YAML_Doc.cpp
-  YAML_Element.cpp
-  finalize.cpp
-  mytimer.cpp
-)
+file(GLOB_RECURSE rochpl_source RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "src/*.cpp")
+
+# HPL device sources
+file(GLOB_RECURSE rochpl_device_source RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "src/*_device.cpp")
+list(REMOVE_ITEM rochpl_source ${rochpl_device_source})
 
 # Flag source files as hip source files
-foreach(i ${rochpl_hip_source})
+foreach(i ${rochpl_device_source})
   set_source_files_properties(${i} PROPERTIES HIP_SOURCE_PROPERTY_FORMAT TRUE)
 endforeach()
 
 # HIP flags workaround while target_compile_options does not work
-list(APPEND HIP_HIPCC_FLAGS "-Wno-unused-command-line-argument -Wno-duplicate-decl-specifier")
+# list(APPEND HIP_HIPCC_FLAGS "-Wno-unused-command-line-argument -Wno-duplicate-decl-specifier")
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
   list(APPEND HIP_HIPCC_FLAGS "-g")
 endif()
-
 
 foreach(target ${AMDGPU_TARGETS})
   list(APPEND HIP_HIPCC_FLAGS "--amdgpu-target=${target}")
 endforeach()
 
 # Target executable
-hip_add_executable(rochpl ${rochpl_source} main.cpp ${rochpl_hip_source})
+hip_add_executable(rochpl ${rochpl_source} ${rochpl_device_source})
 
-# Target compile definitions
-list(APPEND CMAKE_CXX_FLAGS "-D__HIP_PLATFORM_HCC__")
-
-# Support only for contiguous arrays
-target_compile_definitions(rochpl PRIVATE HPCG_CONTIGUOUS_ARRAYS)
-
-if(HPCG_DEBUG)
-  target_compile_definitions(rochpl PRIVATE HPCG_DEBUG)
+if(HPL_DEBUG)
+  target_compile_definitions(rochpl PRIVATE HPL_DEBUG)
 endif()
 
-if(HPCG_DETAILED_DEBUG)
-  target_compile_definitions(rochpl PRIVATE HPCG_DETAILED_DEBUG)
+if(HPL_DETAILED_DEBUG)
+  target_compile_definitions(rochpl PRIVATE HPL_DETAILED_DEBUG)
 endif()
 
-if(HPCG_DETAILED_TIMING)
-  target_compile_definitions(rochpl PRIVATE HPCG_DETAILED_TIMING)
-endif()
-
-if(HPCG_REFERENCE)
-  target_compile_definitions(rochpl PRIVATE HPCG_REFERENCE)
-endif()
-
-if(BUILD_TEST)
-  target_compile_definitions(rochpl PRIVATE GOOGLE_TEST)
+if(HPL_DETAILED_TIMING)
+  target_compile_definitions(rochpl PRIVATE HPL_DETAILED_TIMING)
 endif()
 
 # Target include directories
 target_include_directories(rochpl
                            PRIVATE
+                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
                            $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
                            $<BUILD_INTERFACE:${HIP_INCLUDE_DIRS}>)
 
+#HIP
+target_link_libraries(rochpl PRIVATE hip::host)
+
 # MPI
-if(HPCG_MPI)
-  target_link_libraries(rochpl PRIVATE MPI::MPI_CXX libnuma::libnuma)
-else()
-  target_compile_definitions(rochpl PRIVATE HPCG_NO_MPI)
-endif()
+target_link_libraries(rochpl PRIVATE MPI::MPI_CXX)
 
 # OpenMP
-if(HPCG_OPENMP)
+if(HPL_OPENMP)
   target_link_libraries(rochpl PRIVATE OpenMP::OpenMP_CXX)
-else()
-  target_compile_definitions(rochpl PRIVATE HPCG_NO_OPENMP)
 endif()
 
 # Target link libraries
-target_link_libraries(rochpl PRIVATE roc::rocprim)
-
-if(BUILD_TEST)
-  target_link_libraries(rochpl PRIVATE GTest::GTest)
-endif()
-
+target_link_libraries(rochpl PRIVATE ${BLAS_LIBRARIES})
+target_link_libraries(rochpl PRIVATE roc::rocblas)
+target_link_libraries(rochpl PRIVATE roc::rocrand)
 
 # Target properties
 set_target_properties(rochpl PROPERTIES VERSION ${rochpl_VERSION})
-if(BUILD_TEST)
-  set_target_properties(rochpl PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/tests")
-  set_target_properties(rochpl PROPERTIES OUTPUT_NAME "rochpl-test")
-else()
-  set_target_properties(rochpl PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
-endif()
+set_target_properties(rochpl PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 set_target_properties(rochpl PROPERTIES DEBUG_POSTFIX "-d")
 
 # Install targets
@@ -236,7 +157,7 @@ rocm_install_symlink_subdir(rochpl)
 # Package specific CPACK vars
 set(CPACK_DEBIAN_PACKAGE_DEPENDS "rocm-dev (>= 3.5.0)")
 set(CPACK_RPM_PACKAGE_REQUIRES "rocm-dev >= 3.5.0")
-set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/../LICENSE.md")
+set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
 
 if(NOT CPACK_PACKAGING_INSTALL_PREFIX)
   set(CPACK_PACKAGING_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}")

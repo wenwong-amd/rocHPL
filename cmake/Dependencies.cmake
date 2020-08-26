@@ -28,6 +28,9 @@
 # Git
 find_package(Git REQUIRED)
 
+set(BLA_VENDOR OpenBLAS)
+find_package(BLAS REQUIRED)
+
 # Add some paths
 list(APPEND CMAKE_PREFIX_PATH /opt/rocm/hip /opt/rocm)
 
@@ -36,7 +39,7 @@ find_package(OpenMP)
 if (NOT OPENMP_FOUND)
   message("-- OpenMP not found. Compiling WITHOUT OpenMP support.")
 else()
-  option(HPCG_OPENMP "Compile WITH OpenMP support." ON)
+  option(HPL_OPENMP "Compile WITH OpenMP support." ON)
   if(NOT TARGET OpenMP::OpenMP_CXX)
     # cmake fix for cmake <= 3.9
     find_package(Threads REQUIRED)
@@ -47,49 +50,31 @@ else()
 endif()
 
 # MPI
-find_package(MPI)
-if (NOT MPI_FOUND)
-  message("-- MPI not found. Compiling WITHOUT MPI support.")
-  if (HPCG_MPI)
-    message(FATAL_ERROR "Cannot build with MPI support.")
+find_package(MPI REQUIRED)
+
+if(NOT TARGET MPI::MPI_CXX)
+  # cmake fix for cmake <= 3.9
+  add_library(MPI::MPI_CXX IMPORTED INTERFACE)
+  set_property(TARGET MPI::MPI_CXX PROPERTY INTERFACE_COMPILE_OPTIONS "${MPI_CXX_COMPILE_OPTIONS}")
+  set_property(TARGET MPI::MPI_CXX PROPERTY INTERFACE_COMPILE_DEFINITIONS "${MPI_CXX_COMPILE_DEFINITIONS}")
+  set_property(TARGET MPI::MPI_CXX PROPERTY INTERFACE_LINK_LIBRARIES "")
+  if(MPI_CXX_LINK_FLAGS)
+    set_property(TARGET MPI::MPI_CXX APPEND PROPERTY INTERFACE_LINK_LIBRARIES "${MPI_CXX_LINK_FLAGS}")
   endif()
-else()
-  option(HPCG_MPI "Compile WITH MPI support." ON)
-  if(NOT TARGET MPI::MPI_CXX)
-    # cmake fix for cmake <= 3.9
-    add_library(MPI::MPI_CXX IMPORTED INTERFACE)
-    set_property(TARGET MPI::MPI_CXX PROPERTY INTERFACE_COMPILE_OPTIONS "${MPI_CXX_COMPILE_OPTIONS}")
-    set_property(TARGET MPI::MPI_CXX PROPERTY INTERFACE_COMPILE_DEFINITIONS "${MPI_CXX_COMPILE_DEFINITIONS}")
-    set_property(TARGET MPI::MPI_CXX PROPERTY INTERFACE_LINK_LIBRARIES "")
-    if(MPI_CXX_LINK_FLAGS)
-      set_property(TARGET MPI::MPI_CXX APPEND PROPERTY INTERFACE_LINK_LIBRARIES "${MPI_CXX_LINK_FLAGS}")
-    endif()
-    if(MPI_CXX_LIBRARIES)
-      set_property(TARGET MPI::MPI_CXX APPEND PROPERTY INTERFACE_LINK_LIBRARIES "${MPI_CXX_LIBRARIES}")
-    endif()
-    set_property(TARGET MPI::MPI_CXX PROPERTY INTERFACE_INCLUDE_DIRECTORIES "${MPI_CXX_INCLUDE_DIRS}")
+  if(MPI_CXX_LIBRARIES)
+    set_property(TARGET MPI::MPI_CXX APPEND PROPERTY INTERFACE_LINK_LIBRARIES "${MPI_CXX_LIBRARIES}")
   endif()
-  if(HPCG_MPI)
-    set(CMAKE_C_COMPILER ${MPI_COMPILER})
-    set(CMAKE_CXX_COMPILER ${MPI_COMPILER})
-  endif()
+  set_property(TARGET MPI::MPI_CXX PROPERTY INTERFACE_INCLUDE_DIRECTORIES "${MPI_CXX_INCLUDE_DIRS}")
 endif()
 
 # Find HIP package
 find_package(HIP REQUIRED)
 
-# gtest
-if(BUILD_TEST)
-  find_package(GTest REQUIRED)
-endif()
+# rocblas
+find_package(rocblas REQUIRED)
 
-# rocprim
-find_package(rocprim REQUIRED)
-
-# libnuma if MPI is enabled
-if(HPCG_MPI)
-  find_package(LIBNUMA REQUIRED)
-endif()
+# rocrand
+find_package(rocrand REQUIRED)
 
 # ROCm cmake package
 find_package(ROCM QUIET CONFIG PATHS ${CMAKE_PREFIX_PATH})
