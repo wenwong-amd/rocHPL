@@ -1,9 +1,0 @@
-#!/bin/bash
-
-# For OpenMP
-export OMP_NUM_THREADS=16
-
-mpirun -np 1 --map-by node:PE=16 --bind-to core:overload-allowed --report-bindings ./bin/rochpl.exe
-
-# run with openmpi + ucx
-# mpirun -np 1 --mca pml ucx --mca btl ^vader,tcp,openib,uct --map-by node:PE=16 --bind-to core:overload-allowed --report-bindings ./bin/rochpl.exe

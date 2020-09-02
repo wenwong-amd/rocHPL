@@ -34,10 +34,10 @@ find_package(Git REQUIRED)
 # set(BLA_VENDOR OpenBLAS)
 set(BLAS_LIBRARIES)
 find_library(BLAS_LIBRARIES NAMES openblas
-             PATHS ${CMAKE_CURRENT_SOURCE_DIR}/tpl/openblas
+             PATHS ${HPL_BLAS_DIR}
              NO_DEFAULT_PATH)
 if (BLAS_LIBRARIES)
-  message("-- Found BLAS: ${BLAS_LIBRARIES}")
+  message(STATUS "Found BLAS: ${BLAS_LIBRARIES}")
 else()
   find_package(BLAS REQUIRED)
 endif()
@@ -53,6 +53,7 @@ else()
 endif()
 
 # MPI
+set(MPI_HOME ${HPL_MPI_DIR})
 find_package(MPI REQUIRED)
 
 # Add some paths

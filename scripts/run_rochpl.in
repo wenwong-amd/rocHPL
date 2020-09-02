@@ -1,0 +1,139 @@
+#!/usr/bin/env bash
+# Author: Noel Chalmers
+
+#set -x #echo on
+
+# #################################################
+# helper functions
+# #################################################
+function display_help()
+{
+  echo "rocHPL run helper script"
+  echo "./run_rochpl "
+  echo "    [-h|--help] prints this help message"
+  echo "    [-v|--verbose] print MPI rank binding (Default: false)"
+  echo "    [--np] Number of MPI ranks to use"
+  echo "    [--ppn] Number of MPI ranks per node"
+}
+
+# This function is helpful for dockerfiles that do not have sudo installed, but the default user is root
+# true is a system command that completes successfully, function returns success
+# prereq: ${ID} must be defined before calling
+supported_distro( )
+{
+  if [ -z ${ID+foo} ]; then
+    printf "supported_distro(): \$ID must be set\n"
+    exit 2
+  fi
+
+  case "${ID}" in
+    ubuntu|centos|rhel|fedora|sles)
+        true
+        ;;
+    *)  printf "This script is currently supported on Ubuntu, CentOS, RHEL, Fedora and SLES\n"
+        exit 2
+        ;;
+  esac
+}
+
+# #################################################
+# Pre-requisites check
+# #################################################
+# Exit code 0: alls well
+# Exit code 1: problems with getopt
+# Exit code 2: problems with supported platforms
+
+# check if getopt command is installed
+type getopt > /dev/null
+if [[ $? -ne 0 ]]; then
+  echo "This script uses getopt to parse arguments; try installing the util-linux package";
+  exit 1
+fi
+
+# os-release file describes the system
+if [[ -e "/etc/os-release" ]]; then
+  source /etc/os-release
+else
+  echo "This script depends on the /etc/os-release file"
+  exit 2
+fi
+
+# The following function exits script if an unsupported distro is detected
+supported_distro
+
+# #################################################
+# global variables
+# #################################################
+# Grab options from CMake config
+rochpl_bin=@CMAKE_INSTALL_PREFIX@/bin/rochpl
+mpi_bin=@MPIEXEC_EXECUTABLE@
+openmpi_ucx=@HPL_OPENMPI_UCX@
+verbose=false
+np=1
+ppn=1
+
+# #################################################
+# Parameter parsing
+# #################################################
+
+# check if we have a modern version of getopt that can handle whitespace and long parameters
+getopt -T
+if [[ $? -eq 4 ]]; then
+  GETOPT_PARSE=$(getopt --name "${0}" --longoptions help,verbose,np:,ppn: --options hv -- "$@")
+else
+  echo "Need a new version of getopt"
+  exit 1
+fi
+
+if [[ $? -ne 0 ]]; then
+  echo "getopt invocation failed; could not parse the command line";
+  exit 1
+fi
+
+eval set -- "${GETOPT_PARSE}"
+
+while true; do
+  case "${1}" in
+    -h|--help)
+        display_help
+        exit 0
+        ;;
+    -v|--verbose)
+        verbose=true
+        shift ;;
+    --np)
+        np=${2}
+        shift 2 ;;
+    --ppn)
+        ppn=${2}
+        shift 2 ;;
+    --) shift ; break ;;
+    *)  echo "Unexpected command line parameter received; aborting";
+        exit 1
+        ;;
+  esac
+done
+
+# count the number of physical cores
+num_cpu_cores=$(grep '^core id' /proc/cpuinfo |sort -u|wc -l)
+
+# set the number pf threads to fill the node
+num_core_per_node=$((num_cpu_cores/ppn))
+
+# For OpenMP, set number of threads
+export OMP_NUM_THREADS=${num_core_per_node}
+
+#Default MPI options
+mpi_args="--map-by node:PE=${num_core_per_node} --bind-to core:overload-allowed"
+
+if [[ ${verbose} == true ]]; then
+  mpi_args="${mpi_args} --report-bindings"
+fi
+
+if [[ ${openmpi_ucx} == ON ]]; then
+  # run with openmpi + ucx
+  mpi_args="--mca pml ucx --mca btl ^vader,tcp,openib,uct ${mpi_args}"
+fi
+
+#run
+${mpi_bin} -np ${np} ${mpi_args} ${rochpl_bin}

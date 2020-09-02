@@ -30,6 +30,11 @@ option(HPL_PROGRESS_REPORT "Enable printing progess report to terminal during ru
 option(HPL_DETAILED_TIMING "Enable detailed timers during run" ON)
 option(GPU_AWARE_MPI "Enable use of GPU-Aware MPI functionality" OFF)
 
+option(HPL_BLAS_DIR "Path to CPU BLAS library" ${CMAKE_CURRENT_SOURCE_DIR}/tpl/openblas)
+option(HPL_MPI_DIR  "Path to MPI library" ${CMAKE_CURRENT_SOURCE_DIR}/tpl/openmpi)
+
+option(HPL_OPENMPI_UCX "Compile WITH OpenMPI+UCX support." OFF)
+
 set(CMAKE_INSTALL_PREFIX "/opt/rocm" CACHE PATH "Install path prefix, prepended onto install directories")
 
 # CMake modules
@@ -71,7 +76,7 @@ option(BUILD_TEST "Build rocHPL single-node test" OFF)
 include(cmake/Dependencies.cmake)
 
 # Setup version
-rocm_setup_version(VERSION 0.1)
+rocm_setup_version(VERSION 3.7.0)
 
 # AMD targets
 set(AMDGPU_TARGETS gfx900;gfx906;gfx908 CACHE STRING "List of specific machine types for library to target")
@@ -150,7 +155,6 @@ target_link_libraries(rochpl PRIVATE roc::rocblas)
 target_link_libraries(rochpl PRIVATE roc::rocrand)
 
 # Target properties
-set_target_properties(rochpl PROPERTIES OUTPUT_NAME "rochpl.exe")
 set_target_properties(rochpl PROPERTIES VERSION ${rochpl_VERSION})
 set_target_properties(rochpl PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 set_target_properties(rochpl PROPERTIES DEBUG_POSTFIX "-d")
@@ -160,8 +164,9 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/include/hpl_version.h.in"
                "${PROJECT_BINARY_DIR}/include/hpl_version.h")
 
 # Configure run script
-configure_file("${CMAKE_CURRENT_SOURCE_DIR}/scripts/rochpl.in"
-               "${PROJECT_BINARY_DIR}/rochpl")
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/scripts/run_rochpl.in"
+               "${CMAKE_BINARY_DIR}/run_rochpl"
+               @ONLY)
 
 #move input file
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/scripts/HPL.dat
