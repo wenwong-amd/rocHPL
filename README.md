@@ -13,7 +13,7 @@ rocHPL is a benchmark based on the [HPL][] benchmark application, implemented on
 ## Quickstart rocHPL build and install
 
 #### Install script
-You can build rocHPL using the *install.sh* script
+You can build rocHPL using the `install.sh` script
 ```
 # Clone rocHPL using git
 git clone https://github.com/ROCmSoftwarePlatform/rocHPL.git
