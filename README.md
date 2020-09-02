@@ -27,15 +27,15 @@ cd rocHPL
 #    -i|--install]        - install after build
 #    -d|--dependencies    - install dependencies
 #    -g|--debug]          - Set build type to Debug (otherwise build Release)
-#    --with-cpublas=<dir> - Path to external CPU BLAS library (Default: clone+build [OpenBLAS] v0.3.10)
-#    --with-mpi=<dir>     - Path to external MPI install (Default: clone+build [OpenMPI] v4.0.5 and [UCX] x1.8.1 in tpl/)
+#    --with-cpublas=<dir> - Path to external CPU BLAS library (Default: clone+build OpenBLAS)
+#    --with-mpi=<dir>     - Path to external MPI install (Default: clone+build OpenMPI)
 #    --gpu-aware-mpi      - MPI library supports GPU-aware communication (Default: false)
 #    --verbose-print      - Verbose output during HPL setup (Default: true)
 #    --progress-report    - Print progress report to terminal during HPL run (Default: true)
 #    --detailed-timing    - Record detailed timers during HPL run (Default: true)
 ./install.sh -di
 ```
-After install and build, the `rochpl` executable is placed in build/rochpl-install, by default.
+By default, [OpenBLAS] v0.3.10, [UCX] v1.8.1, and [OpenMPI] v4.0.5 will be cloned and build in rocHPL/tpl. After install and build, the `rochpl` executable is placed in build/rochpl-install.
 
 ## Running rocHPL benchmark application
 You can run the rocHPL benchmark application by running the executable with MPI directly, or by using a provided `run_rochpl` script configured at build
