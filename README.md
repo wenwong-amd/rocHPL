@@ -26,7 +26,7 @@ cd rocHPL
 #    -h|--help            - prints this help message
 #    -i|--install         - install after build
 #    -d|--dependencies    - install dependencies
-#    -g|--debug]          - Set build type to Debug (otherwise build Release)
+#    -g|--debug           - Set build type to Debug (otherwise build Release)
 #    --with-cpublas=<dir> - Path to external CPU BLAS library (Default: clone+build OpenBLAS)
 #    --with-mpi=<dir>     - Path to external MPI install (Default: clone+build OpenMPI)
 #    --gpu-aware-mpi      - MPI library supports GPU-aware communication (Default: false)
