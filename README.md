@@ -24,7 +24,7 @@ cd rocHPL
 # Run install.sh script
 # Command line options:
 #    -h|--help            - prints this help message
-#    -i|--install]        - install after build
+#    -i|--install         - install after build
 #    -d|--dependencies    - install dependencies
 #    -g|--debug]          - Set build type to Debug (otherwise build Release)
 #    --with-cpublas=<dir> - Path to external CPU BLAS library (Default: clone+build OpenBLAS)
