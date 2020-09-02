@@ -35,7 +35,7 @@ cd rocHPL
 #    --detailed-timing    - Record detailed timers during HPL run (Default: true)
 ./install.sh -di
 ```
-By default, [OpenBLAS] v0.3.10, [UCX] v1.8.1, and [OpenMPI] v4.0.5 will be cloned and build in rocHPL/tpl. After install and build, the `rochpl` executable is placed in build/rochpl-install.
+By default, [OpenBLAS] v0.3.10, [UCX] v1.8.1, and [OpenMPI] v4.0.5 will be cloned and build in rocHPL/tpl. After build and install, the `rochpl` executable is placed in build/rochpl-install.
 
 ## Running rocHPL benchmark application
 You can run the rocHPL benchmark application by running the executable with MPI directly, or by using a provided `run_rochpl` script configured at build
