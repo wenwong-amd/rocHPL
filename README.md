@@ -3,7 +3,7 @@ rocHPL is a benchmark based on the [HPL][] benchmark application, implemented on
 
 ## Requirements
 * Git
-* CMake (3.5 or later)
+* CMake (3.10 or later)
 * MPI
 * NUMA library
 * AMD [ROCm] platform (3.5 or later)
@@ -23,28 +23,30 @@ cd rocHPL
 
 # Run install.sh script
 # Command line options:
-#    -h|--help         - prints this help message
-#    -i|--install      - install after build
-#    -d|--dependencies - install dependencies
-#    -r|--reference    - reference mode
-#    -g|--debug        - -DCMAKE_BUILD_TYPE=Debug (default: Release)
-#    -t|--test         - build HPL test application for single GPU
-#    --with-mpi        - compile with MPI support (default: enabled)
-#    --with-openmp     - compile with OpenMP support (default: enabled)
+#    -h|--help            - prints this help message
+#    -i|--install]        - install after build
+#    -d|--dependencies    - install dependencies
+#    -g|--debug]          - Set build type to Debug (otherwise build Release)
+#    --with-cpublas=<dir> - Path to external CPU BLAS library (Default: clone+build [OpenBLAS] v0.3.10)
+#    --with-mpi=<dir>     - Path to external MPI install (Default: clone+build [OpenMPI] v4.0.5 and [UCX] x1.8.1 in tpl/)
+#    --gpu-aware-mpi      - MPI library supports GPU-aware communication (Default: false)
+#    --verbose-print      - Verbose output during HPL setup (Default: true)
+#    --progress-report    - Print progress report to terminal during HPL run (Default: true)
+#    --detailed-timing    - Record detailed timers during HPL run (Default: true)
 ./install.sh -di
 ```
+After install and build, the `rochpl` executable is placed in build/rochpl-install, by default.
 
 ## Running rocHPL benchmark application
-You can run the rocHPL benchmark application by either using command line parameters or the `HPL.dat` input file
+You can run the rocHPL benchmark application by running the executable with MPI directly, or by using a provided `run_rochpl` script configured at build
 ```
-rochpl -np <p,q> -N <n> -NB <nb>
+run_rochpl --np <np> --ppn <ppn>
 # where
-# p,q     - is the MPI rank partition, total ranks = p x q
-# n       - is the global matrix problem size
-# nb      - is the panel blocking size
+# np      - is the number of MPI ranks to run with
+# ppn     - is the number of ranks per node you are running (important for CPU partitioning)
 ```
 
-Similarly, these parameters can be entered into an input file `HPL.dat` in the working directory, e.g.
+The `rochpl` uses an input file `HPL.dat`, e.g.
 ```
 HPLinpack benchmark input file
 Innovative Computing Laboratory, University of Tennessee
@@ -97,5 +99,8 @@ The [license file][] can be found in the main repository.
 [HIP]: https://github.com/ROCm-Developer-Tools/HIP
 [rocBLAS]: https://github.com/ROCmSoftwarePlatform/rocBLAS
 [rocRAND]: https://github.com/ROCmSoftwarePlatform/rocRAND
+[OpenBLAS]: https://github.com/xianyi/OpenBLAS
+[OpenMPI]: https://github.com/open-mpi/ompi
+[UCX]: https://github.com/openucx/ucx
 [the issue tracker]: https://github.com/ROCmSoftwarePlatform/rocHPL/issues
 [license file]: https://github.com/ROCmSoftwarePlatform/rocHPL
