@@ -15,6 +15,7 @@ function display_help()
   echo "    [-i|--install] install after build"
   echo "    [-d|--dependencies] install dependencies"
   echo "    [-g|--debug] Set build type to Debug (otherwise build Release)"
+  echo "    [--with-rocm=<dir>] Path to ROCm install (Default: /opt/rocm)"
   echo "    [--with-cpublas=<dir>] Path to external CPU BLAS library (Default: clone+build OpenBLAS v0.3.10 in tpl/)"
   echo "    [--with-mpi=<dir>] Path to external MPI install (Default: clone+build OpenMPI v4.0.5 in tpl/)"
   echo "    [--gpu-aware-mpi] MPI library supports GPU-aware communication (Default: false)"
@@ -265,8 +266,9 @@ install_openmpi( )
   if [ ! -d "./tpl/ucx" ]; then
     mkdir -p tpl && cd tpl
     git clone --branch v1.8.1 https://github.com/openucx/ucx.git ucx
-    cd ucx; ./autogen.sh; mkdir build; cd build
-    ../contrib/configure-opt --prefix=${PWD}/../ --with-rocm=/opt/rocm --without-knem --without-cuda
+    cd ucx; ./autogen.sh; ./autogen.sh #why do we have to run this twice?
+    mkdir build; cd build
+    ../contrib/configure-opt --prefix=${PWD}/../ --with-rocm=${with_rocm} --without-knem --without-cuda
     make -j$(nproc); make install; cd ../../..
   fi
 
@@ -311,6 +313,7 @@ install_package=false
 install_dependencies=false
 install_prefix=rochpl-install
 build_release=true
+with_rocm=/opt/rocm
 with_mpi=tpl/openmpi
 with_cpublas=tpl/openblas
 gpu_aware_mpi=OFF
@@ -326,7 +329,7 @@ detailed_timing=true
 # check if we have a modern version of getopt that can handle whitespace and long parameters
 getopt -T
 if [[ $? -eq 4 ]]; then
-  GETOPT_PARSE=$(getopt --name "${0}" --longoptions help,install,dependencies,debug,with-mpi:,with-cpublas:,gpu-aware-mpi:,verbose-print:,progress-report:,detailed-timing: --options hidg -- "$@")
+  GETOPT_PARSE=$(getopt --name "${0}" --longoptions help,install,dependencies,debug,with-rocm:,with-mpi:,with-cpublas:,gpu-aware-mpi:,verbose-print:,progress-report:,detailed-timing: --options hidg -- "$@")
 else
   echo "Need a new version of getopt"
   exit 1
@@ -354,6 +357,9 @@ while true; do
     -g|--debug)
         build_release=false
         shift ;;
+    --with-rocm)
+        with_rocm=${2}
+        shift 2 ;;
     --with-mpi)
         with_mpi=${2}
         shift 2 ;;
@@ -408,7 +414,8 @@ fi
 
 # We append customary rocm path; if user provides custom rocm path in ${path}, our
 # hard-coded path has lesser priority
-export PATH=${PATH}:/opt/rocm/bin
+export ROCM_PATH=${with_rocm}
+export PATH=${PATH}:${ROCM_PATH}/bin
 
 pushd .
   # #################################################
@@ -434,7 +441,7 @@ pushd .
   # #################################################
   # configure & build
   # #################################################
-  cmake_common_options="-DCMAKE_INSTALL_PREFIX=${install_prefix} -DHPL_BLAS_DIR=${with_cpublas} -DHPL_MPI_DIR=${with_mpi}"
+  cmake_common_options="-DCMAKE_INSTALL_PREFIX=${install_prefix} -DHPL_BLAS_DIR=${with_cpublas} -DHPL_MPI_DIR=${with_mpi} -DROCM_PATH=${with_rocm}"
 
   # build type
   cmake_common_options="${cmake_common_options} -DCMAKE_BUILD_TYPE=Release"

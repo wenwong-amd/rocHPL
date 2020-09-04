@@ -32,7 +32,7 @@ find_package(Git REQUIRED)
 # For some reason cmake doesn't let us manually specify a search path in FindBLAS,
 # so let's add our own library if we find one in tpl
 # set(BLA_VENDOR OpenBLAS)
-set(BLAS_LIBRARIES)
+get_filename_component(HPL_BLAS_DIR ${HPL_BLAS_DIR} ABSOLUTE)
 find_library(BLAS_LIBRARIES NAMES openblas
              PATHS ${HPL_BLAS_DIR}
              NO_DEFAULT_PATH)
@@ -57,7 +57,7 @@ set(MPI_HOME ${HPL_MPI_DIR})
 find_package(MPI REQUIRED)
 
 # Add some paths
-list(APPEND CMAKE_PREFIX_PATH /opt/rocm/hip /opt/rocm)
+list(APPEND CMAKE_PREFIX_PATH ${ROCM_PATH}/hip ${ROCM_PATH})
 
 # Find HIP package
 find_package(HIP REQUIRED)

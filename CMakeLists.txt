@@ -30,6 +30,7 @@ option(HPL_PROGRESS_REPORT "Enable printing progess report to terminal during ru
 option(HPL_DETAILED_TIMING "Enable detailed timers during run" ON)
 option(GPU_AWARE_MPI "Enable use of GPU-Aware MPI functionality" OFF)
 
+option(ROCM_PATH "Path to ROCm install" /opt/rocm)
 option(HPL_BLAS_DIR "Path to CPU BLAS library" ${CMAKE_CURRENT_SOURCE_DIR}/tpl/openblas)
 option(HPL_MPI_DIR  "Path to MPI library" ${CMAKE_CURRENT_SOURCE_DIR}/tpl/openmpi)
 
@@ -40,7 +41,7 @@ set(CMAKE_INSTALL_PREFIX "/opt/rocm" CACHE PATH "Install path prefix, prepended 
 # CMake modules
 list(APPEND CMAKE_MODULE_PATH
      ${CMAKE_CURRENT_SOURCE_DIR}/cmake
-     /opt/rocm/hip/cmake)
+     ${ROCM_PATH}/hip/cmake)
 
 # Set a default build type if none was specified
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)

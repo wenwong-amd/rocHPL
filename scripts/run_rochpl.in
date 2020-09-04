@@ -68,6 +68,7 @@ supported_distro
 rochpl_bin=@CMAKE_INSTALL_PREFIX@/bin/rochpl
 mpi_bin=@MPIEXEC_EXECUTABLE@
 openmpi_ucx=@HPL_OPENMPI_UCX@
+blas_dir=@HPL_BLAS_DIR@
 verbose=false
 np=1
 ppn=1
@@ -113,6 +114,8 @@ while true; do
         ;;
   esac
 done
+
+export LD_LIBRARY_PATH=${blas_dir}:$LD_LIBRARY_PATH
 
 # count the number of physical cores
 num_cpu_cores=$(grep '^core id' /proc/cpuinfo |sort -u|wc -l)
