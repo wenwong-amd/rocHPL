@@ -99,10 +99,13 @@ foreach(i ${rochpl_device_source})
 endforeach()
 
 # HIP flags workaround while target_compile_options does not work
-list(APPEND HIP_HIPCC_FLAGS "-Wno-unused-command-line-argument")
+list(APPEND HIP_HIPCC_FLAGS "-O3 -Wno-unused-command-line-argument -ffp-contract=fast -ffast-math -funsafe-math-optimizations")
+
+list(APPEND CMAKE_HOST_FLAGS "-O3")
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
   list(APPEND HIP_HIPCC_FLAGS "-g")
+  list(APPEND CMAKE_HOST_FLAGS "-g")
 endif()
 
 foreach(target ${AMDGPU_TARGETS})
@@ -111,6 +114,8 @@ endforeach()
 
 # Target executable
 hip_add_executable(rochpl ${rochpl_source} ${rochpl_device_source})
+
+target_compile_options(rochpl PRIVATE ${CMAKE_HOST_FLAGS})
 
 if(HPL_DEBUG)
   target_compile_definitions(rochpl PRIVATE HPL_DEBUG)
