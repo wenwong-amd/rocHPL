@@ -2,7 +2,7 @@
 # Author: Nico Trost
 # Modified by: Noel Chalmers
 
-set -x #echo on
+#set -x #echo on
 
 # #################################################
 # helper functions
