@@ -2,7 +2,7 @@
 # Author: Nico Trost
 # Modified by: Noel Chalmers
 
-#set -x #echo on
+set -x #echo on
 
 # #################################################
 # helper functions
@@ -124,10 +124,17 @@ install_packages( )
   fi
 
   # dependencies needed for executable to build
-  local library_dependencies_ubuntu=( "make" "cmake" "libnuma-dev" "rocm-dev" "pkg-config" "autoconf" "libtool" "automake" "m4" "flex" "rocblas" "rocrand" )
-  local library_dependencies_centos=( "make" "cmake3" "rocm-dev" "gcc-c++" "rpm-build" "epel-release" "numactl-libs" "autoconf" "libtool" "automake" "m4" "flex" "rocblas" "rocrand" )
-  local library_dependencies_fedora=( "make" "cmake" "rocm-dev" "gcc-c++" "libcxx-devel" "rpm-build" "numactl-libs"  "autoconf" "libtool" "automake" "m4" "flex" "rocblas" "rocrand" )
-  local library_dependencies_sles=(   "make" "cmake" "rocm-dev" "gcc-c++" "libcxxtools9" "rpm-build" "libnuma-devel" "autoconf" "libtool" "automake" "m4" "flex" "rocblas" "rocrand" )
+  local library_dependencies_ubuntu=( "make" "cmake" "libnuma-dev" "pkg-config" "autoconf" "libtool" "automake" "m4" "flex" )
+  local library_dependencies_centos=( "make" "cmake3" "gcc-c++" "rpm-build" "epel-release" "numactl-libs" "autoconf" "libtool" "automake" "m4" "flex" )
+  local library_dependencies_fedora=( "make" "cmake" "gcc-c++" "libcxx-devel" "rpm-build" "numactl-libs"  "autoconf" "libtool" "automake" "m4" "flex" )
+  local library_dependencies_sles=(   "make" "cmake" "gcc-c++" "libcxxtools9" "rpm-build" "libnuma-devel" "autoconf" "libtool" "automake" "m4" "flex" )
+
+  if [[ "${with_rocm}" == /opt/rocm ]]; then
+    library_dependencies_ubuntu+=("rocm-dev" "rocblas" "rocrand")
+    library_dependencies_centos+=("rocm-dev" "rocblas" "rocrand")
+    library_dependencies_fedora+=("rocm-dev" "rocblas" "rocrand")
+    library_dependencies_sles+=("rocm-dev" "rocblas" "rocrand")
+  fi
 
   case "${ID}" in
     ubuntu)
