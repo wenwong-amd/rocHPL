@@ -84,7 +84,7 @@ HPL.out      output file name (if any)
 
 ## Performance evaluation
 The global matrix size N depends on the total amount of GPU VRAM available, and is usually selected to be a multiple of the blocksize NB. Typical values for N when NB=384 include:
-* 16 GB  - N=46080
+* 16 GB  - N=45312
 * 32 GB  - N=64128
 * 64 GB  - N=89472
 * 128 GB - N=125568
