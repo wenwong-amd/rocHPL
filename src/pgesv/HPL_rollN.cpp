@@ -14,7 +14,7 @@
  * ---------------------------------------------------------------------
  */
 
-#include "hpl.h"
+#include "hpl.hpp"
 
 #define I_SEND 0
 #define I_RECV 1

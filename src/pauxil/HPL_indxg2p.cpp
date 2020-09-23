@@ -14,7 +14,7 @@
  * ---------------------------------------------------------------------
  */
 
-#include "hpl.h"
+#include "hpl.hpp"
 
 int HPL_indxg2p(const int IG,
                 const int INB,

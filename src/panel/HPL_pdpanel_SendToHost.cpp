@@ -7,7 +7,7 @@
  *    SPDX-License-Identifier: (BSD-3-Clause)
  * ---------------------------------------------------------------------
  */
-#include "hpl.h"
+#include "hpl.hpp"
 
 void HPL_pdpanel_SendToHost(HPL_T_panel* PANEL) {
   int jb;

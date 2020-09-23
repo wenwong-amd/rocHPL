@@ -14,7 +14,7 @@
  * ---------------------------------------------------------------------
  */
 
-#include "hpl.h"
+#include "hpl.hpp"
 
 void HPL_dmatgen(const int M,
                  const int N,

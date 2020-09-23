@@ -14,7 +14,7 @@
  * ---------------------------------------------------------------------
  */
 
-#include "hpl.h"
+#include "hpl.hpp"
 
 void HPL_pwarn(FILE*       STREAM,
                int         LINE,

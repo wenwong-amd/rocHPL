@@ -14,7 +14,7 @@
  * ---------------------------------------------------------------------
  */
 
-#include "hpl.h"
+#include "hpl.hpp"
 
 void HPL_xjumpm(const int JUMPM,
                 int*      MULT,

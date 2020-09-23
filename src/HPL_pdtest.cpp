@@ -14,7 +14,7 @@
  * ---------------------------------------------------------------------
  */
 
-#include "hpl.h"
+#include "hpl.hpp"
 
 void HPL_pdtest(HPL_T_test* TEST,
                 HPL_T_grid* GRID,

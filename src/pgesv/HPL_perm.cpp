@@ -14,7 +14,7 @@
  * ---------------------------------------------------------------------
  */
 
-#include "hpl.h"
+#include "hpl.hpp"
 
 void HPL_perm(const int N, int* LINDXA, int* LINDXAU, int* IWORK) {
   /*

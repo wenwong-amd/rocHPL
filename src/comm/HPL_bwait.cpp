@@ -14,7 +14,7 @@
  * ---------------------------------------------------------------------
  */
 
-#include "hpl.h"
+#include "hpl.hpp"
 
 int HPL_bwait(HPL_T_panel* PANEL) {
   /*

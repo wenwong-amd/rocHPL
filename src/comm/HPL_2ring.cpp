@@ -14,7 +14,7 @@
  * ---------------------------------------------------------------------
  */
 
-#include "hpl.h"
+#include "hpl.hpp"
 
 int HPL_binit_2ring(HPL_T_panel* PANEL) {
 

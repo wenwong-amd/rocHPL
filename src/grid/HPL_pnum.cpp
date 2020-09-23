@@ -14,7 +14,7 @@
  * ---------------------------------------------------------------------
  */
 
-#include "hpl.h"
+#include "hpl.hpp"
 
 int HPL_pnum(const HPL_T_grid* GRID, const int MYROW, const int MYCOL) {
   /*

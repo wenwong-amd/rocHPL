@@ -8,7 +8,7 @@
  * ---------------------------------------------------------------------
  */
 
-#include "hpl.h"
+#include "hpl.hpp"
 
 int HPL_binit_ibcst(HPL_T_panel* PANEL) {
 

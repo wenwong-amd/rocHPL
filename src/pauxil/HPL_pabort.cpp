@@ -14,7 +14,7 @@
  * ---------------------------------------------------------------------
  */
 
-#include "hpl.h"
+#include "hpl.hpp"
 
 void HPL_pabort(int LINE, const char* SRNAME, const char* FORM, ...) {
   /*

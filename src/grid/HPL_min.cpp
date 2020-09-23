@@ -14,7 +14,7 @@
  * ---------------------------------------------------------------------
  */
 
-#include "hpl.h"
+#include "hpl.hpp"
 
 void HPL_min(const int N, const void* IN, void* INOUT, const HPL_T_TYPE DTYPE) {
   /*

@@ -14,16 +14,9 @@
  * ---------------------------------------------------------------------
  */
 
-#include "hpl.h"
+#include "hpl.hpp"
 
-#ifdef STDC_HEADERS
-void HPL_pipid(HPL_T_panel* PANEL, int* K, int* IPID)
-#else
-void HPL_pipid(PANEL, K, IPID) HPL_T_panel* PANEL;
-int* K;
-int* IPID;
-#endif
-{
+void HPL_pipid(HPL_T_panel* PANEL, int* K, int* IPID){
   /*
    * Purpose
    * =======

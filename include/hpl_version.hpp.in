@@ -8,8 +8,8 @@
  * ---------------------------------------------------------------------
  */
 
-#ifndef HPL_VERSION_H
-#define HPL_VERSION_H
+#ifndef HPL_VERSION_HPP
+#define HPL_VERSION_HPP
 
 // clang-format off
 #define __ROCHPL_VER_MAJOR     @rochpl_VERSION_MAJOR@

@@ -7,7 +7,7 @@
  *    SPDX-License-Identifier: (BSD-3-Clause)
  * ---------------------------------------------------------------------
  */
-#include "hpl.h"
+#include "hpl.hpp"
 
 void HPL_unroll_ipiv(const int mp,
                      const int jb,

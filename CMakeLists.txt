@@ -166,8 +166,8 @@ set_target_properties(rochpl PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY
 set_target_properties(rochpl PROPERTIES DEBUG_POSTFIX "-d")
 
 # Configure a header file to pass the rocHPL version
-configure_file("${CMAKE_CURRENT_SOURCE_DIR}/include/hpl_version.h.in"
-               "${PROJECT_BINARY_DIR}/include/hpl_version.h")
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/include/hpl_version.hpp.in"
+               "${PROJECT_BINARY_DIR}/include/hpl_version.hpp")
 
 # Configure run script
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/scripts/run_rochpl.in"

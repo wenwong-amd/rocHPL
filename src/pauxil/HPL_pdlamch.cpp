@@ -14,7 +14,7 @@
  * ---------------------------------------------------------------------
  */
 
-#include "hpl.h"
+#include "hpl.hpp"
 
 double HPL_pdlamch(MPI_Comm COMM, const HPL_T_MACH CMACH) {
   /*

@@ -14,7 +14,7 @@
  * ---------------------------------------------------------------------
  */
 
-#include "hpl.h"
+#include "hpl.hpp"
 /*
  * Define default value for unrolling factors
  * #ifndef HPL_LATCPY_M_DEPTH

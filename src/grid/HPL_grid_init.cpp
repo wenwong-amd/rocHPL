@@ -14,7 +14,7 @@
  * ---------------------------------------------------------------------
  */
 
-#include "hpl.h"
+#include "hpl.hpp"
 
 int HPL_grid_init(MPI_Comm          COMM,
                   const HPL_T_ORDER ORDER,

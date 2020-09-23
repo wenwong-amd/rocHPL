@@ -14,7 +14,7 @@
  * ---------------------------------------------------------------------
  */
 
-#include "hpl.h"
+#include "hpl.hpp"
 
 void HPL_jumpit(int* MULT, int* IADD, int* IRANN, int* IRANM) {
   /*

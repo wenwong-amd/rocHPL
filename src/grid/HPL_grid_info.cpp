@@ -14,7 +14,7 @@
  * ---------------------------------------------------------------------
  */
 
-#include "hpl.h"
+#include "hpl.hpp"
 
 int HPL_grid_info(const HPL_T_grid* GRID,
                   int*              NPROW,

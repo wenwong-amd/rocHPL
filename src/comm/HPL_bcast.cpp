@@ -14,7 +14,7 @@
  * ---------------------------------------------------------------------
  */
 
-#include "hpl.h"
+#include "hpl.hpp"
 
 int HPL_bcast(HPL_T_panel* PANEL, int* IFLAG) {
   /*

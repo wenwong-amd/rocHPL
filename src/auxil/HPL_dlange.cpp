@@ -14,7 +14,7 @@
  * ---------------------------------------------------------------------
  */
 
-#include "hpl.h"
+#include "hpl.hpp"
 
 double HPL_dlange(const HPL_T_NORM NORM,
                   const int        M,

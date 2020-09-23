@@ -14,7 +14,7 @@
  * ---------------------------------------------------------------------
  */
 
-#include "hpl.h"
+#include "hpl.hpp"
 #include "rocrand.h"
 
 #define BLOCK_SIZE 512

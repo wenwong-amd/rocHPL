@@ -14,7 +14,7 @@
  * ---------------------------------------------------------------------
  */
 
-#include "hpl.h"
+#include "hpl.hpp"
 
 int HPL_send(double* SBUF, int SCOUNT, int DEST, int STAG, MPI_Comm COMM) {
   /*

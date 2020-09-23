@@ -8,7 +8,7 @@
  * ---------------------------------------------------------------------
  */
 
-#include "hpl.h"
+#include "hpl.hpp"
 
 rocblas_handle handle;
 

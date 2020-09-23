@@ -14,7 +14,7 @@
  * ---------------------------------------------------------------------
  */
 
-#include "hpl.h"
+#include "hpl.hpp"
 
 void HPL_pdpanel_new(HPL_T_grid*   GRID,
                      HPL_T_palg*   ALGO,

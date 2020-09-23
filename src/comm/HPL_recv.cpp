@@ -14,7 +14,7 @@
  * ---------------------------------------------------------------------
  */
 
-#include "hpl.h"
+#include "hpl.hpp"
 
 int HPL_recv(double* RBUF, int RCOUNT, int SRC, int RTAG, MPI_Comm COMM) {
   /*

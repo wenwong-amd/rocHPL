@@ -14,7 +14,7 @@
  * ---------------------------------------------------------------------
  */
 
-#include "hpl.h"
+#include "hpl.hpp"
 
 void HPL_pdupdateNT(HPL_T_panel* PBCST,
                     int*         IFLAG,

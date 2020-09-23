@@ -14,7 +14,7 @@
  * ---------------------------------------------------------------------
  */
 
-#include "hpl.h"
+#include "hpl.hpp"
 #include <hip/hip_runtime.h>
 /*
  * Define default value for unrolling factor
