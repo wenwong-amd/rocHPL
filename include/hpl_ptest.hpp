@@ -76,7 +76,9 @@ typedef struct HPL_S_test {
  * Function prototypes
  * ---------------------------------------------------------------------
  */
-void HPL_pdinfo(HPL_T_test*,
+void HPL_pdinfo(int ARGC,
+                char** ARGV,
+                HPL_T_test*,
                 int*,
                 int*,
                 int*,

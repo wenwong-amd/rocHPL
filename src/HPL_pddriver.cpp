@@ -83,7 +83,9 @@ int main(int ARGC, char** ARGV) {
    * 1            Equilibration (0=no,1=yes)
    * 8            memory alignment in double (> 0)
    */
-  HPL_pdinfo(&test,
+  HPL_pdinfo(ARGC,
+             ARGV,
+             &test,
              &ns,
              nval,
              &nbs,

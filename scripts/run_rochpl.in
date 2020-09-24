@@ -10,10 +10,21 @@ function display_help()
 {
   echo "rocHPL run helper script"
   echo "./run_rochpl "
-  echo "    [-h|--help] prints this help message"
+  echo "    [--np]  Number of MPI ranks to use.                   "
+  echo "    [--ppn] Number of MPI ranks per node.                 "
+  echo "    [-P]    Specific MPI grid size: the number of         "
+  echo "            rows in MPI grid.                             "
+  echo "    [-Q]    Specific MPI grid size: the number of         "
+  echo "            columns in MPI grid.                          "
+  echo "    [-N]    Specific matrix size: the number of           "
+  echo "            rows/columns in global matrix.                "
+  echo "    [--NB]  Specific panel size: the number of            "
+  echo "            rows/columns in panels.                       "
+  echo "    [-i]    Input file. When set, all other commnand      "
+  echo "            line parameters are ignored, and problem      "
+  echo "            parameters are read from input file.          "
+  echo "    [-h|--help] prints this help message                  "
   echo "    [-v|--verbose] print MPI rank binding (Default: false)"
-  echo "    [--np] Number of MPI ranks to use"
-  echo "    [--ppn] Number of MPI ranks per node"
 }
 
 # This function is helpful for dockerfiles that do not have sudo installed, but the default user is root
@@ -73,6 +84,15 @@ verbose=false
 np=1
 ppn=1
 
+P=1
+Q=1
+N=45312
+NB=384
+
+filename=HPL.dat
+inputfile=false
+cmdrun=false
+
 # #################################################
 # Parameter parsing
 # #################################################
@@ -80,7 +100,7 @@ ppn=1
 # check if we have a modern version of getopt that can handle whitespace and long parameters
 getopt -T
 if [[ $? -eq 4 ]]; then
-  GETOPT_PARSE=$(getopt --name "${0}" --longoptions help,verbose,np:,ppn: --options hv -- "$@")
+  GETOPT_PARSE=$(getopt --name "${0}" --longoptions np:,ppn:,NB:,help,verbose, --options hvP:Q:N:i: -- "$@")
 else
   echo "Need a new version of getopt"
   exit 1
@@ -108,12 +128,47 @@ while true; do
     --ppn)
         ppn=${2}
         shift 2 ;;
+    -P)
+        P=${2}
+        cmdrun=true
+        shift 2 ;;
+    -Q)
+        Q=${2}
+        cmdrun=true
+        shift 2 ;;
+    -N)
+        N=${2}
+        cmdrun=true
+        shift 2 ;;
+    --NB)
+        NB=${2}
+        cmdrun=true
+        shift 2 ;;
+    -i)
+        filename=${2}
+        inputfile=true
+        shift 2 ;;
     --) shift ; break ;;
     *)  echo "Unexpected command line parameter received; aborting";
         exit 1
         ;;
   esac
 done
+
+#if nothing but np and ppn parameters where given, default to running
+# with default input file
+if [[ "${inputfile}" == false && "${runcmd}" == false ]]; then
+  inputfile=true
+fi
+
+if [[ "${runcmd}" == true ]]; then
+  np=$( (P)*(Q) )
+fi
+
+if [[ "$(np<1)" ]]; then
+  echo "Invalid MPI grid parameters; aborting";
+  exit 1
+fi
 
 export LD_LIBRARY_PATH=${blas_dir}:$LD_LIBRARY_PATH
 
@@ -138,5 +193,11 @@ if [[ ${openmpi_ucx} == ON ]]; then
   mpi_args="--mca pml ucx --mca btl ^vader,tcp,openib,uct ${mpi_args}"
 fi
 
+if [[ "${inputfile}" == true ]]; then
+  rochpl_args="-i ${filename}"
+else
+  rochpl_args="-P ${P} -Q ${Q} -N ${N} -NB ${NB}"
+fi
+
 #run
-${mpi_bin} -np ${np} ${mpi_args} ${rochpl_bin}
+${mpi_bin} -np ${np} ${mpi_args} ${rochpl_bin} ${rochpl_args}

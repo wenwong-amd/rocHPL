@@ -15,8 +15,14 @@
  */
 
 #include "hpl.hpp"
+#include <iostream>
+#include <cstdio>
+#include <cstring>
 
-void HPL_pdinfo(HPL_T_test*  TEST,
+
+void HPL_pdinfo(int ARGC,
+                char** ARGV,
+                HPL_T_test*  TEST,
                 int*         NS,
                 int*         N,
                 int*         NBS,
@@ -213,631 +219,854 @@ void HPL_pdinfo(HPL_T_test*  TEST,
   TEST->epsil = 2.0e-16;
   TEST->thrsh = 16.0;
   TEST->kfail = TEST->kpass = TEST->kskip = TEST->ktest = 0;
+
+  //parse settings
+  int p=1, q=1, n=45312, nb=384;
+  bool cmdlinerun=false;
+  bool inputfile=false;
+  std::string inputFileName="HPL.dat";
+
+  for (int i = 1; i < ARGC; i++) {
+    if (strcmp(ARGV[i], "-h") == 0 || strcmp(ARGV[i], "--help") == 0)
+    {
+      if (rank==0) {
+        std::cout << "rocHPL client command line options:                                 \n"
+           "-P  [ --ranksP ] arg (=1)          Specific MPI grid size: the number of      \n"
+           "                                   rows in MPI grid.                          \n"
+           "-Q  [ --ranksQ ] arg (=1)          Specific MPI grid size: the number of      \n"
+           "                                   columns in MPI grid.                       \n"
+           "-N  [ --sizeN ]  arg (=45312)      Specific matrix size: the number of rows   \n"
+           "                                   /columns in global matrix.                 \n"
+           "-NB [ --sizeNB ] arg (=384)        Specific panel size: the number of rows    \n"
+           "                                   /columns in panels.                        \n"
+           "-i  [ --input ]  arg (=HPL.dat)    Input file. When set, all other commnand   \n"
+           "                                   line parameters are ignored, and problem   \n"
+           "                                   parameters are read from input file.       \n"
+           "-h  [ --help ]                     Produces this help message                 \n"
+           "--version                          Prints the version number                  \n";
+       }
+       MPI_Barrier(MPI_COMM_WORLD);
+       MPI_Finalize();
+       exit(0);
+    }
+
+    if(strcmp(ARGV[i], "--version")==0)
+    {
+      if (rank==0) {
+        std::cout << "rocHPL version: " << __ROCHPL_VER_MAJOR
+                                << "."  << __ROCHPL_VER_MINOR
+                                << "."  << __ROCHPL_VER_PATCH
+                                << std::endl;
+      }
+      MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Finalize();
+      exit(0);
+    }
+
+    if (strcmp(ARGV[i], "-P") == 0 || strcmp(ARGV[i], "--ranksP") == 0)
+    {
+      p = atoi(ARGV[i+1]);
+      cmdlinerun=true;
+      i++;
+      if (p<1) {
+        if(rank == 0)
+          HPL_pwarn(stderr,
+                    __LINE__,
+                    "HPL_pdinfo",
+                    "Illegal value for P. Exiting ...");
+        MPI_Finalize();
+        exit(1);
+      }
+    }
+    if (strcmp(ARGV[i], "-Q") == 0 || strcmp(ARGV[i], "--ranksQ") == 0)
+    {
+      q = atoi(ARGV[i+1]);
+      cmdlinerun=true;
+      i++;
+      if (q<1) {
+        if(rank == 0)
+          HPL_pwarn(stderr,
+                    __LINE__,
+                    "HPL_pdinfo",
+                    "Illegal value for Q. Exiting ...");
+        MPI_Finalize();
+        exit(1);
+      }
+    }
+    if (strcmp(ARGV[i], "-N") == 0 || strcmp(ARGV[i], "--sizeN") == 0)
+    {
+      n = atoi(ARGV[i+1]);
+      cmdlinerun=true;
+      i++;
+      if (n<1) {
+        if(rank == 0)
+          HPL_pwarn(stderr,
+                    __LINE__,
+                    "HPL_pdinfo",
+                    "Illegal value for N. Exiting ...");
+        MPI_Finalize();
+        exit(1);
+      }
+    }
+    if (strcmp(ARGV[i], "-NB") == 0 || strcmp(ARGV[i], "--sizeNB") == 0)
+    {
+      nb = atoi(ARGV[i+1]);
+      cmdlinerun=true;
+      i++;
+      if (nb<1) {
+        if(rank == 0)
+          HPL_pwarn(stderr,
+                    __LINE__,
+                    "HPL_pdinfo",
+                    "Illegal value for NB. Exiting ...");
+        MPI_Finalize();
+        exit(1);
+      }
+    }
+    if (strcmp(ARGV[i], "-i") == 0 || strcmp(ARGV[i], "--input") == 0)
+    {
+      inputFileName = ARGV[i+1];
+      inputfile=true;
+      i++;
+    }
+  }
+
   /*
-   * Process 0 reads the input data, broadcasts to other processes and
-   * writes needed information to TEST->outfp.
+   * Check for enough processes in machine configuration
    */
-  char* status;
-  if(rank == 0) {
-    /*
-     * Open file and skip data file header
-     */
-    if((infp = fopen("HPL.dat", "r")) == NULL) {
-      HPL_pwarn(stderr, __LINE__, "HPL_pdinfo", "cannot open file HPL.dat");
-      error = 1;
-      goto label_error;
-    }
-
-    status = fgets(line, HPL_LINE_MAX - 2, infp);
-    status = fgets(auth, HPL_LINE_MAX - 2, infp);
-    /*
-     * Read name and unit number for summary output file
-     */
-    status = fgets(line, HPL_LINE_MAX - 2, infp);
-    (void)sscanf(line, "%s", file);
-    status = fgets(line, HPL_LINE_MAX - 2, infp);
-    (void)sscanf(line, "%s", num);
-    fid = atoi(num);
-    if(fid == 6)
-      TEST->outfp = stdout;
-    else if(fid == 7)
-      TEST->outfp = stderr;
-    else if((TEST->outfp = fopen(file, "w")) == NULL) {
-      HPL_pwarn(stderr, __LINE__, "HPL_pdinfo", "cannot open file %s.", file);
-      error = 1;
-      goto label_error;
-    }
-    /*
-     * Read and check the parameter values for the tests.
-     *
-     * Problem size (>=0) (N)
-     */
-    status = fgets(line, HPL_LINE_MAX - 2, infp);
-    (void)sscanf(line, "%s", num);
-    *NS = atoi(num);
-    if((*NS < 1) || (*NS > HPL_MAX_PARAM)) {
-      HPL_pwarn(stderr,
-                __LINE__,
-                "HPL_pdinfo",
-                "%s %d",
-                "Number of values of N is less than 1 or greater than",
-                HPL_MAX_PARAM);
-      error = 1;
-      goto label_error;
-    }
-
-    status  = fgets(line, HPL_LINE_MAX - 2, infp);
-    lineptr = line;
-    for(i = 0; i < *NS; i++) {
-      (void)sscanf(lineptr, "%s", num);
-      lineptr += strlen(num) + 1;
-      if((N[i] = atoi(num)) < 0) {
-        HPL_pwarn(stderr, __LINE__, "HPL_pdinfo", "Value of N less than 0");
-        error = 1;
-        goto label_error;
-      }
-    }
-    /*
-     * Block size (>=1) (NB)
-     */
-    status = fgets(line, HPL_LINE_MAX - 2, infp);
-    (void)sscanf(line, "%s", num);
-    *NBS = atoi(num);
-    if((*NBS < 1) || (*NBS > HPL_MAX_PARAM)) {
-      HPL_pwarn(stderr,
-                __LINE__,
-                "HPL_pdinfo",
-                "%s %s %d",
-                "Number of values of NB is less than 1 or",
-                "greater than",
-                HPL_MAX_PARAM);
-      error = 1;
-      goto label_error;
-    }
-
-    status  = fgets(line, HPL_LINE_MAX - 2, infp);
-    lineptr = line;
-    for(i = 0; i < *NBS; i++) {
-      (void)sscanf(lineptr, "%s", num);
-      lineptr += strlen(num) + 1;
-      if((NB[i] = atoi(num)) < 1) {
-        HPL_pwarn(stderr, __LINE__, "HPL_pdinfo", "Value of NB less than 1");
-        error = 1;
-        goto label_error;
-      }
-    }
-    /*
-     * Process grids, mapping, (>=1) (P, Q)
-     */
-    status = fgets(line, HPL_LINE_MAX - 2, infp);
-    (void)sscanf(line, "%s", num);
-    *PMAPPIN = (atoi(num) == 1 ? HPL_COLUMN_MAJOR : HPL_ROW_MAJOR);
-
-    status = fgets(line, HPL_LINE_MAX - 2, infp);
-    (void)sscanf(line, "%s", num);
-    *NPQS = atoi(num);
-    if((*NPQS < 1) || (*NPQS > HPL_MAX_PARAM)) {
-      HPL_pwarn(stderr,
-                __LINE__,
-                "HPL_pdinfo",
-                "%s %s %d",
-                "Number of values of grids is less",
-                "than 1 or greater than",
-                HPL_MAX_PARAM);
-      error = 1;
-      goto label_error;
-    }
-
-    status  = fgets(line, HPL_LINE_MAX - 2, infp);
-    lineptr = line;
-    for(i = 0; i < *NPQS; i++) {
-      (void)sscanf(lineptr, "%s", num);
-      lineptr += strlen(num) + 1;
-      if((P[i] = atoi(num)) < 1) {
-        HPL_pwarn(stderr, __LINE__, "HPL_pdinfo", "Value of P less than 1");
-        error = 1;
-        goto label_error;
-      }
-    }
-    status  = fgets(line, HPL_LINE_MAX - 2, infp);
-    lineptr = line;
-    for(i = 0; i < *NPQS; i++) {
-      (void)sscanf(lineptr, "%s", num);
-      lineptr += strlen(num) + 1;
-      if((Q[i] = atoi(num)) < 1) {
-        HPL_pwarn(stderr, __LINE__, "HPL_pdinfo", "Value of Q less than 1");
-        error = 1;
-        goto label_error;
-      }
-    }
-    /*
-     * Check for enough processes in machine configuration
-     */
-    maxp = 0;
-    for(i = 0; i < *NPQS; i++) {
-      nprocs = P[i] * Q[i];
-      maxp   = Mmax(maxp, nprocs);
-    }
-    if(maxp > size) {
+  maxp = p*q;
+  if(maxp > size) {
+    if(rank == 0)
       HPL_pwarn(stderr,
                 __LINE__,
                 "HPL_pdinfo",
                 "Need at least %d processes for these tests",
                 maxp);
-      error = 1;
-      goto label_error;
-    }
+    MPI_Finalize();
+    exit(1);
+  }
+
+  if (inputfile==false && cmdlinerun==true) {
+    //We were given run paramters via the cmd line so skip
+    // trying to read from an input file and just fill a
+    // TEST structure.
+
     /*
-     * Checking threshold value (TEST->thrsh)
+     * Problem size (>=0) (N)
      */
-    status = fgets(line, HPL_LINE_MAX - 2, infp);
-    (void)sscanf(line, "%s", num);
-    TEST->thrsh = atof(num);
+    *NS = 1;
+    N[0] = n;
+    /*
+     * Block size (>=1) (NB)
+     */
+    *NBS = 1;
+    NB[0] = nb;
+    /*
+     * Process grids, mapping, (>=1) (P, Q)
+     */
+    *PMAPPIN = HPL_ROW_MAJOR; //HPL_COLUMN_MAJOR
+    *NPQS = 1;
+    P[0] = p;
+    Q[0] = q;
     /*
      * Panel factorization algorithm (PF)
      */
-    status = fgets(line, HPL_LINE_MAX - 2, infp);
-    (void)sscanf(line, "%s", num);
-    *NPFS = atoi(num);
-    if((*NPFS < 1) || (*NPFS > HPL_MAX_PARAM)) {
-      HPL_pwarn(stderr,
-                __LINE__,
-                "HPL_pdinfo",
-                "%s %s %d",
-                "number of values of PFACT",
-                "is less than 1 or greater than",
-                HPL_MAX_PARAM);
-      error = 1;
-      goto label_error;
-    }
-    status  = fgets(line, HPL_LINE_MAX - 2, infp);
-    lineptr = line;
-    for(i = 0; i < *NPFS; i++) {
-      (void)sscanf(lineptr, "%s", num);
-      lineptr += strlen(num) + 1;
-      j = atoi(num);
-      if(j == 0)
-        PF[i] = HPL_LEFT_LOOKING;
-      else if(j == 1)
-        PF[i] = HPL_CROUT;
-      else if(j == 2)
-        PF[i] = HPL_RIGHT_LOOKING;
-      else
-        PF[i] = HPL_RIGHT_LOOKING;
-    }
+    *NPFS = 1;
+    PF[i] = HPL_RIGHT_LOOKING; //HPL_LEFT_LOOKING, HPL_CROUT;
     /*
      * Recursive stopping criterium (>=1) (NBM)
      */
-    status = fgets(line, HPL_LINE_MAX - 2, infp);
-    (void)sscanf(line, "%s", num);
-    *NBMS = atoi(num);
-    if((*NBMS < 1) || (*NBMS > HPL_MAX_PARAM)) {
-      HPL_pwarn(stderr,
-                __LINE__,
-                "HPL_pdinfo",
-                "%s %s %d",
-                "Number of values of NBMIN",
-                "is less than 1 or greater than",
-                HPL_MAX_PARAM);
-      error = 1;
-      goto label_error;
-    }
-    status  = fgets(line, HPL_LINE_MAX - 2, infp);
-    lineptr = line;
-    for(i = 0; i < *NBMS; i++) {
-      (void)sscanf(lineptr, "%s", num);
-      lineptr += strlen(num) + 1;
-      if((NBM[i] = atoi(num)) < 1) {
-        HPL_pwarn(stderr, __LINE__, "HPL_pdinfo", "Value of NBMIN less than 1");
-        error = 1;
-        goto label_error;
-      }
-    }
+    *NBMS = 1;
+    NBM[0] = 2;
     /*
      * Number of panels in recursion (>=2) (NDV)
      */
-    status = fgets(line, HPL_LINE_MAX - 2, infp);
-    (void)sscanf(line, "%s", num);
-    *NDVS = atoi(num);
-    if((*NDVS < 1) || (*NDVS > HPL_MAX_PARAM)) {
-      HPL_pwarn(stderr,
-                __LINE__,
-                "HPL_pdinfo",
-                "%s %s %d",
-                "Number of values of NDIV",
-                "is less than 1 or greater than",
-                HPL_MAX_PARAM);
-      error = 1;
-      goto label_error;
-    }
-    status  = fgets(line, HPL_LINE_MAX - 2, infp);
-    lineptr = line;
-    for(i = 0; i < *NDVS; i++) {
-      (void)sscanf(lineptr, "%s", num);
-      lineptr += strlen(num) + 1;
-      if((NDV[i] = atoi(num)) < 2) {
-        HPL_pwarn(stderr, __LINE__, "HPL_pdinfo", "Value of NDIV less than 2");
-        error = 1;
-        goto label_error;
-      }
-    }
+    *NDVS = 1;
+    NDV[0] = 2;
     /*
      * Recursive panel factorization (RF)
      */
-    status = fgets(line, HPL_LINE_MAX - 2, infp);
-    (void)sscanf(line, "%s", num);
-    *NRFS = atoi(num);
-    if((*NRFS < 1) || (*NRFS > HPL_MAX_PARAM)) {
-      HPL_pwarn(stderr,
-                __LINE__,
-                "HPL_pdinfo",
-                "%s %s %d",
-                "Number of values of RFACT",
-                "is less than 1 or greater than",
-                HPL_MAX_PARAM);
-      error = 1;
-      goto label_error;
-    }
-    status  = fgets(line, HPL_LINE_MAX - 2, infp);
-    lineptr = line;
-    for(i = 0; i < *NRFS; i++) {
-      (void)sscanf(lineptr, "%s", num);
-      lineptr += strlen(num) + 1;
-      j = atoi(num);
-      if(j == 0)
-        RF[i] = HPL_LEFT_LOOKING;
-      else if(j == 1)
-        RF[i] = HPL_CROUT;
-      else if(j == 2)
-        RF[i] = HPL_RIGHT_LOOKING;
-      else
-        RF[i] = HPL_RIGHT_LOOKING;
-    }
+    *NRFS = 1;
+    RF[0] = HPL_RIGHT_LOOKING; //HPL_LEFT_LOOKING, HPL_CROUT;
     /*
      * Broadcast topology (TP) (0=rg, 1=2rg, 2=rgM, 3=2rgM, 4=L)
      */
-    status = fgets(line, HPL_LINE_MAX - 2, infp);
-    (void)sscanf(line, "%s", num);
-    *NTPS = atoi(num);
-    if((*NTPS < 1) || (*NTPS > HPL_MAX_PARAM)) {
-      HPL_pwarn(stderr,
-                __LINE__,
-                "HPL_pdinfo",
-                "%s %s %d",
-                "Number of values of BCAST",
-                "is less than 1 or greater than",
-                HPL_MAX_PARAM);
-      error = 1;
-      goto label_error;
-    }
-    status  = fgets(line, HPL_LINE_MAX - 2, infp);
-    lineptr = line;
-    for(i = 0; i < *NTPS; i++) {
-      (void)sscanf(lineptr, "%s", num);
-      lineptr += strlen(num) + 1;
-      j = atoi(num);
-      if(j == 0)
-        TP[i] = HPL_1RING;
-      else if(j == 1)
-        TP[i] = HPL_1RING_M;
-      else if(j == 2)
-        TP[i] = HPL_2RING;
-      else if(j == 3)
-        TP[i] = HPL_2RING_M;
-      else if(j == 4)
-        TP[i] = HPL_BLONG;
-      else if(j == 5)
-        TP[i] = HPL_BLONG_M;
-      else
-        TP[i] = HPL_IBCST;
-    }
+    *NTPS = 1;
+    TP[i] = HPL_IBCST;
     /*
      * Lookahead depth (>=0) (NDH)
      */
-    status = fgets(line, HPL_LINE_MAX - 2, infp);
-    (void)sscanf(line, "%s", num);
-    *NDHS = atoi(num);
-    if((*NDHS < 1) || (*NDHS > HPL_MAX_PARAM)) {
-      HPL_pwarn(stderr,
-                __LINE__,
-                "HPL_pdinfo",
-                "%s %s %d",
-                "Number of values of DEPTH",
-                "is less than 1 or greater than",
-                HPL_MAX_PARAM);
-      error = 1;
-      goto label_error;
-    }
-    status  = fgets(line, HPL_LINE_MAX - 2, infp);
-    lineptr = line;
-    for(i = 0; i < *NDHS; i++) {
-      (void)sscanf(lineptr, "%s", num);
-      lineptr += strlen(num) + 1;
-      if((DH[i] = atoi(num)) < 0) {
-        HPL_pwarn(stderr, __LINE__, "HPL_pdinfo", "Value of DEPTH less than 0");
-        error = 1;
-        goto label_error;
-      }
-    }
+    *NDHS = 1;
+    DH[0] = 1;
     /*
      * Swapping algorithm (0,1 or 2) (FSWAP)
      */
-    status = fgets(line, HPL_LINE_MAX - 2, infp);
-    (void)sscanf(line, "%s", num);
-    j = atoi(num);
-    if(j == 0)
-      *FSWAP = HPL_SWAP00;
-    else if(j == 1)
-      *FSWAP = HPL_SWAP01;
-    else if(j == 2)
-      *FSWAP = HPL_SW_MIX;
-    else
-      *FSWAP = HPL_SWAP01;
+    *FSWAP = HPL_SWAP01;
     /*
      * Swapping threshold (>=0) (TSWAP)
      */
-    status = fgets(line, HPL_LINE_MAX - 2, infp);
-    (void)sscanf(line, "%s", num);
-    *TSWAP = atoi(num);
-    if(*TSWAP <= 0) *TSWAP = 0;
+    *TSWAP = 64;
     /*
      * L1 in (no-)transposed form (0 or 1)
      */
-    status = fgets(line, HPL_LINE_MAX - 2, infp);
-    (void)sscanf(line, "%s", num);
-    *L1NOTRAN = atoi(num);
-    if((*L1NOTRAN != 0) && (*L1NOTRAN != 1)) *L1NOTRAN = 0;
+    *L1NOTRAN = 1;
     /*
      * U  in (no-)transposed form (0 or 1)
      */
-    status = fgets(line, HPL_LINE_MAX - 2, infp);
-    (void)sscanf(line, "%s", num);
-    *UNOTRAN = atoi(num);
-    if((*UNOTRAN != 0) && (*UNOTRAN != 1)) *UNOTRAN = 0;
+    *UNOTRAN = 0;
     /*
      * Equilibration (0=no, 1=yes)
      */
-    status = fgets(line, HPL_LINE_MAX - 2, infp);
-    (void)sscanf(line, "%s", num);
-    *EQUIL = atoi(num);
-    if((*EQUIL != 0) && (*EQUIL != 1)) *EQUIL = 1;
+    *EQUIL = 0;
     /*
      * Memory alignment in bytes (> 0) (ALIGN)
      */
-    status = fgets(line, HPL_LINE_MAX - 2, infp);
-    (void)sscanf(line, "%s", num);
-    *ALIGN = atoi(num);
-    if(*ALIGN <= 0) *ALIGN = 4;
-  /*
-   * Close input file
-   */
-  label_error:
-    (void)fclose(infp);
+    *ALIGN = 8;
+
+    /*
+     * Compute and broadcast machine epsilon
+     */
+    TEST->epsil = HPL_pdlamch(MPI_COMM_WORLD, HPL_MACH_EPS);
+
+    if(rank == 0) {
+      if((TEST->outfp = fopen("HPL.out", "w")) == NULL) {
+        error = 1;
+      }
+    }
+    (void)HPL_all_reduce((void*)(&error), 1, HPL_INT, HPL_max, MPI_COMM_WORLD);
+    if(error) {
+      if(rank == 0)
+        HPL_pwarn(stderr, __LINE__, "HPL_pdinfo", "cannot open file HPL.out.");
+      MPI_Finalize();
+      exit(1);
+    }
   } else {
-    TEST->outfp = NULL;
-  }
-  /*
-   * Check for error on reading input file
-   */
-  (void)HPL_all_reduce((void*)(&error), 1, HPL_INT, HPL_max, MPI_COMM_WORLD);
-  if(error) {
-    if(rank == 0)
-      HPL_pwarn(stderr,
-                __LINE__,
-                "HPL_pdinfo",
-                "Illegal input in file HPL.dat. Exiting ...");
-    MPI_Finalize();
-#ifdef HPL_CALL_VSIPL
-    (void)vsip_finalize(NULL);
-#endif
-    exit(1);
-  }
-  /*
-   * Compute and broadcast machine epsilon
-   */
-  TEST->epsil = HPL_pdlamch(MPI_COMM_WORLD, HPL_MACH_EPS);
-  /*
-   * Pack information arrays and broadcast
-   */
-  (void)HPL_broadcast(
-      (void*)(&(TEST->thrsh)), 1, HPL_DOUBLE, 0, MPI_COMM_WORLD);
-  /*
-   * Broadcast array sizes
-   */
-  iwork = (int*)malloc((size_t)(15) * sizeof(int));
-  if(rank == 0) {
-    iwork[0]  = *NS;
-    iwork[1]  = *NBS;
-    iwork[2]  = (*PMAPPIN == HPL_ROW_MAJOR ? 0 : 1);
-    iwork[3]  = *NPQS;
-    iwork[4]  = *NPFS;
-    iwork[5]  = *NBMS;
-    iwork[6]  = *NDVS;
-    iwork[7]  = *NRFS;
-    iwork[8]  = *NTPS;
-    iwork[9]  = *NDHS;
-    iwork[10] = *TSWAP;
-    iwork[11] = *L1NOTRAN;
-    iwork[12] = *UNOTRAN;
-    iwork[13] = *EQUIL;
-    iwork[14] = *ALIGN;
-  }
-  (void)HPL_broadcast((void*)iwork, 15, HPL_INT, 0, MPI_COMM_WORLD);
-  if(rank != 0) {
-    *NS       = iwork[0];
-    *NBS      = iwork[1];
-    *PMAPPIN  = (iwork[2] == 0 ? HPL_ROW_MAJOR : HPL_COLUMN_MAJOR);
-    *NPQS     = iwork[3];
-    *NPFS     = iwork[4];
-    *NBMS     = iwork[5];
-    *NDVS     = iwork[6];
-    *NRFS     = iwork[7];
-    *NTPS     = iwork[8];
-    *NDHS     = iwork[9];
-    *TSWAP    = iwork[10];
-    *L1NOTRAN = iwork[11];
-    *UNOTRAN  = iwork[12];
-    *EQUIL    = iwork[13];
-    *ALIGN    = iwork[14];
-  }
-  if(iwork) free(iwork);
-  /*
-   * Pack information arrays and broadcast
-   */
-  lwork = (*NS) + (*NBS) + 2 * (*NPQS) + (*NPFS) + (*NBMS) + (*NDVS) + (*NRFS) +
-          (*NTPS) + (*NDHS) + 1;
-  iwork = (int*)malloc((size_t)(lwork) * sizeof(int));
-  if(rank == 0) {
-    j = 0;
-    for(i = 0; i < *NS; i++) {
-      iwork[j] = N[i];
-      j++;
+    /*
+     * Process 0 reads the input data, broadcasts to other processes and
+     * writes needed information to TEST->outfp.
+     */
+    char* status;
+    if(rank == 0) {
+      /*
+       * Open file and skip data file header
+       */
+      if((infp = fopen(inputFileName.c_str(), "r")) == NULL) {
+        HPL_pwarn(stderr, __LINE__, "HPL_pdinfo", "cannot open file %s", inputFileName.c_str());
+        error = 1;
+        goto label_error;
+      }
+
+      status = fgets(line, HPL_LINE_MAX - 2, infp);
+      status = fgets(auth, HPL_LINE_MAX - 2, infp);
+      /*
+       * Read name and unit number for summary output file
+       */
+      status = fgets(line, HPL_LINE_MAX - 2, infp);
+      (void)sscanf(line, "%s", file);
+      status = fgets(line, HPL_LINE_MAX - 2, infp);
+      (void)sscanf(line, "%s", num);
+      fid = atoi(num);
+      if(fid == 6)
+        TEST->outfp = stdout;
+      else if(fid == 7)
+        TEST->outfp = stderr;
+      else if((TEST->outfp = fopen(file, "w")) == NULL) {
+        HPL_pwarn(stderr, __LINE__, "HPL_pdinfo", "cannot open file %s.", file);
+        error = 1;
+        goto label_error;
+      }
+      /*
+       * Read and check the parameter values for the tests.
+       *
+       * Problem size (>=0) (N)
+       */
+      status = fgets(line, HPL_LINE_MAX - 2, infp);
+      (void)sscanf(line, "%s", num);
+      *NS = atoi(num);
+      if((*NS < 1) || (*NS > HPL_MAX_PARAM)) {
+        HPL_pwarn(stderr,
+                  __LINE__,
+                  "HPL_pdinfo",
+                  "%s %d",
+                  "Number of values of N is less than 1 or greater than",
+                  HPL_MAX_PARAM);
+        error = 1;
+        goto label_error;
+      }
+
+      status  = fgets(line, HPL_LINE_MAX - 2, infp);
+      lineptr = line;
+      for(i = 0; i < *NS; i++) {
+        (void)sscanf(lineptr, "%s", num);
+        lineptr += strlen(num) + 1;
+        if((N[i] = atoi(num)) < 0) {
+          HPL_pwarn(stderr, __LINE__, "HPL_pdinfo", "Value of N less than 0");
+          error = 1;
+          goto label_error;
+        }
+      }
+      /*
+       * Block size (>=1) (NB)
+       */
+      status = fgets(line, HPL_LINE_MAX - 2, infp);
+      (void)sscanf(line, "%s", num);
+      *NBS = atoi(num);
+      if((*NBS < 1) || (*NBS > HPL_MAX_PARAM)) {
+        HPL_pwarn(stderr,
+                  __LINE__,
+                  "HPL_pdinfo",
+                  "%s %s %d",
+                  "Number of values of NB is less than 1 or",
+                  "greater than",
+                  HPL_MAX_PARAM);
+        error = 1;
+        goto label_error;
+      }
+
+      status  = fgets(line, HPL_LINE_MAX - 2, infp);
+      lineptr = line;
+      for(i = 0; i < *NBS; i++) {
+        (void)sscanf(lineptr, "%s", num);
+        lineptr += strlen(num) + 1;
+        if((NB[i] = atoi(num)) < 1) {
+          HPL_pwarn(stderr, __LINE__, "HPL_pdinfo", "Value of NB less than 1");
+          error = 1;
+          goto label_error;
+        }
+      }
+      /*
+       * Process grids, mapping, (>=1) (P, Q)
+       */
+      status = fgets(line, HPL_LINE_MAX - 2, infp);
+      (void)sscanf(line, "%s", num);
+      *PMAPPIN = (atoi(num) == 1 ? HPL_COLUMN_MAJOR : HPL_ROW_MAJOR);
+
+      status = fgets(line, HPL_LINE_MAX - 2, infp);
+      (void)sscanf(line, "%s", num);
+      *NPQS = atoi(num);
+      if((*NPQS < 1) || (*NPQS > HPL_MAX_PARAM)) {
+        HPL_pwarn(stderr,
+                  __LINE__,
+                  "HPL_pdinfo",
+                  "%s %s %d",
+                  "Number of values of grids is less",
+                  "than 1 or greater than",
+                  HPL_MAX_PARAM);
+        error = 1;
+        goto label_error;
+      }
+
+      status  = fgets(line, HPL_LINE_MAX - 2, infp);
+      lineptr = line;
+      for(i = 0; i < *NPQS; i++) {
+        (void)sscanf(lineptr, "%s", num);
+        lineptr += strlen(num) + 1;
+        if((P[i] = atoi(num)) < 1) {
+          HPL_pwarn(stderr, __LINE__, "HPL_pdinfo", "Value of P less than 1");
+          error = 1;
+          goto label_error;
+        }
+      }
+      status  = fgets(line, HPL_LINE_MAX - 2, infp);
+      lineptr = line;
+      for(i = 0; i < *NPQS; i++) {
+        (void)sscanf(lineptr, "%s", num);
+        lineptr += strlen(num) + 1;
+        if((Q[i] = atoi(num)) < 1) {
+          HPL_pwarn(stderr, __LINE__, "HPL_pdinfo", "Value of Q less than 1");
+          error = 1;
+          goto label_error;
+        }
+      }
+      /*
+       * Check for enough processes in machine configuration
+       */
+      maxp = 0;
+      for(i = 0; i < *NPQS; i++) {
+        nprocs = P[i] * Q[i];
+        maxp   = Mmax(maxp, nprocs);
+      }
+      if(maxp > size) {
+        HPL_pwarn(stderr,
+                  __LINE__,
+                  "HPL_pdinfo",
+                  "Need at least %d processes for these tests",
+                  maxp);
+        error = 1;
+        goto label_error;
+      }
+      /*
+       * Checking threshold value (TEST->thrsh)
+       */
+      status = fgets(line, HPL_LINE_MAX - 2, infp);
+      (void)sscanf(line, "%s", num);
+      TEST->thrsh = atof(num);
+      /*
+       * Panel factorization algorithm (PF)
+       */
+      status = fgets(line, HPL_LINE_MAX - 2, infp);
+      (void)sscanf(line, "%s", num);
+      *NPFS = atoi(num);
+      if((*NPFS < 1) || (*NPFS > HPL_MAX_PARAM)) {
+        HPL_pwarn(stderr,
+                  __LINE__,
+                  "HPL_pdinfo",
+                  "%s %s %d",
+                  "number of values of PFACT",
+                  "is less than 1 or greater than",
+                  HPL_MAX_PARAM);
+        error = 1;
+        goto label_error;
+      }
+      status  = fgets(line, HPL_LINE_MAX - 2, infp);
+      lineptr = line;
+      for(i = 0; i < *NPFS; i++) {
+        (void)sscanf(lineptr, "%s", num);
+        lineptr += strlen(num) + 1;
+        j = atoi(num);
+        if(j == 0)
+          PF[i] = HPL_LEFT_LOOKING;
+        else if(j == 1)
+          PF[i] = HPL_CROUT;
+        else if(j == 2)
+          PF[i] = HPL_RIGHT_LOOKING;
+        else
+          PF[i] = HPL_RIGHT_LOOKING;
+      }
+      /*
+       * Recursive stopping criterium (>=1) (NBM)
+       */
+      status = fgets(line, HPL_LINE_MAX - 2, infp);
+      (void)sscanf(line, "%s", num);
+      *NBMS = atoi(num);
+      if((*NBMS < 1) || (*NBMS > HPL_MAX_PARAM)) {
+        HPL_pwarn(stderr,
+                  __LINE__,
+                  "HPL_pdinfo",
+                  "%s %s %d",
+                  "Number of values of NBMIN",
+                  "is less than 1 or greater than",
+                  HPL_MAX_PARAM);
+        error = 1;
+        goto label_error;
+      }
+      status  = fgets(line, HPL_LINE_MAX - 2, infp);
+      lineptr = line;
+      for(i = 0; i < *NBMS; i++) {
+        (void)sscanf(lineptr, "%s", num);
+        lineptr += strlen(num) + 1;
+        if((NBM[i] = atoi(num)) < 1) {
+          HPL_pwarn(stderr, __LINE__, "HPL_pdinfo", "Value of NBMIN less than 1");
+          error = 1;
+          goto label_error;
+        }
+      }
+      /*
+       * Number of panels in recursion (>=2) (NDV)
+       */
+      status = fgets(line, HPL_LINE_MAX - 2, infp);
+      (void)sscanf(line, "%s", num);
+      *NDVS = atoi(num);
+      if((*NDVS < 1) || (*NDVS > HPL_MAX_PARAM)) {
+        HPL_pwarn(stderr,
+                  __LINE__,
+                  "HPL_pdinfo",
+                  "%s %s %d",
+                  "Number of values of NDIV",
+                  "is less than 1 or greater than",
+                  HPL_MAX_PARAM);
+        error = 1;
+        goto label_error;
+      }
+      status  = fgets(line, HPL_LINE_MAX - 2, infp);
+      lineptr = line;
+      for(i = 0; i < *NDVS; i++) {
+        (void)sscanf(lineptr, "%s", num);
+        lineptr += strlen(num) + 1;
+        if((NDV[i] = atoi(num)) < 2) {
+          HPL_pwarn(stderr, __LINE__, "HPL_pdinfo", "Value of NDIV less than 2");
+          error = 1;
+          goto label_error;
+        }
+      }
+      /*
+       * Recursive panel factorization (RF)
+       */
+      status = fgets(line, HPL_LINE_MAX - 2, infp);
+      (void)sscanf(line, "%s", num);
+      *NRFS = atoi(num);
+      if((*NRFS < 1) || (*NRFS > HPL_MAX_PARAM)) {
+        HPL_pwarn(stderr,
+                  __LINE__,
+                  "HPL_pdinfo",
+                  "%s %s %d",
+                  "Number of values of RFACT",
+                  "is less than 1 or greater than",
+                  HPL_MAX_PARAM);
+        error = 1;
+        goto label_error;
+      }
+      status  = fgets(line, HPL_LINE_MAX - 2, infp);
+      lineptr = line;
+      for(i = 0; i < *NRFS; i++) {
+        (void)sscanf(lineptr, "%s", num);
+        lineptr += strlen(num) + 1;
+        j = atoi(num);
+        if(j == 0)
+          RF[i] = HPL_LEFT_LOOKING;
+        else if(j == 1)
+          RF[i] = HPL_CROUT;
+        else if(j == 2)
+          RF[i] = HPL_RIGHT_LOOKING;
+        else
+          RF[i] = HPL_RIGHT_LOOKING;
+      }
+      /*
+       * Broadcast topology (TP) (0=rg, 1=2rg, 2=rgM, 3=2rgM, 4=L)
+       */
+      status = fgets(line, HPL_LINE_MAX - 2, infp);
+      (void)sscanf(line, "%s", num);
+      *NTPS = atoi(num);
+      if((*NTPS < 1) || (*NTPS > HPL_MAX_PARAM)) {
+        HPL_pwarn(stderr,
+                  __LINE__,
+                  "HPL_pdinfo",
+                  "%s %s %d",
+                  "Number of values of BCAST",
+                  "is less than 1 or greater than",
+                  HPL_MAX_PARAM);
+        error = 1;
+        goto label_error;
+      }
+      status  = fgets(line, HPL_LINE_MAX - 2, infp);
+      lineptr = line;
+      for(i = 0; i < *NTPS; i++) {
+        (void)sscanf(lineptr, "%s", num);
+        lineptr += strlen(num) + 1;
+        j = atoi(num);
+        if(j == 0)
+          TP[i] = HPL_1RING;
+        else if(j == 1)
+          TP[i] = HPL_1RING_M;
+        else if(j == 2)
+          TP[i] = HPL_2RING;
+        else if(j == 3)
+          TP[i] = HPL_2RING_M;
+        else if(j == 4)
+          TP[i] = HPL_BLONG;
+        else if(j == 5)
+          TP[i] = HPL_BLONG_M;
+        else
+          TP[i] = HPL_IBCST;
+      }
+      /*
+       * Lookahead depth (>=0) (NDH)
+       */
+      status = fgets(line, HPL_LINE_MAX - 2, infp);
+      (void)sscanf(line, "%s", num);
+      *NDHS = atoi(num);
+      if((*NDHS < 1) || (*NDHS > HPL_MAX_PARAM)) {
+        HPL_pwarn(stderr,
+                  __LINE__,
+                  "HPL_pdinfo",
+                  "%s %s %d",
+                  "Number of values of DEPTH",
+                  "is less than 1 or greater than",
+                  HPL_MAX_PARAM);
+        error = 1;
+        goto label_error;
+      }
+      status  = fgets(line, HPL_LINE_MAX - 2, infp);
+      lineptr = line;
+      for(i = 0; i < *NDHS; i++) {
+        (void)sscanf(lineptr, "%s", num);
+        lineptr += strlen(num) + 1;
+        if((DH[i] = atoi(num)) < 0) {
+          HPL_pwarn(stderr, __LINE__, "HPL_pdinfo", "Value of DEPTH less than 0");
+          error = 1;
+          goto label_error;
+        }
+      }
+      /*
+       * Swapping algorithm (0,1 or 2) (FSWAP)
+       */
+      status = fgets(line, HPL_LINE_MAX - 2, infp);
+      (void)sscanf(line, "%s", num);
+      j = atoi(num);
+      if(j == 0)
+        *FSWAP = HPL_SWAP00;
+      else if(j == 1)
+        *FSWAP = HPL_SWAP01;
+      else if(j == 2)
+        *FSWAP = HPL_SW_MIX;
+      else
+        *FSWAP = HPL_SWAP01;
+      /*
+       * Swapping threshold (>=0) (TSWAP)
+       */
+      status = fgets(line, HPL_LINE_MAX - 2, infp);
+      (void)sscanf(line, "%s", num);
+      *TSWAP = atoi(num);
+      if(*TSWAP <= 0) *TSWAP = 0;
+      /*
+       * L1 in (no-)transposed form (0 or 1)
+       */
+      status = fgets(line, HPL_LINE_MAX - 2, infp);
+      (void)sscanf(line, "%s", num);
+      *L1NOTRAN = atoi(num);
+      if((*L1NOTRAN != 0) && (*L1NOTRAN != 1)) *L1NOTRAN = 0;
+      /*
+       * U  in (no-)transposed form (0 or 1)
+       */
+      status = fgets(line, HPL_LINE_MAX - 2, infp);
+      (void)sscanf(line, "%s", num);
+      *UNOTRAN = atoi(num);
+      if((*UNOTRAN != 0) && (*UNOTRAN != 1)) *UNOTRAN = 0;
+      /*
+       * Equilibration (0=no, 1=yes)
+       */
+      status = fgets(line, HPL_LINE_MAX - 2, infp);
+      (void)sscanf(line, "%s", num);
+      *EQUIL = atoi(num);
+      if((*EQUIL != 0) && (*EQUIL != 1)) *EQUIL = 1;
+      /*
+       * Memory alignment in bytes (> 0) (ALIGN)
+       */
+      status = fgets(line, HPL_LINE_MAX - 2, infp);
+      (void)sscanf(line, "%s", num);
+      *ALIGN = atoi(num);
+      if(*ALIGN <= 0) *ALIGN = 4;
+
+      /*
+      * Close input file
+      */
+    label_error:
+      (void)fclose(infp);
+    } else {
+      TEST->outfp = NULL;
     }
-    for(i = 0; i < *NBS; i++) {
-      iwork[j] = NB[i];
-      j++;
+
+    /*
+     * Check for error on reading input file
+     */
+    (void)HPL_all_reduce((void*)(&error), 1, HPL_INT, HPL_max, MPI_COMM_WORLD);
+    if(error) {
+      if(rank == 0)
+        HPL_pwarn(stderr,
+                  __LINE__,
+                  "HPL_pdinfo",
+                  "Illegal input in file HPL.dat. Exiting ...");
+      MPI_Finalize();
+      exit(1);
     }
-    for(i = 0; i < *NPQS; i++) {
-      iwork[j] = P[i];
-      j++;
+    /*
+     * Compute and broadcast machine epsilon
+     */
+    TEST->epsil = HPL_pdlamch(MPI_COMM_WORLD, HPL_MACH_EPS);
+    /*
+     * Pack information arrays and broadcast
+     */
+    (void)HPL_broadcast(
+        (void*)(&(TEST->thrsh)), 1, HPL_DOUBLE, 0, MPI_COMM_WORLD);
+    /*
+     * Broadcast array sizes
+     */
+    iwork = (int*)malloc((size_t)(15) * sizeof(int));
+    if(rank == 0) {
+      iwork[0]  = *NS;
+      iwork[1]  = *NBS;
+      iwork[2]  = (*PMAPPIN == HPL_ROW_MAJOR ? 0 : 1);
+      iwork[3]  = *NPQS;
+      iwork[4]  = *NPFS;
+      iwork[5]  = *NBMS;
+      iwork[6]  = *NDVS;
+      iwork[7]  = *NRFS;
+      iwork[8]  = *NTPS;
+      iwork[9]  = *NDHS;
+      iwork[10] = *TSWAP;
+      iwork[11] = *L1NOTRAN;
+      iwork[12] = *UNOTRAN;
+      iwork[13] = *EQUIL;
+      iwork[14] = *ALIGN;
     }
-    for(i = 0; i < *NPQS; i++) {
-      iwork[j] = Q[i];
-      j++;
+    (void)HPL_broadcast((void*)iwork, 15, HPL_INT, 0, MPI_COMM_WORLD);
+    if(rank != 0) {
+      *NS       = iwork[0];
+      *NBS      = iwork[1];
+      *PMAPPIN  = (iwork[2] == 0 ? HPL_ROW_MAJOR : HPL_COLUMN_MAJOR);
+      *NPQS     = iwork[3];
+      *NPFS     = iwork[4];
+      *NBMS     = iwork[5];
+      *NDVS     = iwork[6];
+      *NRFS     = iwork[7];
+      *NTPS     = iwork[8];
+      *NDHS     = iwork[9];
+      *TSWAP    = iwork[10];
+      *L1NOTRAN = iwork[11];
+      *UNOTRAN  = iwork[12];
+      *EQUIL    = iwork[13];
+      *ALIGN    = iwork[14];
     }
-    for(i = 0; i < *NPFS; i++) {
-      if(PF[i] == HPL_LEFT_LOOKING)
+    if(iwork) free(iwork);
+    /*
+     * Pack information arrays and broadcast
+     */
+    lwork = (*NS) + (*NBS) + 2 * (*NPQS) + (*NPFS) + (*NBMS) + (*NDVS) + (*NRFS) +
+            (*NTPS) + (*NDHS) + 1;
+    iwork = (int*)malloc((size_t)(lwork) * sizeof(int));
+    if(rank == 0) {
+      j = 0;
+      for(i = 0; i < *NS; i++) {
+        iwork[j] = N[i];
+        j++;
+      }
+      for(i = 0; i < *NBS; i++) {
+        iwork[j] = NB[i];
+        j++;
+      }
+      for(i = 0; i < *NPQS; i++) {
+        iwork[j] = P[i];
+        j++;
+      }
+      for(i = 0; i < *NPQS; i++) {
+        iwork[j] = Q[i];
+        j++;
+      }
+      for(i = 0; i < *NPFS; i++) {
+        if(PF[i] == HPL_LEFT_LOOKING)
+          iwork[j] = 0;
+        else if(PF[i] == HPL_CROUT)
+          iwork[j] = 1;
+        else if(PF[i] == HPL_RIGHT_LOOKING)
+          iwork[j] = 2;
+        j++;
+      }
+      for(i = 0; i < *NBMS; i++) {
+        iwork[j] = NBM[i];
+        j++;
+      }
+      for(i = 0; i < *NDVS; i++) {
+        iwork[j] = NDV[i];
+        j++;
+      }
+      for(i = 0; i < *NRFS; i++) {
+        if(RF[i] == HPL_LEFT_LOOKING)
+          iwork[j] = 0;
+        else if(RF[i] == HPL_CROUT)
+          iwork[j] = 1;
+        else if(RF[i] == HPL_RIGHT_LOOKING)
+          iwork[j] = 2;
+        j++;
+      }
+      for(i = 0; i < *NTPS; i++) {
+        if(TP[i] == HPL_1RING)
+          iwork[j] = 0;
+        else if(TP[i] == HPL_1RING_M)
+          iwork[j] = 1;
+        else if(TP[i] == HPL_2RING)
+          iwork[j] = 2;
+        else if(TP[i] == HPL_2RING_M)
+          iwork[j] = 3;
+        else if(TP[i] == HPL_BLONG)
+          iwork[j] = 4;
+        else if(TP[i] == HPL_BLONG_M)
+          iwork[j] = 5;
+        else if(TP[i] == HPL_IBCST)
+          iwork[j] = 6;
+        j++;
+      }
+      for(i = 0; i < *NDHS; i++) {
+        iwork[j] = DH[i];
+        j++;
+      }
+
+      if(*FSWAP == HPL_SWAP00)
         iwork[j] = 0;
-      else if(PF[i] == HPL_CROUT)
+      else if(*FSWAP == HPL_SWAP01)
         iwork[j] = 1;
-      else if(PF[i] == HPL_RIGHT_LOOKING)
+      else if(*FSWAP == HPL_SW_MIX)
         iwork[j] = 2;
       j++;
     }
-    for(i = 0; i < *NBMS; i++) {
-      iwork[j] = NBM[i];
-      j++;
-    }
-    for(i = 0; i < *NDVS; i++) {
-      iwork[j] = NDV[i];
-      j++;
-    }
-    for(i = 0; i < *NRFS; i++) {
-      if(RF[i] == HPL_LEFT_LOOKING)
-        iwork[j] = 0;
-      else if(RF[i] == HPL_CROUT)
-        iwork[j] = 1;
-      else if(RF[i] == HPL_RIGHT_LOOKING)
-        iwork[j] = 2;
-      j++;
-    }
-    for(i = 0; i < *NTPS; i++) {
-      if(TP[i] == HPL_1RING)
-        iwork[j] = 0;
-      else if(TP[i] == HPL_1RING_M)
-        iwork[j] = 1;
-      else if(TP[i] == HPL_2RING)
-        iwork[j] = 2;
-      else if(TP[i] == HPL_2RING_M)
-        iwork[j] = 3;
-      else if(TP[i] == HPL_BLONG)
-        iwork[j] = 4;
-      else if(TP[i] == HPL_BLONG_M)
-        iwork[j] = 5;
-      else if(TP[i] == HPL_IBCST)
-        iwork[j] = 6;
-      j++;
-    }
-    for(i = 0; i < *NDHS; i++) {
-      iwork[j] = DH[i];
-      j++;
-    }
+    (void)HPL_broadcast((void*)iwork, lwork, HPL_INT, 0, MPI_COMM_WORLD);
+    if(rank != 0) {
+      j = 0;
+      for(i = 0; i < *NS; i++) {
+        N[i] = iwork[j];
+        j++;
+      }
+      for(i = 0; i < *NBS; i++) {
+        NB[i] = iwork[j];
+        j++;
+      }
+      for(i = 0; i < *NPQS; i++) {
+        P[i] = iwork[j];
+        j++;
+      }
+      for(i = 0; i < *NPQS; i++) {
+        Q[i] = iwork[j];
+        j++;
+      }
 
-    if(*FSWAP == HPL_SWAP00)
-      iwork[j] = 0;
-    else if(*FSWAP == HPL_SWAP01)
-      iwork[j] = 1;
-    else if(*FSWAP == HPL_SW_MIX)
-      iwork[j] = 2;
-    j++;
+      for(i = 0; i < *NPFS; i++) {
+        if(iwork[j] == 0)
+          PF[i] = HPL_LEFT_LOOKING;
+        else if(iwork[j] == 1)
+          PF[i] = HPL_CROUT;
+        else if(iwork[j] == 2)
+          PF[i] = HPL_RIGHT_LOOKING;
+        j++;
+      }
+      for(i = 0; i < *NBMS; i++) {
+        NBM[i] = iwork[j];
+        j++;
+      }
+      for(i = 0; i < *NDVS; i++) {
+        NDV[i] = iwork[j];
+        j++;
+      }
+      for(i = 0; i < *NRFS; i++) {
+        if(iwork[j] == 0)
+          RF[i] = HPL_LEFT_LOOKING;
+        else if(iwork[j] == 1)
+          RF[i] = HPL_CROUT;
+        else if(iwork[j] == 2)
+          RF[i] = HPL_RIGHT_LOOKING;
+        j++;
+      }
+      for(i = 0; i < *NTPS; i++) {
+        if(iwork[j] == 0)
+          TP[i] = HPL_1RING;
+        else if(iwork[j] == 1)
+          TP[i] = HPL_1RING_M;
+        else if(iwork[j] == 2)
+          TP[i] = HPL_2RING;
+        else if(iwork[j] == 3)
+          TP[i] = HPL_2RING_M;
+        else if(iwork[j] == 4)
+          TP[i] = HPL_BLONG;
+        else if(iwork[j] == 5)
+          TP[i] = HPL_BLONG_M;
+        else if(iwork[j] == 6)
+          TP[i] = HPL_IBCST;
+        j++;
+      }
+      for(i = 0; i < *NDHS; i++) {
+        DH[i] = iwork[j];
+        j++;
+      }
+
+      if(iwork[j] == 0)
+        *FSWAP = HPL_SWAP00;
+      else if(iwork[j] == 1)
+        *FSWAP = HPL_SWAP01;
+      else if(iwork[j] == 2)
+        *FSWAP = HPL_SW_MIX;
+      j++;
+    }
+    if(iwork) free(iwork);
   }
-  (void)HPL_broadcast((void*)iwork, lwork, HPL_INT, 0, MPI_COMM_WORLD);
-  if(rank != 0) {
-    j = 0;
-    for(i = 0; i < *NS; i++) {
-      N[i] = iwork[j];
-      j++;
-    }
-    for(i = 0; i < *NBS; i++) {
-      NB[i] = iwork[j];
-      j++;
-    }
-    for(i = 0; i < *NPQS; i++) {
-      P[i] = iwork[j];
-      j++;
-    }
-    for(i = 0; i < *NPQS; i++) {
-      Q[i] = iwork[j];
-      j++;
-    }
 
-    for(i = 0; i < *NPFS; i++) {
-      if(iwork[j] == 0)
-        PF[i] = HPL_LEFT_LOOKING;
-      else if(iwork[j] == 1)
-        PF[i] = HPL_CROUT;
-      else if(iwork[j] == 2)
-        PF[i] = HPL_RIGHT_LOOKING;
-      j++;
-    }
-    for(i = 0; i < *NBMS; i++) {
-      NBM[i] = iwork[j];
-      j++;
-    }
-    for(i = 0; i < *NDVS; i++) {
-      NDV[i] = iwork[j];
-      j++;
-    }
-    for(i = 0; i < *NRFS; i++) {
-      if(iwork[j] == 0)
-        RF[i] = HPL_LEFT_LOOKING;
-      else if(iwork[j] == 1)
-        RF[i] = HPL_CROUT;
-      else if(iwork[j] == 2)
-        RF[i] = HPL_RIGHT_LOOKING;
-      j++;
-    }
-    for(i = 0; i < *NTPS; i++) {
-      if(iwork[j] == 0)
-        TP[i] = HPL_1RING;
-      else if(iwork[j] == 1)
-        TP[i] = HPL_1RING_M;
-      else if(iwork[j] == 2)
-        TP[i] = HPL_2RING;
-      else if(iwork[j] == 3)
-        TP[i] = HPL_2RING_M;
-      else if(iwork[j] == 4)
-        TP[i] = HPL_BLONG;
-      else if(iwork[j] == 5)
-        TP[i] = HPL_BLONG_M;
-      else if(iwork[j] == 6)
-        TP[i] = HPL_IBCST;
-      j++;
-    }
-    for(i = 0; i < *NDHS; i++) {
-      DH[i] = iwork[j];
-      j++;
-    }
-
-    if(iwork[j] == 0)
-      *FSWAP = HPL_SWAP00;
-    else if(iwork[j] == 1)
-      *FSWAP = HPL_SWAP01;
-    else if(iwork[j] == 2)
-      *FSWAP = HPL_SW_MIX;
-    j++;
-  }
-  if(iwork) free(iwork);
   /*
    * regurgitate input
    */

@@ -33,7 +33,9 @@
  * Function prototypes
  * ---------------------------------------------------------------------
  */
-void HPL_dinfo(FILE**,
+void HPL_dinfo(int ARGC,
+               char** ARGV,
+               FILE**,
                int*,
                int*,
                int*,
