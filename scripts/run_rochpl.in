@@ -157,15 +157,15 @@ done
 
 #if nothing but np and ppn parameters where given, default to running
 # with default input file
-if [[ "${inputfile}" == false && "${runcmd}" == false ]]; then
+if [[ "${inputfile}" == false && "${cmdrun}" == false ]]; then
   inputfile=true
 fi
 
-if [[ "${runcmd}" == true ]]; then
-  np=$( (P)*(Q) )
+if [[ "${cmdrun}" == true ]]; then
+  let np=$P*$Q
 fi
 
-if [[ "$(np<1)" ]]; then
+if [[ "$np" -lt 1 ]]; then
   echo "Invalid MPI grid parameters; aborting";
   exit 1
 fi
