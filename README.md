@@ -39,15 +39,28 @@ cd rocHPL
 By default, [OpenBLAS] v0.3.10, [UCX] v1.8.1, and [OpenMPI] v4.0.5 will be cloned and build in rocHPL/tpl. After build and install, the `rochpl` executable is placed in build/rochpl-install.
 
 ## Running rocHPL benchmark application
-You can run the rocHPL benchmark application by running the executable with MPI directly, or by using a provided `run_rochpl` script configured at build
+You can run the rocHPL benchmark application by running the `rochpl` executable with MPI directly, or by using a provided `run_rochpl` script configured at build. There are two distinct run modes:
 ```
-run_rochpl --np <np> --ppn <ppn>
+run_rochpl -P <p> -Q <q> --ppn <ppn> -N <N> --NB <NB>
+# where
+# P       - is the number of rows in the MPI grid
+# Q       - is the number of columns in the MPI grid
+# ppn     - is the number of ranks per node you are running (important for CPU partitioning)
+# N       - is the total number of rows/columns of the global matrix
+# NB      - is the panel size in the blocking algorithm
+```
+This runmode will launch a total of np=PxQ MPI processes. 
+
+The second runmode takes an input file together with a number of MPI processes:
+```
+run_rochpl --np <np> --ppn <ppn> -i <input>
 # where
 # np      - is the number of MPI ranks to run with
 # ppn     - is the number of ranks per node you are running (important for CPU partitioning)
+# input   - is the input filename (default ./HPL.dat)
 ```
 
-The `rochpl` uses an input file `HPL.dat`, e.g.
+The input file accpted by the `rochpl` executable follows the format below:
 ```
 HPLinpack benchmark input file
 Innovative Computing Laboratory, University of Tennessee
@@ -83,14 +96,26 @@ HPL.out      output file name (if any)
 ```
 
 ## Performance evaluation
-The global matrix size N depends on the total amount of GPU VRAM available, and is usually selected to be a multiple of the blocksize NB. Typical values for N when NB=384 include:
+rocHPL is typically weak scaled so that the global matrix fills all available VRAM on all GPUs. The matrix size N is usually selected to be a multiple of the blocksize NB. Typical values for N when NB=384 include:
 * 16 GB  - N=45312
 * 32 GB  - N=64128
 * 64 GB  - N=89472
 * 128 GB - N=125568
-* 256 GB - N=177792
+* 256 GB - N=177792 
+
+Overall performance of the benchmark is measured in 64-bit floating point operations (FLOPs) per second. Performance is reported at the end of the run to the user's specified output (by default the performance is printed to stdout and a results file HPL.out).
 
 ## Testing rocHPL
+At the end of each benchmark run, residual error checking is computed, and PASS or FAIL is printed to output. 
+
+The simplest suite of tests should run configurations from 1 to 4 GPUs to exercise different communcation code paths. For example the tests:
+```
+run_rochpl -P 1 -Q 1
+run_rochpl -P 1 -Q 2
+run_rochpl -P 2 -Q 1
+run_rochpl -P 2 -Q 2
+```
+should all report PASSED. 
 
 Please note that for successful testing, a device with at least 16GB of device memory is required.
 
