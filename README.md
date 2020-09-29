@@ -99,9 +99,9 @@ HPL.out      output file name (if any)
 rocHPL is typically weak scaled so that the global matrix fills all available VRAM on all GPUs. The matrix size N is usually selected to be a multiple of the blocksize NB. Typical values for N when NB=384 include:
 * 16 GB  - N=45312
 * 32 GB  - N=64128
-* 64 GB  - N=89472
-* 128 GB - N=125568
-* 256 GB - N=177792 
+* 64 GB  - N=91008
+* 128 GB - N=128000
+* 256 GB - N=180224 
 
 Overall performance of the benchmark is measured in 64-bit floating point operations (FLOPs) per second. Performance is reported at the end of the run to the user's specified output (by default the performance is printed to stdout and a results file HPL.out).
 
