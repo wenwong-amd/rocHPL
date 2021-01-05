@@ -490,16 +490,16 @@ pushd .
 
     case "${ID}" in
       ubuntu)
-        elevate_if_not_root dpkg -i rochpl-*.deb
+        elevate_if_not_root dpkg -i rochpl*.deb
       ;;
       centos|rhel)
-        elevate_if_not_root yum -y localinstall rochpl-*.rpm
+        elevate_if_not_root yum -y localinstall rochpl*.rpm
       ;;
       fedora)
-        elevate_if_not_root dnf install rochpl-*.rpm
+        elevate_if_not_root dnf install rochpl*.rpm
       ;;
       sles)
-        elevate_if_not_root zypper -n --no-gpg-checks install rochpl-*.rpm
+        elevate_if_not_root zypper -n --no-gpg-checks install rochpl*.rpm
       ;;
     esac
   fi
