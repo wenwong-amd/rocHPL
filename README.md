@@ -34,7 +34,7 @@ cd rocHPL
 #    --verbose-print      - Verbose output during HPL setup (Default: true)
 #    --progress-report    - Print progress report to terminal during HPL run (Default: true)
 #    --detailed-timing    - Record detailed timers during HPL run (Default: true)
-./install.sh -di
+./install.sh -d
 ```
 By default, [OpenBLAS] v0.3.10, [UCX] v1.9.0, and [OpenMPI] v4.0.5 will be cloned and build in rocHPL/tpl. After build and install, the `rochpl` executable is placed in build/rochpl-install.
 
