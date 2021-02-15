@@ -822,6 +822,13 @@ void HPL_pdinfo(int ARGC,
       (void)sscanf(line, "%s", num);
       *UNOTRAN = atoi(num);
       if((*UNOTRAN != 0) && (*UNOTRAN != 1)) *UNOTRAN = 0;
+
+      //NC: We don't support holding U in no-transpose form anymore
+      if(*UNOTRAN != 0) {
+        HPL_pwarn(stderr, __LINE__, "HPL_pdinfo", "U  in no-transposed form unsupported");
+        error = 1;
+        goto label_error;
+      }
       /*
        * Equilibration (0=no, 1=yes)
        */
@@ -829,6 +836,13 @@ void HPL_pdinfo(int ARGC,
       (void)sscanf(line, "%s", num);
       *EQUIL = atoi(num);
       if((*EQUIL != 0) && (*EQUIL != 1)) *EQUIL = 1;
+
+      //NC: We don't currently support Equilibration
+      if(*EQUIL != 0) {
+        HPL_pwarn(stderr, __LINE__, "HPL_pdinfo", "Equilibration currently unsupported");
+        error = 1;
+        goto label_error;
+      }
       /*
        * Memory alignment in bytes (> 0) (ALIGN)
        */

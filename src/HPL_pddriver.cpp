@@ -168,10 +168,7 @@ int main(int ARGC, char** ARGV) {
                       else
                         algo.rffun = HPL_pdrpanrlN;
 
-                      if(Unotran != 0)
-                        algo.upfun = HPL_pdupdateNN;
-                      else
-                        algo.upfun = HPL_pdupdateNT;
+                      algo.upfun = HPL_pdupdateNT;
                     } else {
                       if(rpfa == HPL_LEFT_LOOKING)
                         algo.pffun = HPL_pdpanllT;
@@ -188,10 +185,7 @@ int main(int ARGC, char** ARGV) {
                       else
                         algo.rffun = HPL_pdrpanrlT;
 
-                      if(Unotran != 0)
-                        algo.upfun = HPL_pdupdateTN;
-                      else
-                        algo.upfun = HPL_pdupdateTT;
+                      algo.upfun = HPL_pdupdateTT;
                     }
 
                     algo.fswap = fswap;

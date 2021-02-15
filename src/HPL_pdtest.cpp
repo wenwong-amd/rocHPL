@@ -415,20 +415,16 @@ void HPL_pdtest(HPL_T_test* TEST,
    * If I own b, compute ( b - A x ) and ( - A x ) otherwise
    */
   if(mycol == HPL_indxg2p(N, NB, NB, 0, npcol)) {
-    // HPL_dgemv( HplColumnMajor, HplNoTrans, mat.mp, nq, -HPL_rone,
-    //            mat.A, mat.ld, mat.X, 1, HPL_rone, Bptr, 1 );
     const double one  = 1.0;
     const double mone = -1.0;
-    HPL_dgemv_gpu(
-        handle, mat.mp, nq, mone, mat.dA, mat.ld, mat.dX, 1, one, dBptr, 1);
+    rocblas_dgemv(handle, rocblas_operation_none,
+                  mat.mp, nq, &mone, mat.dA, mat.ld, mat.dX, 1, &one, dBptr, 1);
     hipMemcpy(Bptr, dBptr, mat.mp * sizeof(double), hipMemcpyDeviceToHost);
   } else if(nq > 0) {
-    // HPL_dgemv( HplColumnMajor, HplNoTrans, mat.mp, nq, -HPL_rone,
-    //            mat.A, mat.ld, mat.X, 1, HPL_rzero, Bptr, 1 );
     const double zero = 0.0;
     const double mone = -1.0;
-    HPL_dgemv_gpu(
-        handle, mat.mp, nq, mone, mat.dA, mat.ld, mat.dX, 1, zero, dBptr, 1);
+    rocblas_dgemv(handle, rocblas_operation_none,
+                  mat.mp, nq, &mone, mat.dA, mat.ld, mat.dX, 1, &zero, dBptr, 1);
     hipMemcpy(Bptr, dBptr, mat.mp * sizeof(double), hipMemcpyDeviceToHost);
   } else {
     for(ii = 0; ii < mat.mp; ii++) Bptr[ii] = HPL_rzero;

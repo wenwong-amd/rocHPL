@@ -63,7 +63,7 @@ void HPL_pdgesvK2(HPL_T_grid* GRID, HPL_T_palg* ALGO, HPL_T_pmat* A) {
   if(N <= 0) return;
 
 #ifdef HPL_PROGRESS_REPORT
-  start_time = HPL_timer_walltime();
+  start_time = HPL_ptimer_walltime();
 #endif
 
   /*
@@ -281,7 +281,7 @@ void HPL_pdgesvK2(HPL_T_grid* GRID, HPL_T_palg* ALGO, HPL_T_pmat* A) {
 #ifdef HPL_PROGRESS_REPORT
     /* if this is process 0,0 and not the first panel */
     if(GRID->myrow == 0 && mycol == 0 && j > 0) {
-      time   = HPL_timer_walltime() - start_time;
+      time   = HPL_ptimer_walltime() - start_time;
       gflops = 2.0 * (N * (double)N * N - n * (double)n * n) / 3.0 /
                (time > 0.0 ? time : 1e-6) / 1e9;
       HPL_fprintf(stdout,

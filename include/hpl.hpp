@@ -45,17 +45,12 @@
 #include "hpl_misc.hpp"
 #include "hpl_blas.hpp"
 #include "hpl_auxil.hpp"
-#include "hpl_gesv.hpp"
 
 #include "hpl_pmisc.hpp"
 #include "hpl_pauxil.hpp"
 #include "hpl_panel.hpp"
 #include "hpl_pfact.hpp"
 #include "hpl_pgesv.hpp"
-
-#include "hpl_timer.hpp"
-#include "hpl_matgen.hpp"
-#include "hpl_test.hpp"
 
 #include "hpl_ptimer.hpp"
 #include "hpl_pmatgen.hpp"

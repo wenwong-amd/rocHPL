@@ -171,62 +171,32 @@ void HPL_equil(HPL_T_panel*         PBCST,
       /*
        * Equilibration phase
        */
-      if(TRANS == HplNoTrans) {
-        if(left) {
-          HPL_spreadN(PBCST,
-                      IFLAG,
-                      PANEL,
-                      HplLeft,
-                      N,
-                      U,
-                      LDU,
-                      iprow,
-                      IWORK,
-                      IPMAP,
-                      IPMAPM1);
-        }
+      if(left) {
+        HPL_spreadT(PBCST,
+                    IFLAG,
+                    PANEL,
+                    HplLeft,
+                    N,
+                    U,
+                    LDU,
+                    iprow,
+                    IWORK,
+                    IPMAP,
+                    IPMAPM1);
+      }
 
-        if(right) {
-          HPL_spreadN(PBCST,
-                      IFLAG,
-                      PANEL,
-                      HplRight,
-                      N,
-                      U,
-                      LDU,
-                      iprow,
-                      IWORK,
-                      IPMAP,
-                      IPMAPM1);
-        }
-      } else {
-        if(left) {
-          HPL_spreadT(PBCST,
-                      IFLAG,
-                      PANEL,
-                      HplLeft,
-                      N,
-                      U,
-                      LDU,
-                      iprow,
-                      IWORK,
-                      IPMAP,
-                      IPMAPM1);
-        }
-
-        if(right) {
-          HPL_spreadT(PBCST,
-                      IFLAG,
-                      PANEL,
-                      HplRight,
-                      N,
-                      U,
-                      LDU,
-                      iprow,
-                      IWORK,
-                      IPMAP,
-                      IPMAPM1);
-        }
+      if(right) {
+        HPL_spreadT(PBCST,
+                    IFLAG,
+                    PANEL,
+                    HplRight,
+                    N,
+                    U,
+                    LDU,
+                    iprow,
+                    IWORK,
+                    IPMAP,
+                    IPMAPM1);
       }
     }
   }

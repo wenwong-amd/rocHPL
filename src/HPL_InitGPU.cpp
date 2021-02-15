@@ -21,12 +21,6 @@ hipEvent_t dlaswpStart, dlaswpStop;
 hipEvent_t dtrsmStart, dtrsmStop;
 hipEvent_t dgemmStart, dgemmStop;
 
-int stringCmp(const void* a, const void* b) {
-  char* c_a = (char*)a;
-  char* c_b = (char*)b;
-  return strcmp(c_a, c_b);
-}
-
 static char host_name[MPI_MAX_PROCESSOR_NAME];
 
 /*
