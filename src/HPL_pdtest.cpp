@@ -507,6 +507,7 @@ void HPL_pdtest(HPL_T_test* TEST,
   if(dvptr) hipFree(dvptr);
   if(vptr) hipHostFree(vptr);
   if(Bptr) hipHostFree(Bptr);
+  if(gBptr) hipHostFree(gBptr);
 
   if(mat.dW) hipFree(mat.dW);
 
