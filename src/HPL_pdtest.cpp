@@ -388,6 +388,9 @@ void HPL_pdtest(HPL_T_test* TEST,
   // Bptr  = Mptr( mat.A , 0, nq, mat.ld );
   size_t BptrBytes = Mmax(mat.nq, mat.ld) * sizeof(double);
   hipHostMalloc(&(Bptr), BptrBytes, 0);
+
+  double* gBptr=NULL;
+  hipHostMalloc(&(gBptr), BptrBytes, 0);
   dBptr = Mptr(mat.dA, 0, nq, mat.ld);
   if(mycol == HPL_indxg2p(N, NB, NB, 0, npcol)) {
     if(mat.mp > 0) {
@@ -433,11 +436,12 @@ void HPL_pdtest(HPL_T_test* TEST,
    * Reduce the distributed residual in process column 0
    */
   if(mat.mp > 0)
-    (void)HPL_reduce(Bptr, mat.mp, HPL_DOUBLE, HPL_sum, 0, GRID->row_comm);
+    (void) MPI_Reduce(Bptr, gBptr, mat.mp, MPI_DOUBLE, MPI_SUM, 0, GRID->row_comm);
+    // (void)HPL_reduce(Bptr, mat.mp, HPL_DOUBLE, HPL_sum, 0, GRID->row_comm);
   /*
    * Compute || b - A x ||_oo
    */
-  hipMemcpy(dBptr, Bptr, mat.mp * sizeof(double), hipMemcpyHostToDevice);
+  hipMemcpy(dBptr, gBptr, mat.mp * sizeof(double), hipMemcpyHostToDevice);
   resid0 = HPL_pdlange(GRID, HPL_NORM_I, N, 1, NB, dBptr, mat.ld);
   /*
    * Computes and displays norms, residuals ...
