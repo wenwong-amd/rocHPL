@@ -77,7 +77,7 @@ option(BUILD_TEST "Build rocHPL single-node test" OFF)
 include(cmake/Dependencies.cmake)
 
 # Setup version
-rocm_setup_version(VERSION 3.7.0)
+rocm_setup_version(VERSION 4.1.0)
 
 # AMD targets
 set(AMDGPU_TARGETS gfx900;gfx906;gfx908 CACHE STRING "List of specific machine types for library to target")
