@@ -364,7 +364,7 @@ void HPL_pdinfo(int ARGC,
     /*
      * Process grids, mapping, (>=1) (P, Q)
      */
-    *PMAPPIN = HPL_ROW_MAJOR; //HPL_COLUMN_MAJOR
+    *PMAPPIN = HPL_COLUMN_MAJOR; //HPL_ROW_MAJOR
     *NPQS = 1;
     P[0] = p;
     Q[0] = q;
