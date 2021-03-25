@@ -80,7 +80,7 @@ include(cmake/Dependencies.cmake)
 rocm_setup_version(VERSION 4.1.0)
 
 # AMD targets
-set(AMDGPU_TARGETS gfx900;gfx906;gfx908 CACHE STRING "List of specific machine types for library to target")
+#set(AMDGPU_TARGETS gfx900;gfx906;gfx90a;gfx908 CACHE STRING "List of specific machine types for library to target")
 
 # This option only works for make/nmake and the ninja generators, but no reason it shouldn't be on all the time
 # This tells cmake to create a compile_commands.json file that can be used with clang tooling or vim
@@ -99,16 +99,18 @@ foreach(i ${rochpl_device_source})
 endforeach()
 
 # HIP flags workaround while target_compile_options does not work
-list(APPEND HIP_HIPCC_FLAGS "-O3 -Wno-unused-command-line-argument -ffp-contract=fast -ffast-math -funsafe-math-optimizations")
+list(APPEND HIP_HIPCC_FLAGS "-O3 -march=native -Wno-unused-command-line-argument -ffp-contract=fast -ffast-math -funsafe-math-optimizations")
 
-list(APPEND CMAKE_HOST_FLAGS "-O3")
+list(APPEND CMAKE_HOST_FLAGS "-O3;-march=native")
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
   list(APPEND HIP_HIPCC_FLAGS "-g")
   list(APPEND CMAKE_HOST_FLAGS "-g")
 endif()
 
-foreach(target ${AMDGPU_TARGETS})
+# AMD targets
+set(TARGETS gfx900;gfx906;gfx908;gfx90a)
+foreach(target ${TARGETS})
   list(APPEND HIP_HIPCC_FLAGS "--amdgpu-target=${target}")
 endforeach()
 
