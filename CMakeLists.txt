@@ -109,7 +109,7 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug")
 endif()
 
 # AMD targets
-set(TARGETS gfx900;gfx906;gfx908;gfx90a)
+set(TARGETS gfx900;gfx906;gfx908)
 foreach(target ${TARGETS})
   list(APPEND HIP_HIPCC_FLAGS "--amdgpu-target=${target}")
 endforeach()
