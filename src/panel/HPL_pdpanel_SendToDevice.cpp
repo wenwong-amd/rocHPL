@@ -171,42 +171,47 @@ void HPL_pdpanel_SendToDevice(HPL_T_panel* PANEL) {
 
   // copy A and/or L2
   if(PANEL->grid->mycol == PANEL->pcol) {
-    // A  = Mptr( PANEL->A,  0, -jb, PANEL->lda );
-    A  = Mptr(PANEL->A, 0, 0, PANEL->lda);
-    dA = Mptr(PANEL->dA, 0, -jb, PANEL->dlda);
-
-    if(PANEL->mp > 0)
-      hipMemcpy2DAsync(dA,
-                       PANEL->dlda * sizeof(double),
-                       A,
-                       PANEL->lda * sizeof(double),
-                       PANEL->mp * sizeof(double),
-                       jb,
-                       hipMemcpyHostToDevice,
-                       dataStream);
-
     if(PANEL->grid->npcol > 1) { // L2 is its own array
       if(PANEL->grid->myrow == PANEL->prow) {
+        hipMemcpy2DAsync(Mptr(PANEL->dA, 0, -jb, PANEL->dlda),
+                         PANEL->dlda * sizeof(double),
+                         Mptr(PANEL->A, 0, 0, PANEL->lda),
+                         PANEL->lda * sizeof(double),
+                         jb * sizeof(double),
+                         jb,
+                         hipMemcpyHostToDevice,
+                         dataStream);
+
         if((PANEL->mp - jb) > 0)
           hipMemcpy2DAsync(PANEL->dL2,
                            PANEL->dldl2 * sizeof(double),
-                           Mptr(PANEL->dA, jb, -jb, PANEL->dlda),
-                           PANEL->dlda * sizeof(double),
+                           Mptr(PANEL->A, jb, 0, PANEL->lda),
+                           PANEL->lda * sizeof(double),
                            (PANEL->mp - jb) * sizeof(double),
                            jb,
-                           hipMemcpyDeviceToDevice,
+                           hipMemcpyHostToDevice,
                            dataStream);
       } else {
         if((PANEL->mp) > 0)
           hipMemcpy2DAsync(PANEL->dL2,
                            PANEL->dldl2 * sizeof(double),
-                           Mptr(PANEL->dA, 0, -jb, PANEL->dlda),
-                           PANEL->dlda * sizeof(double),
-                           (PANEL->mp) * sizeof(double),
+                           Mptr(PANEL->A, 0, 0, PANEL->lda),
+                           PANEL->lda * sizeof(double),
+                           PANEL->mp * sizeof(double),
                            jb,
-                           hipMemcpyDeviceToDevice,
+                           hipMemcpyHostToDevice,
                            dataStream);
       }
+    } else {
+      if(PANEL->mp > 0)
+        hipMemcpy2DAsync(Mptr(PANEL->dA, 0, -jb, PANEL->dlda),
+                         PANEL->dlda * sizeof(double),
+                         Mptr(PANEL->A, 0, 0, PANEL->lda),
+                         PANEL->lda * sizeof(double),
+                         PANEL->mp * sizeof(double),
+                         jb,
+                         hipMemcpyHostToDevice,
+                         dataStream);
     }
 
     // copy L1
