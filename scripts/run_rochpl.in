@@ -25,6 +25,7 @@ function display_help()
   echo "            parameters are read from input file.          "
   echo "    [-h|--help] prints this help message                  "
   echo "    [-v|--verbose] print MPI rank binding (Default: false)"
+  echo "    [--version] Print rocHPL version number.              "
 }
 
 # This function is helpful for dockerfiles that do not have sudo installed, but the default user is root
@@ -93,6 +94,8 @@ filename=HPL.dat
 inputfile=false
 cmdrun=false
 
+export LD_LIBRARY_PATH=${blas_dir}:$LD_LIBRARY_PATH
+
 # #################################################
 # Parameter parsing
 # #################################################
@@ -100,7 +103,7 @@ cmdrun=false
 # check if we have a modern version of getopt that can handle whitespace and long parameters
 getopt -T
 if [[ $? -eq 4 ]]; then
-  GETOPT_PARSE=$(getopt --name "${0}" --longoptions np:,ppn:,NB:,help,verbose, --options hvP:Q:N:i: -- "$@")
+  GETOPT_PARSE=$(getopt --name "${0}" --longoptions np:,ppn:,NB:,help,verbose,version, --options hvP:Q:N:i: -- "$@")
 else
   echo "Need a new version of getopt"
   exit 1
@@ -122,6 +125,10 @@ while true; do
     -v|--verbose)
         verbose=true
         shift ;;
+    --version)
+        ${mpi_bin} -np 1 ${rochpl_bin} --version
+        exit 0
+        ;;
     --np)
         np=${2}
         shift 2 ;;
@@ -169,8 +176,6 @@ if [[ "$np" -lt 1 ]]; then
   echo "Invalid MPI grid parameters; aborting";
   exit 1
 fi
-
-export LD_LIBRARY_PATH=${blas_dir}:$LD_LIBRARY_PATH
 
 # count the number of physical cores
 num_cpu_cores=$(grep '^core id' /proc/cpuinfo |sort -u|wc -l)
