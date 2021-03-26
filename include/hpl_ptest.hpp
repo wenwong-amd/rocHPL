@@ -23,7 +23,6 @@
 #include "hpl_misc.hpp"
 #include "hpl_blas.hpp"
 #include "hpl_auxil.hpp"
-#include "hpl_gesv.hpp"
 
 #include "hpl_pmisc.hpp"
 #include "hpl_pauxil.hpp"

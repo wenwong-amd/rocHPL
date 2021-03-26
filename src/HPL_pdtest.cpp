@@ -388,6 +388,9 @@ void HPL_pdtest(HPL_T_test* TEST,
   // Bptr  = Mptr( mat.A , 0, nq, mat.ld );
   size_t BptrBytes = Mmax(mat.nq, mat.ld) * sizeof(double);
   hipHostMalloc(&(Bptr), BptrBytes, 0);
+
+  double* gBptr=NULL;
+  hipHostMalloc(&(gBptr), BptrBytes, 0);
   dBptr = Mptr(mat.dA, 0, nq, mat.ld);
   if(mycol == HPL_indxg2p(N, NB, NB, 0, npcol)) {
     if(mat.mp > 0) {
@@ -415,20 +418,16 @@ void HPL_pdtest(HPL_T_test* TEST,
    * If I own b, compute ( b - A x ) and ( - A x ) otherwise
    */
   if(mycol == HPL_indxg2p(N, NB, NB, 0, npcol)) {
-    // HPL_dgemv( HplColumnMajor, HplNoTrans, mat.mp, nq, -HPL_rone,
-    //            mat.A, mat.ld, mat.X, 1, HPL_rone, Bptr, 1 );
     const double one  = 1.0;
     const double mone = -1.0;
-    HPL_dgemv_gpu(
-        handle, mat.mp, nq, mone, mat.dA, mat.ld, mat.dX, 1, one, dBptr, 1);
+    rocblas_dgemv(handle, rocblas_operation_none,
+                  mat.mp, nq, &mone, mat.dA, mat.ld, mat.dX, 1, &one, dBptr, 1);
     hipMemcpy(Bptr, dBptr, mat.mp * sizeof(double), hipMemcpyDeviceToHost);
   } else if(nq > 0) {
-    // HPL_dgemv( HplColumnMajor, HplNoTrans, mat.mp, nq, -HPL_rone,
-    //            mat.A, mat.ld, mat.X, 1, HPL_rzero, Bptr, 1 );
     const double zero = 0.0;
     const double mone = -1.0;
-    HPL_dgemv_gpu(
-        handle, mat.mp, nq, mone, mat.dA, mat.ld, mat.dX, 1, zero, dBptr, 1);
+    rocblas_dgemv(handle, rocblas_operation_none,
+                  mat.mp, nq, &mone, mat.dA, mat.ld, mat.dX, 1, &zero, dBptr, 1);
     hipMemcpy(Bptr, dBptr, mat.mp * sizeof(double), hipMemcpyDeviceToHost);
   } else {
     for(ii = 0; ii < mat.mp; ii++) Bptr[ii] = HPL_rzero;
@@ -437,11 +436,12 @@ void HPL_pdtest(HPL_T_test* TEST,
    * Reduce the distributed residual in process column 0
    */
   if(mat.mp > 0)
-    (void)HPL_reduce(Bptr, mat.mp, HPL_DOUBLE, HPL_sum, 0, GRID->row_comm);
+    (void) MPI_Reduce(Bptr, gBptr, mat.mp, MPI_DOUBLE, MPI_SUM, 0, GRID->row_comm);
+    // (void)HPL_reduce(Bptr, mat.mp, HPL_DOUBLE, HPL_sum, 0, GRID->row_comm);
   /*
    * Compute || b - A x ||_oo
    */
-  hipMemcpy(dBptr, Bptr, mat.mp * sizeof(double), hipMemcpyHostToDevice);
+  hipMemcpy(dBptr, gBptr, mat.mp * sizeof(double), hipMemcpyHostToDevice);
   resid0 = HPL_pdlange(GRID, HPL_NORM_I, N, 1, NB, dBptr, mat.ld);
   /*
    * Computes and displays norms, residuals ...
@@ -507,6 +507,7 @@ void HPL_pdtest(HPL_T_test* TEST,
   if(dvptr) hipFree(dvptr);
   if(vptr) hipHostFree(vptr);
   if(Bptr) hipHostFree(Bptr);
+  if(gBptr) hipHostFree(gBptr);
 
   if(mat.dW) hipFree(mat.dW);
 

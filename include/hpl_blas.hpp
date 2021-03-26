@@ -34,18 +34,6 @@ extern hipEvent_t dlaswpStart, dlaswpStop;
 extern hipEvent_t dtrsmStart, dtrsmStop;
 extern hipEvent_t dgemmStart, dgemmStop;
 
-void HPL_dgemv_gpu(rocblas_handle,
-                   const int,
-                   const int,
-                   const double,
-                   const double*,
-                   const int,
-                   const double*,
-                   const int,
-                   const double,
-                   double*,
-                   const int);
-
 #if __cplusplus
 extern "C" {
 #endif

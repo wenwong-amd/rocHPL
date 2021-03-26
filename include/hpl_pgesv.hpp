@@ -37,6 +37,12 @@
  * ---------------------------------------------------------------------
  */
 typedef enum {
+  HPL_LEFT_LOOKING  = 301, /* Left looking lu fact variant */
+  HPL_CROUT         = 302, /* Crout lu fact variant */
+  HPL_RIGHT_LOOKING = 303  /* Right looking lu fact variant */
+} HPL_T_FACT;
+
+typedef enum {
   HPL_SWAP00 = 451, /* Use HPL_pdlaswp00 */
   HPL_SWAP01 = 452, /* Use HPL_pdlaswp01 */
   HPL_SW_MIX = 453, /* Use HPL_pdlaswp00_ for small number of */
@@ -105,7 +111,6 @@ typedef struct HPL_S_pmat {
  */
 void HPL_pipid(HPL_T_panel*, int*, int*);
 void HPL_plindx0(HPL_T_panel*, const int, int*, int*, int*, int*);
-void HPL_pdlaswp00N(HPL_T_panel*, int*, HPL_T_panel*, const int);
 void HPL_pdlaswp00T(HPL_T_panel*, int*, HPL_T_panel*, const int);
 
 void HPL_perm(const int, int*, int*, int*);
@@ -122,17 +127,6 @@ void HPL_plindx1(HPL_T_panel*,
                  int*,
                  int*,
                  int*);
-void HPL_spreadN(HPL_T_panel*,
-                 int*,
-                 HPL_T_panel*,
-                 const enum HPL_SIDE,
-                 const int,
-                 double*,
-                 const int,
-                 const int,
-                 const int*,
-                 const int*,
-                 const int*);
 void HPL_spreadT(HPL_T_panel*,
                  int*,
                  HPL_T_panel*,
@@ -155,15 +149,6 @@ void HPL_equil(HPL_T_panel*,
                const int*,
                const int*,
                int*);
-void HPL_rollN(HPL_T_panel*,
-               int*,
-               HPL_T_panel*,
-               const int,
-               double*,
-               const int,
-               const int*,
-               const int*,
-               const int*);
 void HPL_rollT(HPL_T_panel*,
                int*,
                HPL_T_panel*,
@@ -173,16 +158,11 @@ void HPL_rollT(HPL_T_panel*,
                const int*,
                const int*,
                const int*);
-void HPL_pdlaswp01N(HPL_T_panel*, int*, HPL_T_panel*, const int);
 void HPL_pdlaswp01T(HPL_T_panel*, int*, HPL_T_panel*, const int);
 
-void HPL_pdupdateNN(HPL_T_panel*, int*, HPL_T_panel*, const int);
 void HPL_pdupdateNT(HPL_T_panel*, int*, HPL_T_panel*, const int);
-void HPL_pdupdateTN(HPL_T_panel*, int*, HPL_T_panel*, const int);
 void HPL_pdupdateTT(HPL_T_panel*, int*, HPL_T_panel*, const int);
 
-void HPL_pdgesv0(HPL_T_grid*, HPL_T_palg*, HPL_T_pmat*);
-void HPL_pdgesvK1(HPL_T_grid*, HPL_T_palg*, HPL_T_pmat*);
 void HPL_pdgesvK2(HPL_T_grid*, HPL_T_palg*, HPL_T_pmat*);
 void HPL_pdgesv(HPL_T_grid*, HPL_T_palg*, HPL_T_pmat*);
 

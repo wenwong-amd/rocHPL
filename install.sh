@@ -262,7 +262,7 @@ install_openblas( )
 {
   if [ ! -d "./tpl/openblas" ]; then
     mkdir -p tpl && cd tpl
-    git clone --branch v0.3.10 https://github.com/xianyi/OpenBLAS openblas
+    git clone --branch v0.3.14 https://github.com/xianyi/OpenBLAS openblas
     cd openblas; make USE_OPENMP=1 -j$(nproc); cd ../..
   fi
 }
@@ -272,7 +272,7 @@ install_openmpi( )
 {
   if [ ! -d "./tpl/ucx" ]; then
     mkdir -p tpl && cd tpl
-    git clone --branch v1.9.0 https://github.com/openucx/ucx.git ucx
+    git clone --branch v1.10.0 https://github.com/openucx/ucx.git ucx
     cd ucx; ./autogen.sh; ./autogen.sh #why do we have to run this twice?
     mkdir build; cd build
     ../contrib/configure-opt --prefix=${PWD}/../ --with-rocm=${with_rocm} --without-knem --without-cuda --without-java
@@ -281,7 +281,7 @@ install_openmpi( )
 
   if [ ! -d "./tpl/openmpi" ]; then
     mkdir -p tpl && cd tpl
-    git clone --branch v4.0.5 https://github.com/open-mpi/ompi.git openmpi
+    git clone --branch v4.1.0 https://github.com/open-mpi/ompi.git openmpi
     cd openmpi; ./autogen.pl; mkdir build; cd build
     ../configure --prefix=${PWD}/../ --with-ucx=${PWD}/../../ucx --without-verbs
     make -j$(nproc); make install; cd ../../..
@@ -439,7 +439,7 @@ pushd .
   # #################################################
   if [[ "${with_mpi}" == tpl/openmpi ]]; then
 
-    gpu_aware_mpi=ON #turn on GPU-aware MPI when using internal MPI library
+    #gpu_aware_mpi=ON #turn on GPU-aware MPI when using internal MPI library
     openmpi_ucx=true
     install_openmpi
 
