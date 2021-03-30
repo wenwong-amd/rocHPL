@@ -215,10 +215,10 @@ void HPL_pdpanel_init(HPL_T_grid*  GRID,
   {                              /* space for L1, PIV, DINFO */
     PANEL->len = JB * JB + lpiv; // L1, integer arrays
     lwork      = ALGO->align + (PANEL->len + ipivlen + 1);
-    if(nprow > 1) /* space for U */
+    if(nprow > 1) /* space for U & W */
     {
       nu = nq - JB;
-      lwork += JB * Mmax(0, nu);
+      lwork += 2 * JB * Mmax(0, nu);
     }
 
     if(PANEL->max_work_size < (size_t)(lwork) * sizeof(double)) {
@@ -272,28 +272,32 @@ void HPL_pdpanel_init(HPL_T_grid*  GRID,
      */
     PANEL->ldl2  = Mmax(1, mp);
     PANEL->dldl2 = A->ld;
+    PANEL->L2    = PANEL->A  + (myrow == icurrow ? JB : 0);
     PANEL->dL2   = PANEL->dA + (myrow == icurrow ? JB : 0);
-    PANEL->L2    = PANEL->A + (myrow == icurrow ? JB : 0);
-    PANEL->dL1   = (double*)HPL_PTR(PANEL->dWORK, dalign);
-    PANEL->L1    = (double*)HPL_PTR(PANEL->WORK, dalign);
 
+    PANEL->U     = (nprow > 1 ? (double*)PANEL->WORK  : NULL);
+    PANEL->dU    = (nprow > 1 ? (double*)PANEL->dWORK : NULL);
+    PANEL->W     = (nprow > 1 ? PANEL->U  + JB * Mmax(0, nu) : NULL);
+    PANEL->dW    = (nprow > 1 ? PANEL->dU + JB * Mmax(0, nu) : NULL);
+
+    PANEL->L1    = (double*)PANEL->WORK  + (nprow > 1 ? 2 * JB * Mmax(0, nu) : 0);
+    PANEL->dL1   = (double*)PANEL->dWORK + (nprow > 1 ? 2 * JB * Mmax(0, nu) : 0);
+
+    PANEL->lindxA   = (int*)(PANEL->L1  + JB * JB);
     PANEL->dlindxA  = (int*)(PANEL->dL1 + JB * JB);
-    PANEL->lindxA   = (int*)(PANEL->L1 + JB * JB);
+    PANEL->lindxAU  = PANEL->lindxA  + 2 * JB;
     PANEL->dlindxAU = PANEL->dlindxA + 2 * JB;
-    PANEL->lindxAU  = PANEL->lindxA + 2 * JB;
+    PANEL->permU    = PANEL->lindxAU  + 2 * JB;
     PANEL->dpermU   = PANEL->dlindxAU + 2 * JB;
-    PANEL->permU    = PANEL->lindxAU + 2 * JB;
 
     // Put ipiv array at the end
+    PANEL->ipiv  = PANEL->permU  + JB;
     PANEL->dipiv = PANEL->dpermU + JB;
-    PANEL->ipiv  = PANEL->permU + JB;
 
-    PANEL->DINFO  = ((double*)PANEL->lindxA) + lpiv + ipivlen;
+    PANEL->DINFO  = ((double*)PANEL->lindxA)  + lpiv + ipivlen;
     PANEL->dDINFO = ((double*)PANEL->dlindxA) + lpiv + ipivlen;
 
     *(PANEL->DINFO) = 0.0;
-    PANEL->U        = (nprow > 1 ? PANEL->DINFO + 1 : NULL);
-    PANEL->dU       = (nprow > 1 ? PANEL->dDINFO + 1 : NULL);
   } else { /* space for L2, L1, DPIV */
     ml2 = (myrow == icurrow ? mp - JB : mp);
     ml2 = Mmax(0, ml2);
@@ -301,15 +305,12 @@ void HPL_pdpanel_init(HPL_T_grid*  GRID,
     itmp1      = JB * JB + lpiv + ipivlen; // L1, integer arrays
     PANEL->len = ml2 * JB + itmp1;
 
-#ifdef HPL_COPY_L
     lwork = ALGO->align + PANEL->len + 1;
-#else
-    lwork = ALGO->align + (mycol == icurcol ? itmp1 : PANEL->len) + 1;
-#endif
-    if(nprow > 1) /* space for U */
+
+    if(nprow > 1) /* space for U & W */
     {
       nu = (mycol == icurcol ? nq - JB : nq);
-      lwork += JB * Mmax(0, nu);
+      lwork += 2 * JB * Mmax(0, nu);
     }
 
     if(PANEL->max_work_size < (size_t)(lwork) * sizeof(double)) {
@@ -357,52 +358,36 @@ void HPL_pdpanel_init(HPL_T_grid*  GRID,
 #endif
       PANEL->max_work_size = (size_t)(lwork) * sizeof(double);
     }
-/*
- * Initialize the pointers of the panel structure - Re-use A in the cur-
- * rent process column when HPL_COPY_L is not defined.
- */
-#ifdef HPL_COPY_L
-    PANEL->dL2   = (double*)HPL_PTR(PANEL->dWORK, dalign);
+  /*
+   * Initialize the pointers of the panel structure - Re-use A in the cur-
+   * rent process column when HPL_COPY_L is not defined.
+   */
+    PANEL->U     = (nprow > 1 ? (double*)PANEL->WORK  : NULL);
+    PANEL->dU    = (nprow > 1 ? (double*)PANEL->dWORK : NULL);
+    PANEL->W     = (nprow > 1 ? PANEL->U  + JB * Mmax(0, nu) : NULL);
+    PANEL->dW    = (nprow > 1 ? PANEL->dU + JB * Mmax(0, nu) : NULL);
+
+    PANEL->L2    = (double*)PANEL->WORK  + (nprow > 1 ? 2 * JB * Mmax(0, nu) : 0);
+    PANEL->dL2   = (double*)PANEL->dWORK + (nprow > 1 ? 2 * JB * Mmax(0, nu) : 0);
+    PANEL->L1    = PANEL->L2  + ml2 * JB;
     PANEL->dL1   = PANEL->dL2 + ml2 * JB;
-    PANEL->L2    = (double*)HPL_PTR(PANEL->WORK, dalign);
-    PANEL->L1    = PANEL->L2 + ml2 * JB;
     PANEL->ldl2  = Mmax(1, ml2);
     PANEL->dldl2 = Mmax(1, ml2);
-#else
-    if(mycol == icurcol) {
-      PANEL->L2    = PANEL->A + (myrow == icurrow ? JB : 0);
-      PANEL->dL2   = PANEL->dA + (myrow == icurrow ? JB : 0);
-      PANEL->ldl2  = mp;
-      PANEL->dldl2 = A->ld;
-      PANEL->L1    = (double*)HPL_PTR(PANEL->WORK, dalign);
-      PANEL->dL1   = (double*)HPL_PTR(PANEL->dWORK, dalign);
-    } else {
-      PANEL->dL2 = (double*)HPL_PTR(PANEL->dWORK, dalign);
-      PANEL->dL1 = PANEL->dL2 + ml2 * JB;
 
-      PANEL->L2    = (double*)HPL_PTR(PANEL->WORK, dalign);
-      PANEL->L1    = PANEL->L2 + ml2 * JB;
-      PANEL->ldl2  = Mmax(1, ml2);
-      PANEL->dldl2 = Mmax(1, ml2);
-    }
-#endif
-
+    PANEL->lindxA   = (int*)(PANEL->L1  + JB * JB);
     PANEL->dlindxA  = (int*)(PANEL->dL1 + JB * JB);
-    PANEL->lindxA   = (int*)(PANEL->L1 + JB * JB);
+    PANEL->lindxAU  = PANEL->lindxA  + 2 * JB;
     PANEL->dlindxAU = PANEL->dlindxA + 2 * JB;
-    PANEL->lindxAU  = PANEL->lindxA + 2 * JB;
+    PANEL->permU    = PANEL->lindxAU  + 2 * JB;
     PANEL->dpermU   = PANEL->dlindxAU + 2 * JB;
-    PANEL->permU    = PANEL->lindxAU + 2 * JB;
 
+    PANEL->ipiv  = PANEL->permU  + JB;
     PANEL->dipiv = PANEL->dpermU + JB;
-    PANEL->ipiv  = PANEL->permU + JB;
 
     PANEL->DINFO  = ((double*)PANEL->lindxA) + lpiv + ipivlen;
     PANEL->dDINFO = ((double*)PANEL->dlindxA) + lpiv + ipivlen;
 
     *(PANEL->DINFO) = 0.0;
-    PANEL->U        = (nprow > 1 ? PANEL->DINFO + 1 : NULL);
-    PANEL->dU       = (nprow > 1 ? PANEL->dDINFO + 1 : NULL);
   }
   /*
    * If nprow is 1, we just allocate an array of JB integers to store the

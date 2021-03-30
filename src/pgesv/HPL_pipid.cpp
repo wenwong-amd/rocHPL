@@ -100,9 +100,13 @@ void HPL_pipid(HPL_T_panel* PANEL, int* K, int* IPID){
     *K += 2;
   }
 
+  // printf("rank %d ipiv[%d]=%d\n", PANEL->grid->myrow, 0, ipiv[0]);
+
   for(i = 1; i < jb; i++) {
     fnds = 0;
     j    = 1;
+
+    // printf("rank %d ipiv[%d]=%d\n", PANEL->grid->myrow, i, ipiv[i]);
 
     if((src = ia + i) == (dst = (int)(ipiv[i]))) {
       do {

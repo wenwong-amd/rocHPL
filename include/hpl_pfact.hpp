@@ -37,7 +37,7 @@ typedef void (
     *HPL_T_PFA_FUN)(HPL_T_panel*, const int, const int, const int, double*);
 typedef void (
     *HPL_T_RFA_FUN)(HPL_T_panel*, const int, const int, const int, double*);
-typedef void (*HPL_T_UPD_FUN)(HPL_T_panel*, int*, HPL_T_panel*, const int);
+typedef void (*HPL_T_UPD_FUN)(HPL_T_panel*, const int);
 /*
  * ---------------------------------------------------------------------
  * Function prototypes

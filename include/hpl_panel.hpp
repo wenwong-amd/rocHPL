@@ -52,6 +52,8 @@ typedef struct HPL_S_panel {
   int*               dpermU;
   double*            U;          /* ptr to U */
   double*            dU;         /* ptr to U */
+  double*            W;          /* ptr to W */
+  double*            dW;         /* ptr to W */
   int*               IWORK;      /* integer workspace for swapping */
   void*              buffers[2]; /* buffers for panel bcast */
   int                counts[2];  /* counts for panel bcast */

@@ -219,7 +219,7 @@ int  HPL_numrocI(const int,
                  const int);
 
 void HPL_dlaswp00N(const int, const int, double*, const int, const int*);
-void HPL_dlaswp10N(const int, const int, double*, const int, const int*);
+
 void HPL_dlaswp01T(const int,
                    const int,
                    double*,
@@ -228,45 +228,31 @@ void HPL_dlaswp01T(const int,
                    const int,
                    const int*,
                    const int*);
-void HPL_dlaswp02N(const int,
+
+void HPL_dlaswp02T(const int,
                    const int,
-                   const double*,
-                   const int,
-                   double*,
                    double*,
                    const int,
                    const int*,
                    const int*);
+
 void HPL_dlaswp03T(const int,
                    const int,
                    double*,
                    const int,
-                   const double*,
-                   const double*,
-                   const int);
+                   double*,
+                   const int,
+                   const int*);
+
 void HPL_dlaswp04T(const int,
                    const int,
-                   const int,
                    double*,
                    const int,
                    double*,
                    const int,
-                   const double*,
-                   const double*,
-                   const int,
-                   const int*,
                    const int*);
-void HPL_dlaswp05T(const int,
-                   const int,
-                   double*,
-                   const int,
-                   const double*,
-                   const int,
-                   const int*,
-                   const int*);
-void HPL_dlaswp06T(const int,
-                   const int,
-                   double*,
+
+void HPL_dlaswp10N(const int,
                    const int,
                    double*,
                    const int,

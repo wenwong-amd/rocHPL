@@ -17,6 +17,8 @@ hipStream_t computeStream, dataStream;
 hipEvent_t panelUpdate;
 hipEvent_t panelCopy;
 
+hipEvent_t swapStartEvent, swapUCopyEvent, swapWCopyEvent;
+
 hipEvent_t dlaswpStart, dlaswpStop;
 hipEvent_t dtrsmStart, dtrsmStop;
 hipEvent_t dgemmStart, dgemmStop;
@@ -76,15 +78,19 @@ void HPL_InitGPU() {
   dev = localRank % deviceCount;
   hipSetDevice(dev);
 
+  hipStreamCreate(&computeStream);
+  hipStreamCreate(&dataStream);
+
   rocblas_create_handle(&handle);
   rocblas_set_pointer_mode(handle, rocblas_pointer_mode_host);
 
   rocblas_initialize();
 
-  hipStreamCreate(&computeStream);
-  hipStreamCreate(&dataStream);
-
   rocblas_set_stream(handle, computeStream);
+
+  hipEventCreate(&swapStartEvent);
+  hipEventCreate(&swapUCopyEvent);
+  hipEventCreate(&swapWCopyEvent);
 
   hipEventCreate(&panelUpdate);
   hipEventCreate(&panelCopy);

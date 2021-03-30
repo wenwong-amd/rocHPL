@@ -27,6 +27,8 @@ extern rocblas_handle handle;
 extern hipStream_t    computeStream;
 extern hipStream_t    dataStream;
 
+extern hipEvent_t swapStartEvent, swapUCopyEvent, swapWCopyEvent;
+
 extern hipEvent_t panelUpdate;
 extern hipEvent_t panelCopy;
 
