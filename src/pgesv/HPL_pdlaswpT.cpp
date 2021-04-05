@@ -129,16 +129,36 @@ void HPL_pdlaswpT(HPL_T_panel* PANEL, const int NN) {
   dpermU    = PANEL->dpermU;
   dpermU_ex = dpermU + jb;
 
-  // HPL_pipid(PANEL, ipl, ipID);
-  // HPL_plindx(PANEL,
-  //            *ipl,
-  //            ipID,
-  //            ipA,
-  //            lindxA,
-  //            lindxAU,
-  //            iplen,
-  //            permU,
-  //            iwork);
+  if(*iflag == -1) /* no index arrays have been computed so far */
+  {
+#ifdef GPU_AWARE_MPI
+    //get the ipivs on the host after the Bcast
+    if(PANEL->grid->mycol != PANEL->pcol) {
+      hipMemcpy2DAsync(PANEL->ipiv,
+                       PANEL->jb * sizeof(int),
+                       PANEL->dipiv,
+                       PANEL->jb * sizeof(int),
+                       PANEL->jb * sizeof(int),
+                       1,
+                       hipMemcpyDeviceToHost,
+                       dataStream);
+    }
+    hipStreamSynchronize(dataStream);
+#endif
+
+    //compute spreading info
+    HPL_pipid(PANEL, ipl, ipID);
+    HPL_plindx(PANEL,
+               *ipl,
+               ipID,
+               ipA,
+               lindxA,
+               lindxAU,
+               iplen,
+               permU,
+               iwork);
+    *iflag = 1;
+  }
 
   /* Set MPI message counts and offsets */
   ipcounts[0]  = (iplen[1]-iplen[0])*n;

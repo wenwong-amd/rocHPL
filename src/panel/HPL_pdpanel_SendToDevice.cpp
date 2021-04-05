@@ -172,22 +172,28 @@ void HPL_pdpanel_SendToDevice(HPL_T_panel* PANEL) {
       int* lindxAU  = PANEL->lindxAU;
       int* permU    = PANEL->permU;
       int* permU_ex = permU + jb;
+      int* ipiv     = PANEL->ipiv;
 
       int* dlindxA   = PANEL->dlindxA;
       int* dlindxAU  = PANEL->dlindxAU;
       int* dpermU    = PANEL->dpermU;
       int* dpermU_ex = dpermU + jb;
+      int* dipiv     = PANEL->dipiv;
 
-      HPL_pipid(PANEL, ipl, ipID);
-      HPL_plindx(PANEL,
-                 *ipl,
-                 ipID,
-                 ipA,
-                 lindxA,
-                 lindxAU,
-                 iplen,
-                 permU,
-                 iwork);
+      if(*iflag == -1) /* no index arrays have been computed so far */
+      {
+        HPL_pipid(PANEL, ipl, ipID);
+        HPL_plindx(PANEL,
+                   *ipl,
+                   ipID,
+                   ipA,
+                   lindxA,
+                   lindxAU,
+                   iplen,
+                   permU,
+                   iwork);
+        *iflag = 1;
+      }
 
       int N = Mmax(*ipA, jb);
       if(N > 0) {
@@ -217,6 +223,17 @@ void HPL_pdpanel_SendToDevice(HPL_T_panel* PANEL) {
                        1,
                        hipMemcpyHostToDevice,
                        dataStream);
+#ifdef GPU_AWARE_MPI
+      //send the ipivs along with L2 in the Bcast
+      hipMemcpy2DAsync(dipiv,
+                       jb * sizeof(int),
+                       ipiv,
+                       jb * sizeof(int),
+                       jb * sizeof(int),
+                       1,
+                       hipMemcpyHostToDevice,
+                       dataStream);
+#endif
     }
 
 #ifdef GPU_AWARE_MPI

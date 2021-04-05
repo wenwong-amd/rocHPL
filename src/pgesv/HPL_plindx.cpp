@@ -29,11 +29,11 @@ void HPL_plindx(HPL_T_panel* PANEL,
    * Purpose
    * =======
    *
-   * HPL_plindx1 computes two local arrays  LINDXA and  LINDXAU  containing
+   * HPL_plindx computes two local arrays  LINDXA and  LINDXAU  containing
    * the  local  source and final destination position  resulting from the
    * application of row interchanges.  In addition, this function computes
-   * three arrays IPLEN, IPMAP and IPMAPM1  that contain  the  logarithmic
-   * mapping information for the spreading phase.
+   * the array IPLEN that contains the mapping information for the
+   * spreading phase.
    *
    * Arguments
    * =========
@@ -103,26 +103,7 @@ void HPL_plindx(HPL_T_panel* PANEL,
   /*
    * Compute IPLEN
    */
-  for(int i = 0; i <= nprow; i++) IPLEN[i] = 0;
-
-  /*
-   * IPLEN[i]  is the number of rows of A in the processes  before
-   * process i, with the convention that IPLEN[nprow] is the total
-   * number of rows.
-   * In other words,  IPLEN[i+1] - IPLEN[i] is the local number of
-   * rows of  A  that should be moved for each process.
-   */
-  for(int i = 0; i < K; i += 2) {
-    const int src = IPID[i];
-    int srcrow;
-    Mindxg2p(src, nb, nb, srcrow, 0, nprow);
-    if(srcrow == icurrow) {
-      const int dst = IPID[i + 1];
-      int dstrow;
-      Mindxg2p(dst, nb, nb, dstrow, 0, nprow);
-      if((dstrow != srcrow) || (dst - ia < jb)) IPLEN[dstrow + 1]++;
-    }
-  }
+  HPL_piplen(PANEL, K, IPID, IPLEN, IWORK);
 
   /*
    * Compute the local arrays  LINDXA  and  LINDXAU  containing  the local

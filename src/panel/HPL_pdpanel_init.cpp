@@ -298,7 +298,9 @@ void HPL_pdpanel_init(HPL_T_grid*  GRID,
     PANEL->dDINFO = ((double*)PANEL->dlindxA) + lpiv + ipivlen;
 
     *(PANEL->DINFO) = 0.0;
+
   } else { /* space for L2, L1, DPIV */
+
     ml2 = (myrow == icurrow ? mp - JB : mp);
     ml2 = Mmax(0, ml2);
 

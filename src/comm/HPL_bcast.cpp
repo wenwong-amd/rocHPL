@@ -40,32 +40,41 @@ int HPL_bcast(HPL_T_panel* PANEL, int* IFLAG) {
    * ---------------------------------------------------------------------
    */
 
-  int       ierr;
-  HPL_T_TOP top;
+  MPI_Comm comm;
+  int      ierr, ierr2, go, next, msgid, prev, rank, root, size;
 
   if(PANEL == NULL) {
     *IFLAG = HPL_SUCCESS;
     return (HPL_SUCCESS);
   }
-  if(PANEL->grid->npcol <= 1) {
+  if((size = PANEL->grid->npcol) <= 1) {
     *IFLAG = HPL_SUCCESS;
     return (HPL_SUCCESS);
   }
+
+  rank  = PANEL->grid->mycol;
+  comm  = PANEL->grid->row_comm;
+  root  = PANEL->pcol;
+  msgid = PANEL->msgid;
+
   /*
-   * Retrieve the selected virtual broadcast topology
+   * Force the copy of the panel into a contiguous buffer
    */
-  top = PANEL->algo->btopo;
+  HPL_copyL(PANEL);
 
-  switch(top) {
-    case HPL_1RING_M: ierr = HPL_bcast_1rinM(PANEL, IFLAG); break;
-    case HPL_1RING: ierr = HPL_bcast_1ring(PANEL, IFLAG); break;
-    case HPL_2RING_M: ierr = HPL_bcast_2rinM(PANEL, IFLAG); break;
-    case HPL_2RING: ierr = HPL_bcast_2ring(PANEL, IFLAG); break;
-    case HPL_BLONG_M: ierr = HPL_bcast_blonM(PANEL, IFLAG); break;
-    case HPL_BLONG: ierr = HPL_bcast_blong(PANEL, IFLAG); break;
-    case HPL_IBCST: ierr = HPL_bcast_ibcst(PANEL, IFLAG); break;
-    default: ierr = HPL_SUCCESS;
-  }
+  /*
+   * Single Bcast call
+   */
+#if defined(GPU_AWARE_MPI)
+  ierr  = MPI_Bcast(PANEL->dL2, PANEL->len, MPI_DOUBLE, root, comm);
+#else
+  ierr  = MPI_Bcast(PANEL->L2, PANEL->len, MPI_DOUBLE, root, comm);
+#endif
 
-  return (ierr);
+  /*
+   * If an error occured in an MPI call, return HPL_FAILURE.
+   */
+  *IFLAG = (ierr == MPI_SUCCESS ? HPL_SUCCESS : HPL_FAILURE);
+
+  return (*IFLAG);
 }

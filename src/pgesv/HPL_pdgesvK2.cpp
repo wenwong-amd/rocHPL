@@ -48,7 +48,7 @@ void HPL_pdgesvK2(HPL_T_grid* GRID, HPL_T_palg* ALGO, HPL_T_pmat* A) {
   HPL_T_panel * p, **panel = NULL;
   HPL_T_UPD_FUN HPL_pdupdate;
   int N, depth, icurcol = 0, j, jb, jj = 0, jstart, k, mycol, n, nb, nn, npcol,
-                nq, tag = MSGID_BEGIN_FACT, test = HPL_KEEP_TESTING;
+                nq, tag = MSGID_BEGIN_FACT, test;
 #ifdef HPL_PROGRESS_REPORT
   double start_time, time, gflops;
 #endif
@@ -135,9 +135,7 @@ void HPL_pdgesvK2(HPL_T_grid* GRID, HPL_T_palg* ALGO, HPL_T_pmat* A) {
 #endif
 #endif
 
-    (void)HPL_binit(panel[k]);
-    do { (void)HPL_bcast(panel[k], &test); } while(test != HPL_SUCCESS);
-    (void)HPL_bwait(panel[k]);
+    HPL_bcast(panel[k], &test);
 
 #if !defined(GPU_AWARE_MPI)
     HPL_pdpanel_SendToDevice(panel[k]);
@@ -217,9 +215,8 @@ void HPL_pdgesvK2(HPL_T_grid* GRID, HPL_T_palg* ALGO, HPL_T_pmat* A) {
 #endif
 #endif
 
-      (void)HPL_binit(panel[depth]);
-      do { (void)HPL_bcast(panel[depth], &test); } while(test != HPL_SUCCESS);
-      (void)HPL_bwait(panel[depth]);
+      /* broadcast current panel */
+      HPL_bcast(panel[depth], &test);
 
 #if !defined(GPU_AWARE_MPI)
       HPL_pdpanel_SendToDevice(panel[depth]);
@@ -240,9 +237,7 @@ void HPL_pdgesvK2(HPL_T_grid* GRID, HPL_T_palg* ALGO, HPL_T_pmat* A) {
       // hipStreamSynchronize(dataStream);
 
       /* broadcast current panel */
-      (void)HPL_binit(panel[depth]);
-      do { (void)HPL_bcast(panel[depth], &test); } while(test != HPL_SUCCESS);
-      (void)HPL_bwait(panel[depth]);
+      HPL_bcast(panel[depth], &test);
 
 #if !defined(GPU_AWARE_MPI)
       HPL_pdpanel_SendToDevice(panel[depth]);

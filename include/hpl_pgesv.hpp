@@ -110,12 +110,9 @@ typedef struct HPL_S_pmat {
  * ---------------------------------------------------------------------
  */
 void HPL_pipid(HPL_T_panel*, int*, int*);
-void HPL_plindx0(HPL_T_panel*, const int, int*, int*, int*, int*);
-void HPL_pdlaswp00T(HPL_T_panel*, int*, HPL_T_panel*, const int);
+void HPL_piplen(HPL_T_panel*,const int, const int*,int*,int*);
 
 void HPL_perm(const int, int*, int*, int*);
-void HPL_logsort(const int, const int, int*, int*, int*);
-void HPL_plindx10(HPL_T_panel*, const int, const int*, int*, int*, int*);
 void HPL_plindx(HPL_T_panel*,
                 const int,
                 const int*,
