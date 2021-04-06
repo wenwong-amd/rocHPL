@@ -139,7 +139,7 @@ void HPL_pdtest(HPL_T_test* TEST,
   info[0] = (dvptr == NULL);
   info[1] = myrow;
   info[2] = mycol;
-  (void)HPL_all_reduce((void*)(info), 3, HPL_INT, HPL_max, GRID->all_comm);
+  (void)HPL_all_reduce((void*)(info), 3, HPL_INT, HPL_MAX, GRID->all_comm);
   if(info[0] != 0) {
     HPL_pwarn(TEST->outfp,
               __LINE__,
@@ -408,7 +408,7 @@ void HPL_pdtest(HPL_T_test* TEST,
       BnormI = HPL_rzero;
     }
     (void)HPL_all_reduce(
-        (void*)(&BnormI), 1, HPL_DOUBLE, HPL_max, GRID->col_comm);
+        (void*)(&BnormI), 1, HPL_DOUBLE, HPL_MAX, GRID->col_comm);
   }
   (void)HPL_broadcast((void*)(&BnormI),
                       1,

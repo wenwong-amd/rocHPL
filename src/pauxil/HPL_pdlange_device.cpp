@@ -233,7 +233,7 @@ double HPL_pdlange(const HPL_T_grid* GRID,
       //    A += LDA - mp;
       // }
     }
-    (void)HPL_reduce((void*)(&v0), 1, HPL_DOUBLE, HPL_max, 0, Acomm);
+    (void)HPL_reduce((void*)(&v0), 1, HPL_DOUBLE, HPL_MAX, 0, Acomm);
   } else if(NORM == HPL_NORM_1) {
     /*
      * Find norm_1( A ).
@@ -262,7 +262,7 @@ double HPL_pdlange(const HPL_T_grid* GRID,
       /*
        * Find sum of global matrix columns, store on row 0 of process grid
        */
-      (void)HPL_reduce((void*)(work), nq, HPL_DOUBLE, HPL_sum, 0, Ccomm);
+      (void)HPL_reduce((void*)(work), nq, HPL_DOUBLE, HPL_SUM, 0, Ccomm);
       /*
        * Find maximum sum of columns for 1-norm
        */
@@ -277,7 +277,7 @@ double HPL_pdlange(const HPL_T_grid* GRID,
      * Find max in row 0, store result in process (0,0)
      */
     if(myrow == 0)
-      (void)HPL_reduce((void*)(&v0), 1, HPL_DOUBLE, HPL_max, 0, Rcomm);
+      (void)HPL_reduce((void*)(&v0), 1, HPL_DOUBLE, HPL_MAX, 0, Rcomm);
   } else if(NORM == HPL_NORM_I) {
     /*
      * Find norm_inf( A )
@@ -318,7 +318,7 @@ double HPL_pdlange(const HPL_T_grid* GRID,
       /*
        * Find sum of global matrix rows, store on column 0 of process grid
        */
-      (void)HPL_reduce((void*)(work), mp, HPL_DOUBLE, HPL_sum, 0, Rcomm);
+      (void)HPL_reduce((void*)(work), mp, HPL_DOUBLE, HPL_SUM, 0, Rcomm);
       /*
        * Find maximum sum of rows for inf-norm
        */
@@ -333,7 +333,7 @@ double HPL_pdlange(const HPL_T_grid* GRID,
      * Find max in column 0, store result in process (0,0)
      */
     if(mycol == 0)
-      (void)HPL_reduce((void*)(&v0), 1, HPL_DOUBLE, HPL_max, 0, Ccomm);
+      (void)HPL_reduce((void*)(&v0), 1, HPL_DOUBLE, HPL_MAX, 0, Ccomm);
   }
   /*
    * Broadcast answer to every process in the grid

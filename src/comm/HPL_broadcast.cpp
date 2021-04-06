@@ -16,24 +16,24 @@
 
 #include "hpl.hpp"
 
-int HPL_all_reduce(void*            BUFFER,
-                   const int        COUNT,
-                   const HPL_T_TYPE DTYPE,
-                   const HPL_T_OP   OP,
-                   MPI_Comm         COMM) {
+int HPL_broadcast(void*            BUFFER,
+                  const int        COUNT,
+                  const HPL_T_TYPE DTYPE,
+                  const int        ROOT,
+                  MPI_Comm         COMM) {
   /*
    * Purpose
    * =======
    *
-   * HPL_all_reduce performs   a   global   reduce  operation  across  all
-   * processes of a group leaving the results on all processes.
+   * HPL_broadcast broadcasts  a message from the process with rank ROOT to
+   * all processes in the group.
    *
    * Arguments
    * =========
    *
-   * BUFFER  (local input/global output)   void *
-   *         On entry,  BUFFER  points to  the  buffer to be combined.  On
-   *         exit, this array contains the combined data and  is identical
+   * BUFFER  (local input/output)          void *
+   *         On entry,  BUFFER  points to  the  buffer to be broadcast. On
+   *         exit, this array contains the broadcast data and is identical
    *         on all processes in the group.
    *
    * COUNT   (global input)                const int
@@ -43,8 +43,8 @@ int HPL_all_reduce(void*            BUFFER,
    * DTYPE   (global input)                const HPL_T_TYPE
    *         On entry,  DTYPE  specifies the type of the buffers operands.
    *
-   * OP      (global input)                const HPL_T_OP
-   *         On entry, OP is a pointer to the local combine function.
+   * ROOT    (global input)                const int
+   *         On entry, ROOT is the coordinate of the source process.
    *
    * COMM    (global/local input)          MPI_Comm
    *         The MPI communicator identifying the process collection.
@@ -52,9 +52,9 @@ int HPL_all_reduce(void*            BUFFER,
    * ---------------------------------------------------------------------
    */
 
-  int hplerr;
+  int ierr;
 
-  hplerr = HPL_reduce(BUFFER, COUNT, DTYPE, OP, 0, COMM);
-  if(hplerr != MPI_SUCCESS) return (hplerr);
-  return (HPL_broadcast(BUFFER, COUNT, DTYPE, 0, COMM));
+  ierr = MPI_Bcast(BUFFER, COUNT, HPL_2_MPI_TYPE(DTYPE), ROOT, COMM);
+
+  return ((ierr == MPI_SUCCESS ? HPL_SUCCESS : HPL_FAILURE));
 }

@@ -433,7 +433,7 @@ void HPL_pdinfo(int ARGC,
         error = 1;
       }
     }
-    (void)HPL_all_reduce((void*)(&error), 1, HPL_INT, HPL_max, MPI_COMM_WORLD);
+    (void)HPL_all_reduce((void*)(&error), 1, HPL_INT, HPL_MAX, MPI_COMM_WORLD);
     if(error) {
       if(rank == 0)
         HPL_pwarn(stderr, __LINE__, "HPL_pdinfo", "cannot open file HPL.out.");
@@ -863,7 +863,7 @@ void HPL_pdinfo(int ARGC,
     /*
      * Check for error on reading input file
      */
-    (void)HPL_all_reduce((void*)(&error), 1, HPL_INT, HPL_max, MPI_COMM_WORLD);
+    (void)HPL_all_reduce((void*)(&error), 1, HPL_INT, HPL_MAX, MPI_COMM_WORLD);
     if(error) {
       if(rank == 0)
         HPL_pwarn(stderr,
