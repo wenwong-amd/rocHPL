@@ -121,7 +121,7 @@ void HPL_pdtest(HPL_T_test* TEST,
 
   // allocate on device
   size_t numbytes = (((size_t)((size_t)(ALGO->align) +
-                               (size_t)(mat.ld + 1) * (size_t)(mat.nq)) *
+                               (size_t)(mat.ld) * (size_t)(mat.nq)) *
                           sizeof(double) +
                       (size_t)4095) /
                      (size_t)4096) *
@@ -162,7 +162,7 @@ void HPL_pdtest(HPL_T_test* TEST,
   mat.X = Mptr(mat.A, 0, mat.nq, mat.ld);
 
   mat.dA = (double*)HPL_PTR(dvptr, ((size_t)(ALGO->align) * sizeof(double)));
-  mat.dX = Mptr(mat.dA, 0, mat.nq, mat.ld);
+  hipMalloc(&(mat.dX), mat.nq*sizeof(double));
 
   HPL_pdmatgen(GRID, N, N + 1, NB, mat.dA, mat.ld, HPL_ISEED);
 
@@ -171,6 +171,8 @@ void HPL_pdtest(HPL_T_test* TEST,
   int n1    = (npcol - 1) * mat.nb;
   n1        = Mmax(n1, mat.nb);
   size_t nn = Mmin(n1, Anp);
+
+  hipMalloc(&(mat.dXC), Anp * sizeof(double));
 
 #ifdef GPU_AWARE_MPI
   hipMalloc((void**)&(mat.dW), nn * sizeof(double));
@@ -388,10 +390,8 @@ void HPL_pdtest(HPL_T_test* TEST,
 
   // Bptr  = Mptr( mat.A , 0, nq, mat.ld );
   size_t BptrBytes = Mmax(mat.nq, mat.ld) * sizeof(double);
-  hipHostMalloc(&(Bptr), BptrBytes, 0);
+  Bptr = (double*) malloc(BptrBytes);
 
-  double* gBptr=NULL;
-  hipHostMalloc(&(gBptr), BptrBytes, 0);
   dBptr = Mptr(mat.dA, 0, nq, mat.ld);
   if(mycol == HPL_indxg2p(N, NB, NB, 0, npcol)) {
     if(mat.mp > 0) {
@@ -470,12 +470,12 @@ void HPL_pdtest(HPL_T_test* TEST,
    * Reduce the distributed residual in process column 0
    */
   if(mat.mp > 0)
-    (void) MPI_Reduce(Bptr, gBptr, mat.mp, MPI_DOUBLE, MPI_SUM, 0, GRID->row_comm);
-    // (void)HPL_reduce(Bptr, mat.mp, HPL_DOUBLE, HPL_sum, 0, GRID->row_comm);
+    (void)HPL_reduce(Bptr, mat.mp, HPL_DOUBLE, HPL_SUM, 0, GRID->row_comm);
+
   /*
    * Compute || b - A x ||_oo
    */
-  hipMemcpy(dBptr, gBptr, mat.mp * sizeof(double), hipMemcpyHostToDevice);
+  hipMemcpy(dBptr, Bptr, mat.mp * sizeof(double), hipMemcpyHostToDevice);
   resid0 = HPL_pdlange(GRID, HPL_NORM_I, N, 1, NB, dBptr, mat.ld);
   /*
    * Computes and displays norms, residuals ...
@@ -540,10 +540,11 @@ void HPL_pdtest(HPL_T_test* TEST,
 
   if(dvptr) hipFree(dvptr);
   if(vptr) hipHostFree(vptr);
-  if(Bptr) hipHostFree(Bptr);
-  if(gBptr) hipHostFree(gBptr);
+  if(Bptr) free(Bptr);
 
   if(mat.dW) hipFree(mat.dW);
+  if(mat.dX) hipFree(mat.dX);
+  if(mat.dXC) hipFree(mat.dXC);
 
 #ifndef GPU_AWARE_MPI
   if(mat.W) hipHostFree(mat.W);

@@ -93,6 +93,7 @@ void HPL_pdtrsv(HPL_T_grid* GRID, HPL_T_pmat* AMAT) {
 
   dA  = AMAT->dA;
   dXR = AMAT->dX;
+  dXC = AMAT->dXC;
 
   hipStream_t stream;
   rocblas_get_stream(handle, &stream);
@@ -119,25 +120,33 @@ void HPL_pdtrsv(HPL_T_grid* GRID, HPL_T_pmat* AMAT) {
   // XC = Mptr( Aptr, 0, Anq, lda );
 
   dAptr = (double*)(dA);
-  dXC   = Mptr(dAptr, 0, Anq, lda);
+  double* dB   = Mptr(dAptr, 0, Anq, lda);
+
+
   Mindxg2p(n, nb, nb, Bcol, 0, npcol);
 
-  if((Anp > 0) && (Alcol != Bcol)) {
-    if(mycol == Bcol) {
-#ifdef GPU_AWARE_MPI
-      hipDeviceSynchronize();
-      (void)HPL_send(dXC, Anp, Alcol, Rmsgid, Rcomm);
-#else
-      if(Anp) hipMemcpy(XC, dXC, Anp * sizeof(double), hipMemcpyDeviceToHost);
-      (void)HPL_send(XC, Anp, Alcol, Rmsgid, Rcomm);
-#endif
-    } else if(mycol == Alcol) {
-#ifdef GPU_AWARE_MPI
-      (void)HPL_recv(dXC, Anp, Bcol, Rmsgid, Rcomm);
-#else
-      (void)HPL_recv(XC, Anp, Bcol, Rmsgid, Rcomm);
-      if(Anp) hipMemcpy(dXC, XC, Anp * sizeof(double), hipMemcpyHostToDevice);
-#endif
+  if(Anp > 0) {
+    if (Alcol != Bcol) {
+      if(mycol == Bcol) {
+  #ifdef GPU_AWARE_MPI
+        hipMemcpy(dXC, dB, Anp * sizeof(double), hipMemcpyDeviceToDevice);
+        (void)HPL_send(dXC, Anp, Alcol, Rmsgid, Rcomm);
+  #else
+        if(Anp) hipMemcpy(XC, dB, Anp * sizeof(double), hipMemcpyDeviceToHost);
+        (void)HPL_send(XC, Anp, Alcol, Rmsgid, Rcomm);
+  #endif
+      } else if(mycol == Alcol) {
+  #ifdef GPU_AWARE_MPI
+        (void)HPL_recv(dXC, Anp, Bcol, Rmsgid, Rcomm);
+  #else
+        (void)HPL_recv(XC, Anp, Bcol, Rmsgid, Rcomm);
+        if(Anp) hipMemcpy(dXC, XC, Anp * sizeof(double), hipMemcpyHostToDevice);
+  #endif
+      }
+    } else {
+      if(mycol == Bcol) {
+        hipMemcpy(dXC, dB, Anp * sizeof(double), hipMemcpyDeviceToDevice);
+      }
     }
   }
 

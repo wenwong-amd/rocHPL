@@ -122,7 +122,7 @@ void HPL_pdpanel_init(HPL_T_grid*  GRID,
       fflush(stdout);
     }
 #endif
-    hipError_t statusHost = hipHostMalloc(&(PANEL->A), numpinnedbytes, 0);
+    hipError_t statusHost = hipHostMalloc(&(PANEL->A), numpinnedbytes, hipHostMallocDefault);
     if(statusHost != hipSuccess) {
       HPL_pabort(
           __LINE__, "HPL_pdpanel_init", "Panel Host Memory allocation failed");
