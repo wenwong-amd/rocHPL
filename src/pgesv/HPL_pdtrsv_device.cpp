@@ -70,12 +70,12 @@ void HPL_pdtrsv(HPL_T_grid* GRID, HPL_T_pmat* AMAT) {
    */
 
   MPI_Comm Ccomm, Rcomm;
-  double * A = NULL, *Aprev = NULL, *Aptr, *XC = NULL, *XR = NULL, *Xd = NULL,
+  double *Aprev = NULL, *XC = NULL, *XR = NULL, *Xd = NULL,
          *Xdprev = NULL, *W = NULL;
   double *dA = NULL, *dAprev = NULL, *dAptr, *dXC = NULL, *dXR = NULL,
          *dXd = NULL, *dXdprev = NULL, *dW = NULL;
   int Alcol, Alrow, Anpprev, Anp, Anq, Bcol, Cmsgid, GridIsNotPx1, GridIsNot1xQ,
-      Rmsgid, Wfr = 0, colprev, kb, kbprev, lda, mycol, myrow, n, n1, n1p,
+      Rmsgid, colprev, kb, kbprev, lda, mycol, myrow, n, n1, n1p,
               n1pprev = 0, nb, npcol, nprow, rowprev, tmp1, tmp2;
 /* ..
  * .. Executable Statements ..
@@ -84,19 +84,6 @@ void HPL_pdtrsv(HPL_T_grid* GRID, HPL_T_pmat* AMAT) {
   HPL_ptimer(HPL_TIMING_PTRSV);
 #endif
   if((n = AMAT->n) <= 0) return;
-  nb  = AMAT->nb;
-  lda = AMAT->ld;
-
-  A  = AMAT->A;
-  XR = AMAT->XR;
-  XC = AMAT->XC;
-
-  dA  = AMAT->dA;
-  dXR = AMAT->dX;
-  dXC = AMAT->dXC;
-
-  hipStream_t stream;
-  rocblas_get_stream(handle, &stream);
 
   (void)HPL_grid_info(GRID, &nprow, &npcol, &myrow, &mycol);
   Rcomm        = GRID->row_comm;
@@ -105,23 +92,37 @@ void HPL_pdtrsv(HPL_T_grid* GRID, HPL_T_pmat* AMAT) {
   Cmsgid       = MSGID_BEGIN_PTRSV + 1;
   GridIsNot1xQ = (nprow > 1);
   GridIsNotPx1 = (npcol > 1);
+
+  nb  = AMAT->nb;
+  lda = AMAT->ld;
+
+  Mnumroc(Anp, n, nb, nb, myrow, 0, nprow);
+  Mnumroc(Anq, n, nb, nb, mycol, 0, npcol);
+
+  dA  = AMAT->dA;
+  dXR = AMAT->dX;
+  XR  = AMAT->W + 2*Anp;
+
+  XC  = AMAT->W;
+  dXC = AMAT->dW;
+
+  W   = AMAT->W  + Anp;
+  dW  = AMAT->dW + Anp;
+
+  hipStream_t stream;
+  rocblas_get_stream(handle, &stream);
+
   /*
    * Move the rhs in the process column owning the last column of A.
    */
-  Mnumroc(Anp, n, nb, nb, myrow, 0, nprow);
-  Mnumroc(Anq, n, nb, nb, mycol, 0, npcol);
 
   tmp1  = (n - 1) / nb;
   Alrow = tmp1 - (tmp1 / nprow) * nprow;
   Alcol = tmp1 - (tmp1 / npcol) * npcol;
   kb    = n - tmp1 * nb;
 
-  Aptr = (double*)(A);
-  // XC = Mptr( Aptr, 0, Anq, lda );
-
   dAptr = (double*)(dA);
   double* dB   = Mptr(dAptr, 0, Anq, lda);
-
 
   Mindxg2p(n, nb, nb, Bcol, 0, npcol);
 
@@ -165,27 +166,20 @@ void HPL_pdtrsv(HPL_T_grid* GRID, HPL_T_pmat* AMAT) {
    */
   n1 = (npcol - 1) * nb;
   n1 = Mmax(n1, nb);
-  if(Anp > 0) {
-    dW  = AMAT->dW;
-    W   = AMAT->W;
-    Wfr = 1;
-  }
 
   Anpprev = Anp;
+  dAprev  = dAptr = Mptr(dAptr, 0, Anq, lda);
   Xdprev  = XR;
-  Aprev = Aptr = Mptr(Aptr, 0, Anq, lda);
-  dXdprev      = dXR;
-  dAprev = dAptr = Mptr(dAptr, 0, Anq, lda);
-  tmp1           = n - kb;
+  dXdprev = dXR;
+  tmp1  = n - kb;
   tmp1 -= (tmp2 = Mmin(tmp1, n1));
   MnumrocI(n1pprev, tmp2, Mmax(0, tmp1), nb, nb, myrow, 0, nprow);
 
   if(myrow == Alrow) { Anpprev = (Anp -= kb); }
   if(mycol == Alcol) {
-    Aprev = (Aptr -= lda * kb);
-    Anq -= kb;
-    Xdprev  = (Xd = XR + Anq);
     dAprev  = (dAptr -= lda * kb);
+    Anq -= kb;
+    Xdprev  = ( Xd =  XR + Anq);
     dXdprev = (dXd = dXR + Anq);
     if(myrow == Alrow) {
       rocblas_dtrsv(handle,
@@ -215,10 +209,9 @@ void HPL_pdtrsv(HPL_T_grid* GRID, HPL_T_pmat* AMAT) {
    */
   while(n > 0) {
     if(mycol == Alcol) {
-      Aptr -= lda * kb;
-      Anq -= kb;
-      Xd = XR + Anq;
       dAptr -= lda * kb;
+      Anq -= kb;
+      Xd  =  XR + Anq;
       dXd = dXR + Anq;
     }
     if(myrow == Alrow) { Anp -= kb; }
@@ -360,10 +353,9 @@ void HPL_pdtrsv(HPL_T_grid* GRID, HPL_T_pmat* AMAT) {
      *  Save info of current step and update info for the next step
      */
     if(mycol == Alcol) {
-      Xdprev  = Xd;
-      Aprev   = Aptr;
-      dXdprev = dXd;
       dAprev  = dAptr;
+      Xdprev  = Xd;
+      dXdprev = dXd;
     }
     if(myrow == Alrow) { Anpprev -= kb; }
 
@@ -390,6 +382,7 @@ void HPL_pdtrsv(HPL_T_grid* GRID, HPL_T_pmat* AMAT) {
     hipDeviceSynchronize();
     (void)HPL_broadcast((void*)(dXR), kbprev, HPL_DOUBLE, rowprev, Ccomm);
 #else
+    hipDeviceSynchronize();
     if(kbprev)
       hipMemcpy(XR, dXR, kbprev * sizeof(double), hipMemcpyDeviceToHost);
     (void)HPL_broadcast((void*)(XR), kbprev, HPL_DOUBLE, rowprev, Ccomm);
@@ -397,6 +390,8 @@ void HPL_pdtrsv(HPL_T_grid* GRID, HPL_T_pmat* AMAT) {
       hipMemcpy(dXR, XR, kbprev * sizeof(double), hipMemcpyHostToDevice);
 #endif
   }
+
+
 
 #ifdef HPL_DETAILED_TIMING
   HPL_ptimer(HPL_TIMING_PTRSV);

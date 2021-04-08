@@ -67,9 +67,7 @@ typedef struct HPL_S_palg {
 } HPL_T_palg;
 
 typedef struct HPL_S_pmat {
-  double* A;    /* pointer to local piece of A */
   double* dA;   /* pointer to local piece of A */
-  double* X;    /* pointer to solution vector */
   double* dX;   /* pointer to solution vector */
   int     n;    /* global problem size */
   int     nb;   /* blocking factor */
@@ -77,10 +75,6 @@ typedef struct HPL_S_pmat {
   int     mp;   /* local number of rows */
   int     nq;   /* local number of columns */
   int     info; /* computational flag */
-  double* XR;
-  double* XC;
-  double* dXR;
-  double* dXC;
   double* W;
   double* dW;
 } HPL_T_pmat;
@@ -109,6 +103,7 @@ typedef struct HPL_S_pmat {
  * Function prototypes
  * ---------------------------------------------------------------------
  */
+
 void HPL_pipid(HPL_T_panel*, int*, int*);
 void HPL_piplen(HPL_T_panel*,const int, const int*,int*,int*);
 
