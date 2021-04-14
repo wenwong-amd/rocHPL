@@ -13,10 +13,12 @@
 
 int HPL_pdmatgen(HPL_T_test* TEST,
                  HPL_T_grid* GRID,
+                 HPL_T_palg* ALGO,
                  HPL_T_pmat* mat,
                  const int   N,
                  const int   NB) {
 
+  int ii, ip2, im4096;
   int mycol, myrow, npcol, nprow, nq, info[3];
   (void)HPL_grid_info(GRID, &nprow, &npcol, &myrow, &mycol);
 
@@ -31,9 +33,22 @@ int HPL_pdmatgen(HPL_T_test* TEST,
    * The  result  however  is stored in a 1 x N vector replicated in every
    * process row. In every process, A is lda * (nq+1), x is 1 * nq and the
    * workspace is mp.
+   *
+   * Ensure that lda is a multiple of ALIGN and not a power of 2, and not
+   * a multiple of 4096
    */
+  mat->ld = ((Mmax(1, mat->mp) - 1) / ALGO->align) * ALGO->align;
+  do {
+    ii  = (mat->ld += ALGO->align);
+    ip2 = 1;
+    while(ii > 1) {
+      ii >>= 1;
+      ip2 <<= 1;
+    }
+    im4096 = (mat->ld % 4096) ? 0 : 1;
+  } while((mat->ld == ip2) || im4096 );
+
   mat->nq = nq + 1;
-  mat->ld = Mmax(1, mat->mp);
 
   mat->dA = nullptr;
   mat->dX = nullptr;

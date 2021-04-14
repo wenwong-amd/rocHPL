@@ -60,6 +60,7 @@ void   HPL_pdrandmat(const HPL_T_grid*,
 
 int  HPL_pdmatgen(HPL_T_test*,
                   HPL_T_grid*,
+                  HPL_T_palg*,
                   HPL_T_pmat*,
                   const int,
                   const int);
