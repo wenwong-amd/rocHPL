@@ -26,7 +26,7 @@ __global__ void hpl_init_shift(double* __restrict__ A, const size_t n) {
   if(id < n) A[id] -= 0.5;
 }
 
-void HPL_pdmatgen(const HPL_T_grid* GRID,
+void HPL_pdrandmat(const HPL_T_grid* GRID,
                   const int         M,
                   const int         N,
                   const int         NB,
@@ -37,7 +37,7 @@ void HPL_pdmatgen(const HPL_T_grid* GRID,
    * Purpose
    * =======
    *
-   * HPL_pdmatgen generates (or regenerates) a parallel random matrix A.
+   * HPL_pdrandmat generates (or regenerates) a parallel random matrix A.
    *
    * The  pseudo-random  generator uses the linear congruential algorithm:
    * X(n+1) = (a * X(n) + c) mod m  as  described  in the  Art of Computer

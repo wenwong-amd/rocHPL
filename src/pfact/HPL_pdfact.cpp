@@ -72,13 +72,6 @@ void HPL_pdfact(HPL_T_panel* PANEL) {
 #ifdef HPL_DETAILED_TIMING
   HPL_ptimer(HPL_TIMING_RPFACT);
 #endif
-  align = PANEL->algo->align;
-  vptr  = (void*)malloc(
-      ((size_t)(align) + (size_t)(((4 + ((unsigned int)(jb) << 1)) << 1))) *
-      sizeof(double));
-  if(vptr == NULL) {
-    HPL_pabort(__LINE__, "HPL_pdfact", "Memory allocation failed");
-  }
   /*
    * Factor the panel - Update the panel pointers
    */
@@ -87,8 +80,7 @@ void HPL_pdfact(HPL_T_panel* PANEL) {
       PANEL->mp,
       jb,
       0,
-      (double*)HPL_PTR(vptr, ((size_t)(align) * sizeof(double))));
-  if(vptr) free(vptr);
+      PANEL->fWORK);
 
   // PANEL->A   = Mptr( PANEL->A, 0, jb, PANEL->lda );
   PANEL->dA = Mptr(PANEL->dA, 0, jb, PANEL->dlda);

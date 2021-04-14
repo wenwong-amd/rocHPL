@@ -36,6 +36,7 @@ typedef struct HPL_S_panel {
   double*            dA;     /* ptr to trailing part of A */
   double*            WORK;   /* work space */
   double*            dWORK;  /* device-copy work space */
+  double*            fWORK;  /* pdfact work space */
   double*            L2;     /* ptr to L */
   double*            L1;     /* ptr to jb x jb upper block of A */
   double*            dL2;    /* ptr to L */
@@ -81,6 +82,7 @@ typedef struct HPL_S_panel {
   unsigned int       max_pinned_work_size; /* largest size of pinned A space */
   unsigned int       max_work_size;        /* largest size of WORK space */
   unsigned int       max_iwork_size;       /* largest size of IWORK space */
+  unsigned int       max_fwork_size;       /* largest size of fWORK space */
   unsigned int       free_work_now;        /* should we deallocate */
 } HPL_T_panel;
 

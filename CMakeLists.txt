@@ -99,9 +99,9 @@ foreach(i ${rochpl_device_source})
 endforeach()
 
 # HIP flags workaround while target_compile_options does not work
-list(APPEND HIP_HIPCC_FLAGS "-O3 -march=native -Wno-unused-command-line-argument -ffp-contract=fast -ffast-math -funsafe-math-optimizations")
+list(APPEND HIP_HIPCC_FLAGS "-g -O3 -march=native -Wno-unused-command-line-argument -ffp-contract=fast -ffast-math -funsafe-math-optimizations")
 
-list(APPEND CMAKE_HOST_FLAGS "-O3;-march=native")
+list(APPEND CMAKE_HOST_FLAGS "-g;-O3;-march=native")
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
   list(APPEND HIP_HIPCC_FLAGS "-g")

@@ -36,7 +36,6 @@ int HPL_pdpanel_free(HPL_T_panel* PANEL) {
   if(PANEL->pmat->info == 0) PANEL->pmat->info = *(PANEL->DINFO);
 
   if(PANEL->free_work_now == 1) {
-    if(PANEL->A) hipHostFree(PANEL->A);
 
     if(PANEL->WORK) hipHostFree(PANEL->WORK);
 
@@ -44,10 +43,12 @@ int HPL_pdpanel_free(HPL_T_panel* PANEL) {
 
     PANEL->max_work_size = 0;
 
-    if(PANEL->IWORK) hipHostFree(PANEL->IWORK);
+    if(PANEL->IWORK) free(PANEL->IWORK);
+    if(PANEL->fWORK) free(PANEL->fWORK);
 
     PANEL->max_iwork_size = 0;
+    PANEL->max_fwork_size = 0;
   }
 
-  return (MPI_SUCCESS);
+  return (HPL_SUCCESS);
 }
