@@ -96,7 +96,7 @@ void HPL_pdtest(HPL_T_test* TEST,
    * process row. In every process, A is lda * (nq+1), x is 1 * nq and the
    * workspace is mp.
    */
-  ierr = HPL_pdmatgen(TEST, GRID, &mat, N, NB);
+  ierr = HPL_pdmatgen(TEST, GRID, ALGO, &mat, N, NB);
 
   if(ierr != HPL_SUCCESS) {
     (TEST->kskip)++;
