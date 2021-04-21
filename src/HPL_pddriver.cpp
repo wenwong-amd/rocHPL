@@ -113,9 +113,6 @@ int main(int ARGC, char** ARGV) {
              &equil,
              &align);
 
-  // Initialize GPU
-  HPL_InitGPU();
-
   /*
    * Loop over different process grids - Define process grid. Go to bottom
    * of process grid loop if this case does not use my process.
@@ -126,6 +123,9 @@ int main(int ARGC, char** ARGV) {
 
     if((myrow < 0) || (myrow >= nprow) || (mycol < 0) || (mycol >= npcol))
       goto label_end_of_npqs;
+
+    // Initialize GPU
+    HPL_InitGPU(&grid);
 
     for(in = 0; in < ns; in++) {       /* Loop over various problem sizes */
       for(inb = 0; inb < nbs; inb++) { /* Loop over various blocking factors */
@@ -203,6 +203,8 @@ int main(int ARGC, char** ARGV) {
       }
     }
     (void)HPL_grid_exit(&grid);
+    Free_gpu();
+
   label_end_of_npqs:;
   }
   /*

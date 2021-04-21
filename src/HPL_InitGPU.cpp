@@ -9,6 +9,7 @@
  */
 
 #include "hpl.hpp"
+#include <algorithm>
 
 rocblas_handle handle;
 
@@ -30,52 +31,71 @@ static char host_name[MPI_MAX_PROCESSOR_NAME];
   and assigns a local rank that can be used to map a process to a device.
   This function needs to be called by all the MPI processes.
 */
-void HPL_InitGPU() {
-  char(*host_names)[MPI_MAX_PROCESSOR_NAME];
+void HPL_InitGPU(const HPL_T_grid* GRID) {
+  char host_name[MPI_MAX_PROCESSOR_NAME];
 
-  int    i, n, namelen, color, rank, nprocs;
-  size_t bytes;
+  int    i, n, namelen, rank, nprocs;
   int    dev;
+
+  int nprow, npcol, myrow, mycol;
+  (void)HPL_grid_info(GRID, &nprow, &npcol, &myrow, &mycol);
 
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
+
   MPI_Get_processor_name(host_name, &namelen);
 
-  bytes      = nprocs * sizeof(char[MPI_MAX_PROCESSOR_NAME]);
-  host_names = (char(*)[MPI_MAX_PROCESSOR_NAME])malloc(bytes);
+  MPI_Comm nodeComm;
+  MPI_Comm_split_type(MPI_COMM_WORLD, MPI_COMM_TYPE_SHARED, rank,
+                      MPI_INFO_NULL, &nodeComm);
 
-  strcpy(host_names[rank], host_name);
+  int localRank;
+  int localSize;
+  MPI_Comm_rank(nodeComm, &localRank);
+  MPI_Comm_size(nodeComm, &localSize);
 
-  for(n = 0; n < nprocs; n++) {
-    MPI_Bcast(
-        &(host_names[n]), MPI_MAX_PROCESSOR_NAME, MPI_CHAR, n, MPI_COMM_WORLD);
-  }
-
-  int localRank = 0;
-  for(n = 0; n < rank; n++) {
-    if(!strcmp(host_name, host_names[n])) localRank++;
-  }
-
-  int localSize = 0;
-  for(n = 0; n < nprocs; n++) {
-    if(!strcmp(host_name, host_names[n])) localSize++;
-  }
-
-  /* Find out how many DP capable GPUs are in the system and their device number
-   */
+  /* Find out how many GPUs are in the system and their device number */
   int deviceCount;
   hipGetDeviceCount(&deviceCount);
 
+  typedef struct {
+    int p;
+    int q;
+  } int2;
+
+  int2 mypq{myrow, mycol};
+  int2 pq[localSize];
+  MPI_Allgather(&mypq, 2, MPI_INT, pq, 2, MPI_INT, nodeComm);
+
+  //sort by P then by Q
+  std::sort(pq, pq+localSize,
+            [](const int2& a, const int2& b) {
+              if(a.p < b.p) return true;
+              if(a.p > b.p) return false;
+
+              return (a.q < b.q);
+            });
+
+  for (int i=0;i<localSize;++i) {
+    if (pq[i].p == mypq.p && pq[i].q == mypq.q) {
+      dev = i;
+      break;
+    }
+  }
+
+  dev = dev % deviceCount;
+
+  MPI_Comm_free(&nodeComm);
+
 #ifdef HPL_VERBOSE_PRINT
   printf("Assigning device %d on node %s to rank %d \n",
-         localRank % deviceCount,
+         dev,
          host_name,
          rank);
 #endif
 
   /* Assign device to MPI process, initialize BLAS and probe device properties
    */
-  dev = localRank % deviceCount;
   hipSetDevice(dev);
 
   hipStreamCreate(&computeStream);
