@@ -15,13 +15,6 @@
  */
 
 #include "hpl.hpp"
-/*
- * Define default value for unrolling factor
- */
-#ifndef HPL_LOCSWP_DEPTH
-#define HPL_LOCSWP_DEPTH 32
-#define HPL_LOCSWP_LOG2_DEPTH 5
-#endif
 
 void HPL_dlocswpN(HPL_T_panel* PANEL,
                   const int    II,

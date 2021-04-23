@@ -15,6 +15,7 @@
  */
 
 #include "hpl.hpp"
+#include <assert.h>
 
 void HPL_pdfact(HPL_T_panel* PANEL) {
   /*
@@ -61,8 +62,7 @@ void HPL_pdfact(HPL_T_panel* PANEL) {
    * ---------------------------------------------------------------------
    */
 
-  void* vptr = NULL;
-  int   align, jb, i;
+  int   jb, i;
 
   jb = PANEL->jb;
   PANEL->n -= jb;
@@ -75,7 +75,24 @@ void HPL_pdfact(HPL_T_panel* PANEL) {
   /*
    * Factor the panel - Update the panel pointers
    */
-  PANEL->algo->rffun(PANEL, PANEL->mp, jb, 0, PANEL->fWORK);
+  double max_value[128];
+  int max_index[128];
+
+  #pragma omp parallel shared(max_value, max_index)
+  {
+    const int thread_rank = omp_get_thread_num();
+    const int thread_size = omp_get_num_threads();
+    assert(thread_size <= 128);
+
+    PANEL->algo->rffun(
+        PANEL,
+        PANEL->mp,
+        jb,
+        0,
+        PANEL->fWORK,
+        thread_rank, thread_size,
+        max_value, max_index);
+  }
 
   // PANEL->A   = Mptr( PANEL->A, 0, jb, PANEL->lda );
   PANEL->dA = Mptr(PANEL->dA, 0, jb, PANEL->dlda);

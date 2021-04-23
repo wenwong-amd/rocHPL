@@ -20,7 +20,11 @@ void HPL_pdpanrlT(HPL_T_panel* PANEL,
                   const int    M,
                   const int    N,
                   const int    ICOFF,
-                  double*      WORK) {
+                  double*      WORK,
+                  int          thread_rank,
+                  int          thread_size,
+                  double *     max_value,
+                  int *        max_index) {
   /*
    * Purpose
    * =======
@@ -110,7 +114,9 @@ void HPL_pdpanrlT(HPL_T_panel* PANEL,
   /*
    * Find local absolute value max in first column - initialize WORK[0:3]
    */
-  HPL_dlocmax(PANEL, m, ii, jj, WORK);
+  HPL_dlocmax( PANEL, m, ii, jj, WORK,
+                    thread_rank, thread_size,
+                    max_index, max_value );
 
   while(Nm1 >= 1) {
     Acur = Mptr(A, iip1, jj, lda);
@@ -118,21 +124,30 @@ void HPL_pdpanrlT(HPL_T_panel* PANEL,
     /*
      * Swap and broadcast the current row
      */
-    HPL_pdmxswp(PANEL, m, ii, jj, WORK);
-    HPL_dlocswpT(PANEL, ii, jj, WORK);
+    if (thread_rank == 0) {
+      HPL_pdmxswp(PANEL, m, ii, jj, WORK);
+      HPL_dlocswpT(PANEL, ii, jj, WORK);
+    }
     /*
      * Scale current column by its absolute value max entry  -  Update trai-
      * ling sub-matrix and find local absolute value max in next column (On-
      * ly one pass through cache for each current column).  This sequence of
      * operations could benefit from a specialized blocked implementation.
      */
-    if(WORK[0] != HPL_rzero) HPL_dscal(Mm1, HPL_rone / WORK[0], Acur, 1);
-    HPL_daxpy(Mm1, -(*(Mptr(L1, jj + 1, jj, n0))), Acur, 1, Anxt, 1);
-    HPL_dlocmax(PANEL, Mm1, iip1, jj + 1, WORK);
+    if(WORK[0] != HPL_rzero)
+      HPL_dscal_omp( Mm1, HPL_rone / WORK[0], Acur, 1,
+                        PANEL->nb, iip1, thread_rank, thread_size );
+
+    HPL_daxpy_omp( Mm1, -(*(Mptr( L1, jj+1, jj, n0 ))), Acur, 1, Anxt, 1,
+                     PANEL->nb, iip1, thread_rank, thread_size );
+
+    HPL_dlocmax( PANEL, Mm1, iip1, jj+1, WORK,
+                       thread_rank, thread_size,
+                       max_index, max_value );
 
     if(Nm1 > 1) {
 
-      HPL_dger(HplColumnMajor,
+      HPL_dger_omp(HplColumnMajor,
                Mm1,
                Nm1 - 1,
                -HPL_rone,
@@ -141,7 +156,8 @@ void HPL_pdpanrlT(HPL_T_panel* PANEL,
                Mptr(L1, jj + 2, jj, n0),
                1,
                Mptr(Anxt, 0, 1, lda),
-               lda);
+               lda,
+               PANEL->nb, iip1, thread_rank, thread_size);
     }
     if(curr != 0) {
       ii = iip1;
@@ -157,10 +173,13 @@ void HPL_pdpanrlT(HPL_T_panel* PANEL,
    * Swap and broadcast last row - Scale last column by its absolute value
    * max entry
    */
-  HPL_pdmxswp(PANEL, m, ii, jj, WORK);
-  HPL_dlocswpT(PANEL, ii, jj, WORK);
+  if (thread_rank == 0) {
+    HPL_pdmxswp(PANEL, m, ii, jj, WORK);
+    HPL_dlocswpT(PANEL, ii, jj, WORK);
+  }
   if(WORK[0] != HPL_rzero)
-    HPL_dscal(Mm1, HPL_rone / WORK[0], Mptr(A, iip1, jj, lda), 1);
+    HPL_dscal_omp( Mm1, HPL_rone / WORK[0], Mptr( A, iip1, jj, lda ), 1,
+                     PANEL->nb, iip1, thread_rank, thread_size );
 
 #ifdef HPL_DETAILED_TIMING
   HPL_ptimer(HPL_TIMING_PFACT);

@@ -262,8 +262,8 @@ install_openblas( )
 {
   if [ ! -d "./tpl/openblas" ]; then
     mkdir -p tpl && cd tpl
-    git clone --branch v0.3.14 https://github.com/xianyi/OpenBLAS openblas
-    cd openblas; make USE_OPENMP=1 -j$(nproc); cd ../..
+    git clone --branch v0.3.14 https://github.com/xianyi/OpenBLAS openblas-st
+    cd openblas; make -j$(nproc); cd ../..
   fi
 }
 
@@ -322,7 +322,7 @@ install_prefix=rochpl-install
 build_release=true
 with_rocm=/opt/rocm
 with_mpi=tpl/openmpi
-with_cpublas=tpl/openblas
+with_cpublas=tpl/openblas-st
 gpu_aware_mpi=OFF
 openmpi_ucx=false
 verbose_print=true
