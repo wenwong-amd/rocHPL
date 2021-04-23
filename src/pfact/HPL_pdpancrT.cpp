@@ -23,8 +23,8 @@ void HPL_pdpancrT(HPL_T_panel* PANEL,
                   double*      WORK,
                   int          thread_rank,
                   int          thread_size,
-                  double *     max_value,
-                  int *        max_index) {
+                  double*      max_value,
+                  int*         max_index) {
   /*
    * Purpose
    * =======
@@ -114,15 +114,14 @@ void HPL_pdpancrT(HPL_T_panel* PANEL,
   /*
    * Find local absolute value max in first column - initialize WORK[0:3]
    */
-  HPL_dlocmax( PANEL, m, ii, jj, WORK,
-                   thread_rank, thread_size,
-                   max_index, max_value );
+  HPL_dlocmax(
+      PANEL, m, ii, jj, WORK, thread_rank, thread_size, max_index, max_value);
 
   while(Nm1 > 0) {
     /*
      * Swap and broadcast the current row
      */
-    if (thread_rank == 0) {
+    if(thread_rank == 0) {
       HPL_pdmxswp(PANEL, m, ii, jj, WORK);
       HPL_dlocswpT(PANEL, ii, jj, WORK);
     }
@@ -132,7 +131,7 @@ void HPL_pdpancrT(HPL_T_panel* PANEL,
     if(kk > 0) {
       L1ptr = Mptr(L1, jj + 1, jj, n0);
 
-      if (thread_rank == 0) {
+      if(thread_rank == 0) {
         HPL_dgemv(HplColumnMajor,
                   HplNoTrans,
                   Nm1,
@@ -149,6 +148,9 @@ void HPL_pdpancrT(HPL_T_panel* PANEL,
         if(curr != 0) HPL_dcopy(Nm1, L1ptr, 1, Mptr(A, ii, jj + 1, lda), lda);
       }
     }
+
+#pragma omp barrier
+
     /*
      * Scale current column by its absolute value max entry  -  Update  dia-
      * diagonal and subdiagonal elements in column  A(iip1:iip1+Mm1-1, jj+1)
@@ -157,29 +159,41 @@ void HPL_pdpancrT(HPL_T_panel* PANEL,
      * could benefit from a specialized blocked implementation.
      */
     if(WORK[0] != HPL_rzero)
-      HPL_dscal_omp( Mm1, HPL_rone / WORK[0], Mptr( A, iip1, jj, lda ), 1,
-                     PANEL->nb, iip1, thread_rank, thread_size );
+      HPL_dscal_omp(Mm1,
+                    HPL_rone / WORK[0],
+                    Mptr(A, iip1, jj, lda),
+                    1,
+                    PANEL->nb,
+                    iip1,
+                    thread_rank,
+                    thread_size);
 
     HPL_dgemv_omp(HplColumnMajor,
-              HplNoTrans,
-              Mm1,
-              kk + 1,
-              -HPL_rone,
-              Mptr(A, iip1, ICOFF, lda),
-              lda,
-              Mptr(L1, jj + 1, ICOFF, n0),
-              n0,
-              HPL_rone,
-              Mptr(A, iip1, jj + 1, lda),
-              1,
-              PANEL->nb,
-              iip1,
-              thread_rank,
-              thread_size);
+                  HplNoTrans,
+                  Mm1,
+                  kk + 1,
+                  -HPL_rone,
+                  Mptr(A, iip1, ICOFF, lda),
+                  lda,
+                  Mptr(L1, jj + 1, ICOFF, n0),
+                  n0,
+                  HPL_rone,
+                  Mptr(A, iip1, jj + 1, lda),
+                  1,
+                  PANEL->nb,
+                  iip1,
+                  thread_rank,
+                  thread_size);
 
-    HPL_dlocmax(PANEL, Mm1, iip1, jj + 1, WORK,
-                    thread_rank, thread_size,
-                    max_index, max_value);
+    HPL_dlocmax(PANEL,
+                Mm1,
+                iip1,
+                jj + 1,
+                WORK,
+                thread_rank,
+                thread_size,
+                max_index,
+                max_value);
     if(curr != 0) {
       ii = iip1;
       iip1++;
@@ -195,14 +209,22 @@ void HPL_pdpancrT(HPL_T_panel* PANEL,
    * Swap and broadcast last row - Scale last column by its absolute value
    * max entry
    */
-  if (thread_rank == 0) {
+  if(thread_rank == 0) {
     HPL_pdmxswp(PANEL, m, ii, jj, WORK);
     HPL_dlocswpT(PANEL, ii, jj, WORK);
   }
 
+#pragma omp barrier
+
   if(WORK[0] != HPL_rzero)
-    HPL_dscal_omp( Mm1, HPL_rone / WORK[0], Mptr( A, iip1, jj, lda ), 1,
-                   PANEL->nb, iip1, thread_rank, thread_size );
+    HPL_dscal_omp(Mm1,
+                  HPL_rone / WORK[0],
+                  Mptr(A, iip1, jj, lda),
+                  1,
+                  PANEL->nb,
+                  iip1,
+                  thread_rank,
+                  thread_size);
 
 #ifdef HPL_DETAILED_TIMING
   HPL_ptimer(HPL_TIMING_PFACT);

@@ -34,8 +34,6 @@ void HPL_dgemm_omp(const enum HPL_ORDER             ORDER,
                    const int                        thread_rank,
                    const int                        thread_size) {
 
-   #pragma omp barrier
-
    int tile = 0;
    if (tile%thread_size == thread_rank) {
       const int mm = Mmin(NB-II, M);

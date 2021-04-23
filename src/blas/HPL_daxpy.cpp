@@ -26,8 +26,6 @@ void HPL_daxpy_omp(const int                        N,
                    const int                        thread_rank,
                    const int                        thread_size) {
 
-   #pragma omp barrier
-
    int tile = 0;
    if (tile%thread_size == thread_rank) {
       const int nn = Mmin(NB-II, N);

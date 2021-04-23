@@ -23,8 +23,8 @@ void HPL_pdrpancrN(HPL_T_panel* PANEL,
                    double*      WORK,
                    int          thread_rank,
                    int          thread_size,
-                   double *     max_value,
-                   int *        max_index) {
+                   double*      max_value,
+                   int*         max_index) {
   /*
    * Purpose
    * =======
@@ -80,9 +80,15 @@ void HPL_pdrpancrN(HPL_T_panel* PANEL,
   int     curr, ii, ioff, jb, jj, lda, m, n, n0, nb, nbdiv, nbmin;
 
   if(N <= (nbmin = PANEL->algo->nbmin)) {
-    PANEL->algo->pffun(PANEL, M, N, ICOFF, WORK,
-                         thread_rank, thread_size,
-                         max_value, max_index);
+    PANEL->algo->pffun(PANEL,
+                       M,
+                       N,
+                       ICOFF,
+                       WORK,
+                       thread_rank,
+                       thread_size,
+                       max_value,
+                       max_index);
     return;
   }
   /*
@@ -123,32 +129,44 @@ void HPL_pdrpancrN(HPL_T_panel* PANEL,
   do {
     n -= jb;
     ioff = ICOFF + jj;
+
+#pragma omp barrier
+
     /*
      * Local update - Factor current panel - Replicated update and solve
      */
     HPL_dgemm_omp(HplColumnMajor,
-              HplNoTrans,
-              HplNoTrans,
-              m,
-              jb,
-              jj,
-              -HPL_rone,
-              Mptr(Aptr, ii, 0, lda),
-              lda,
-              Mptr(L1ptr, 0, jj, n0),
-              n0,
-              HPL_rone,
-              Mptr(Aptr, ii, jj, lda),
-              lda,
-              PANEL->nb, (curr != 0) ? ICOFF + ii : 0,
-                 thread_rank, thread_size);
-    HPL_pdrpancrN(PANEL, m, jb, ioff, WORK,
-                  thread_rank, thread_size,
-                     max_value, max_index);
+                  HplNoTrans,
+                  HplNoTrans,
+                  m,
+                  jb,
+                  jj,
+                  -HPL_rone,
+                  Mptr(Aptr, ii, 0, lda),
+                  lda,
+                  Mptr(L1ptr, 0, jj, n0),
+                  n0,
+                  HPL_rone,
+                  Mptr(Aptr, ii, jj, lda),
+                  lda,
+                  PANEL->nb,
+                  (curr != 0) ? ICOFF + ii : 0,
+                  thread_rank,
+                  thread_size);
+
+    HPL_pdrpancrN(PANEL,
+                  m,
+                  jb,
+                  ioff,
+                  WORK,
+                  thread_rank,
+                  thread_size,
+                  max_value,
+                  max_index);
 
     if(n > 0) {
 
-      if (thread_rank == 0) {
+      if(thread_rank == 0) {
         HPL_dgemm(HplColumnMajor,
                   HplNoTrans,
                   HplNoTrans,
@@ -182,7 +200,7 @@ void HPL_pdrpancrN(HPL_T_panel* PANEL,
      * Copy back upper part of A in current process row - Go the next block
      */
     if(curr != 0) {
-      if (thread_rank == 0) {
+      if(thread_rank == 0) {
         HPL_dlacpy(
             ioff, jb, Mptr(L1, 0, ioff, n0), n0, Mptr(A, 0, ioff, lda), lda);
       }

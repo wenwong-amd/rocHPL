@@ -30,8 +30,6 @@ void HPL_idamax_omp(const int                        N,
 
    if (N<1) return;
 
-   #pragma omp barrier
-
    int tile = 0;
    if (tile%thread_size == thread_rank) {
       const int nn = Mmin(NB-II, N);

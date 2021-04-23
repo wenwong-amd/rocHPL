@@ -23,8 +23,8 @@ void HPL_dlocmax(HPL_T_panel* PANEL,
                  double*      WORK,
                  int          thread_rank,
                  int          thread_size,
-                 int *        max_index,
-                 double *     max_value) {
+                 int*         max_index,
+                 double*      max_value) {
   /*
    * Purpose
    * =======
@@ -70,17 +70,15 @@ void HPL_dlocmax(HPL_T_panel* PANEL,
   int     kk, igindx, ilindx, myrow, nb, nprow;
 
   if(N > 0) {
-    A      = Mptr(PANEL->A, II, JJ, PANEL->lda);
-    myrow  = PANEL->grid->myrow;
-    nprow  = PANEL->grid->nprow;
-    nb     = PANEL->nb;
+    A     = Mptr(PANEL->A, II, JJ, PANEL->lda);
+    myrow = PANEL->grid->myrow;
+    nprow = PANEL->grid->nprow;
+    nb    = PANEL->nb;
 
-    HPL_idamax_omp(N, A, 1,
-                   nb, II,
-                   thread_rank, thread_size,
-                   max_index, max_value);
+    HPL_idamax_omp(
+        N, A, 1, nb, II, thread_rank, thread_size, max_index, max_value);
 
-    if (thread_rank == 0) {
+    if(thread_rank == 0) {
       ilindx = max_index[0];
       kk     = PANEL->ii + II + (ilindx);
       Mindxl2g(igindx, kk, nb, nb, myrow, 0, nprow);
@@ -101,12 +99,12 @@ void HPL_dlocmax(HPL_T_panel* PANEL,
      * (WORK[3]) owning this "ghost" row,  such that it  will never be used,
      * even if there are only zeros in the current column of A.
      */
-    if (thread_rank == 0) {
+    if(thread_rank == 0) {
       WORK[0] = WORK[1] = WORK[2] = HPL_rzero;
       WORK[3]                     = (double)(PANEL->grid->nprow);
     }
   }
 
-  //make sure WORK is visible to all threads
-  #pragma omp barrier
+// make sure WORK is visible to all threads
+#pragma omp barrier
 }

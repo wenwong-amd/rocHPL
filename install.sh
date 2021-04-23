@@ -260,10 +260,10 @@ check_packages( )
 # Clone and build OpenBLAS in rochpl/tpl
 install_openblas( )
 {
-  if [ ! -d "./tpl/openblas" ]; then
+  if [ ! -d "./tpl/openblas-st" ]; then
     mkdir -p tpl && cd tpl
     git clone --branch v0.3.14 https://github.com/xianyi/OpenBLAS openblas-st
-    cd openblas; make -j$(nproc); cd ../..
+    cd openblas-st; make -j$(nproc); cd ../..
   fi
 }
 
@@ -428,7 +428,7 @@ pushd .
   # #################################################
   # BLAS
   # #################################################
-  if [[ "${with_cpublas}" == tpl/openblas ]]; then
+  if [[ "${with_cpublas}" == tpl/openblas-st ]]; then
 
     install_openblas
 
