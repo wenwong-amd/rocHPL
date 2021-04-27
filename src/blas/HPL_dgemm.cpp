@@ -37,7 +37,7 @@ void HPL_dgemm_omp(const enum HPL_ORDER             ORDER,
    int tile = 0;
    if (tile%thread_size == thread_rank) {
       const int mm = Mmin(NB-II, M);
-      HPL_dgemm( ORDER, TRANSA, TRANSA, mm, N, K,
+      HPL_dgemm( ORDER, TRANSA, TRANSB, mm, N, K,
                  ALPHA, A, LDA, B, LDB, BETA, C, LDC );
    }
    ++tile;
@@ -45,7 +45,7 @@ void HPL_dgemm_omp(const enum HPL_ORDER             ORDER,
    for (; i < M; i += NB) {
       if (tile%thread_size == thread_rank) {
          const int mm = Mmin(NB, M-i);
-         HPL_dgemm( ORDER, TRANSA, TRANSA, mm, N, K,
+         HPL_dgemm( ORDER, TRANSA, TRANSB, mm, N, K,
                     ALPHA, A+i, LDA, B, LDB, BETA, C+i, LDC );
       }
       ++tile;
