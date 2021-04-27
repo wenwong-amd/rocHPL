@@ -15,40 +15,48 @@
  */
 #include "hpl.hpp"
 
-void HPL_dgemv_omp(const enum HPL_ORDER             ORDER,
-                   const enum HPL_TRANS             TRANS,
-                   const int                        M,
-                   const int                        N,
-                   const double                     ALPHA,
-                   const double *                   A,
-                   const int                        LDA,
-                   const double *                   X,
-                   const int                        INCX,
-                   const double                     BETA,
-                   double *                         Y,
-                   const int                        INCY,
-                   const int                        NB,
-                   const int                        II,
-                   const int                        thread_rank,
-                   const int                        thread_size) {
+void HPL_dgemv_omp(const enum HPL_ORDER ORDER,
+                   const enum HPL_TRANS TRANS,
+                   const int            M,
+                   const int            N,
+                   const double         ALPHA,
+                   const double*        A,
+                   const int            LDA,
+                   const double*        X,
+                   const int            INCX,
+                   const double         BETA,
+                   double*              Y,
+                   const int            INCY,
+                   const int            NB,
+                   const int            II,
+                   const int            thread_rank,
+                   const int            thread_size) {
 
-   #pragma omp barrier
+#pragma omp barrier
 
-   int tile = 0;
-   if (tile%thread_size == thread_rank) {
-      const int mm = Mmin(NB-II, M);
-      HPL_dgemv( ORDER, TRANS, mm, N,
-                 ALPHA, A, LDA, X, INCX, BETA, Y, INCY );
-   }
-   ++tile;
-   int i = NB-II;
-   for (; i < M; i += NB) {
-      if (tile%thread_size == thread_rank) {
-         const int mm = Mmin(NB, M-i);
-         HPL_dgemv( ORDER, TRANS, mm, N,
-                    ALPHA, A+i, LDA, X, INCX, BETA, Y+i*INCY, INCY );
-      }
-      ++tile;
-   }
+  int tile = 0;
+  if(tile % thread_size == thread_rank) {
+    const int mm = Mmin(NB - II, M);
+    HPL_dgemv(ORDER, TRANS, mm, N, ALPHA, A, LDA, X, INCX, BETA, Y, INCY);
+  }
+  ++tile;
+  int i = NB - II;
+  for(; i < M; i += NB) {
+    if(tile % thread_size == thread_rank) {
+      const int mm = Mmin(NB, M - i);
+      HPL_dgemv(ORDER,
+                TRANS,
+                mm,
+                N,
+                ALPHA,
+                A + i,
+                LDA,
+                X,
+                INCX,
+                BETA,
+                Y + i * INCY,
+                INCY);
+    }
+    ++tile;
+  }
 }
-
