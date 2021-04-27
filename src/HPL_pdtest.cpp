@@ -308,7 +308,7 @@ void HPL_pdtest(HPL_T_test* TEST,
 
   // Bptr  = Mptr( mat.A , 0, nq, mat.ld );
   size_t BptrBytes = Mmax(mat.nq, mat.ld) * sizeof(double);
-  Bptr = (double*) malloc(BptrBytes);
+  Bptr             = (double*)malloc(BptrBytes);
 
   nq    = HPL_numroc(N, NB, NB, mycol, 0, npcol);
   dBptr = Mptr(mat.dA, 0, nq, mat.ld);
@@ -339,24 +339,32 @@ void HPL_pdtest(HPL_T_test* TEST,
    */
 
   // rocBLAS < v4.2 has an integer overflow problem in dgemv, so
-  //chunk the nq columns to compute the full dgemv
-  const int nq_chunk = std::numeric_limits<int>::max()/(mat.ld);
+  // chunk the nq columns to compute the full dgemv
+  const int nq_chunk = std::numeric_limits<int>::max() / (mat.ld);
 
   if(mycol == HPL_indxg2p(N, NB, NB, 0, npcol)) {
     const double one  = 1.0;
     const double mone = -1.0;
 
-    for (int nn=0;nn<nq;nn+=nq_chunk) {
-      int nb = Mmin(nq-nn, nq_chunk);
-      rocblas_dgemv(handle, rocblas_operation_none,
-                  mat.mp, nb, &mone,
-                  Mptr(mat.dA, 0, nn, mat.ld), mat.ld,
-                  Mptr(mat.dX, 0, nn, 1), 1,
-                  &one, dBptr, 1);
+    for(int nn = 0; nn < nq; nn += nq_chunk) {
+      int nb = Mmin(nq - nn, nq_chunk);
+      rocblas_dgemv(handle,
+                    rocblas_operation_none,
+                    mat.mp,
+                    nb,
+                    &mone,
+                    Mptr(mat.dA, 0, nn, mat.ld),
+                    mat.ld,
+                    Mptr(mat.dX, 0, nn, 1),
+                    1,
+                    &one,
+                    dBptr,
+                    1);
     }
 
     // rocblas_dgemv(handle, rocblas_operation_none,
-    //               mat.mp, nq, &mone, mat.dA, mat.ld, mat.dX, 1, &one, dBptr, 1);
+    //               mat.mp, nq, &mone, mat.dA, mat.ld, mat.dX, 1, &one, dBptr,
+    //               1);
     hipMemcpy(Bptr, dBptr, mat.mp * sizeof(double), hipMemcpyDeviceToHost);
   } else if(nq > 0) {
     const double one  = 1.0;
@@ -364,23 +372,38 @@ void HPL_pdtest(HPL_T_test* TEST,
     const double mone = -1.0;
 
     int nb = Mmin(nq, nq_chunk);
-    rocblas_dgemv(handle, rocblas_operation_none,
-                  mat.mp, nb, &mone,
-                  Mptr(mat.dA, 0, 0, mat.ld), mat.ld,
-                  Mptr(mat.dX, 0, 0, 1), 1,
-                  &zero, dBptr, 1);
+    rocblas_dgemv(handle,
+                  rocblas_operation_none,
+                  mat.mp,
+                  nb,
+                  &mone,
+                  Mptr(mat.dA, 0, 0, mat.ld),
+                  mat.ld,
+                  Mptr(mat.dX, 0, 0, 1),
+                  1,
+                  &zero,
+                  dBptr,
+                  1);
 
-    for (int nn=nb;nn<nq;nn+=nq_chunk) {
-      int nb = Mmin(nq-nn, nq_chunk);
-      rocblas_dgemv(handle, rocblas_operation_none,
-                  mat.mp, nb, &mone,
-                  Mptr(mat.dA, 0, nn, mat.ld), mat.ld,
-                  Mptr(mat.dX, 0, nn, 1), 1,
-                  &one, dBptr, 1);
+    for(int nn = nb; nn < nq; nn += nq_chunk) {
+      int nb = Mmin(nq - nn, nq_chunk);
+      rocblas_dgemv(handle,
+                    rocblas_operation_none,
+                    mat.mp,
+                    nb,
+                    &mone,
+                    Mptr(mat.dA, 0, nn, mat.ld),
+                    mat.ld,
+                    Mptr(mat.dX, 0, nn, 1),
+                    1,
+                    &one,
+                    dBptr,
+                    1);
     }
 
     // rocblas_dgemv(handle, rocblas_operation_none,
-    //               mat.mp, nq, &mone, mat.dA, mat.ld, mat.dX, 1, &zero, dBptr, 1);
+    //               mat.mp, nq, &mone, mat.dA, mat.ld, mat.dX, 1, &zero, dBptr,
+    //               1);
     hipMemcpy(Bptr, dBptr, mat.mp * sizeof(double), hipMemcpyDeviceToHost);
   } else {
     for(ii = 0; ii < mat.mp; ii++) Bptr[ii] = HPL_rzero;

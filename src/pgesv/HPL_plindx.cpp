@@ -98,7 +98,7 @@ void HPL_plindx(HPL_T_panel* PANEL,
   const int iroff   = PANEL->ii;
   const int icurrow = PANEL->prow;
 
-  int *iwork = IWORK + jb;
+  int* iwork = IWORK + jb;
 
   /*
    * Compute IPLEN
@@ -112,16 +112,16 @@ void HPL_plindx(HPL_T_panel* PANEL,
    * elsewhere and PERMU in every process.
    */
   if(myrow == icurrow) {
-    //for all rows to be swapped
+    // for all rows to be swapped
     int ip = 0, ipU = 0;
     for(int i = 0; i < K; i += 2) {
       const int src = IPID[i];
-      int srcrow;
+      int       srcrow;
       Mindxg2p(src, nb, nb, srcrow, 0, nprow);
 
-      if(srcrow == icurrow) {//if I own the src row
+      if(srcrow == icurrow) { // if I own the src row
         const int dst = IPID[i + 1];
-        int dstrow;
+        int       dstrow;
         Mindxg2p(dst, nb, nb, dstrow, 0, nprow);
 
         int il;
@@ -129,57 +129,57 @@ void HPL_plindx(HPL_T_panel* PANEL,
         LINDXA[ip] = il - iroff;
 
         if((dstrow == icurrow) && (dst - ia < jb)) {
-          //if I own the dst and it's in U
+          // if I own the dst and it's in U
 
-          PERMU[ipU]  = dst - ia;      //row index in U
-          iwork[ipU]  = IPLEN[dstrow]; //Index in AllGathered U
-          LINDXAU[ip] = IPLEN[dstrow]; //Index in AllGathered U
+          PERMU[ipU] = dst - ia;       // row index in U
+          iwork[ipU] = IPLEN[dstrow];  // Index in AllGathered U
+          LINDXAU[ip] = IPLEN[dstrow]; // Index in AllGathered U
           IPLEN[dstrow]++;
           ipU++;
         } else if(dstrow != icurrow) {
-          //else if I don't own the dst
+          // else if I don't own the dst
 
-          //Find the IPID pair with dst as the source
+          // Find the IPID pair with dst as the source
           int j = 0;
           int fndd;
           do {
             fndd = (dst == IPID[j]);
             j += 2;
           } while(!fndd && (j < K));
-          //This pair must have dst being sent to a position in U
+          // This pair must have dst being sent to a position in U
 
-          PERMU[ipU]  = IPID[j - 1] - ia; //row index in U
-          iwork[ipU]  = IPLEN[dstrow];    //Index in AllGathered U
-          LINDXAU[ip] = IPLEN[dstrow];    //Index in AllGathered U
+          PERMU[ipU] = IPID[j - 1] - ia; // row index in U
+          iwork[ipU] = IPLEN[dstrow];    // Index in AllGathered U
+          LINDXAU[ip] = IPLEN[dstrow];   // Index in AllGathered U
           IPLEN[dstrow]++;
           ipU++;
         } else if((dstrow == icurrow) && (dst - ia >= jb)) {
-          //if I own the dst but it's not in U
+          // if I own the dst but it's not in U
           int il;
           Mindxg2l(il, dst, nb, nb, myrow, 0, nprow);
-          LINDXAU[ip] = iroff - il;  // Save negative local A index
+          LINDXAU[ip] = iroff - il; // Save negative local A index
         }
         ip++;
       }
     }
     *IPA = ip;
   } else {
-    //for all rows to be swapped
+    // for all rows to be swapped
     int ip = 0, ipU = 0;
     for(int i = 0; i < K; i += 2) {
       const int src = IPID[i];
-      int srcrow;
+      int       srcrow;
       Mindxg2p(src, nb, nb, srcrow, 0, nprow);
       const int dst = IPID[i + 1];
-      int dstrow;
+      int       dstrow;
       Mindxg2p(dst, nb, nb, dstrow, 0, nprow);
       /*
        * LINDXA[i] is the local index of the row of A that belongs into U
        */
-      if(myrow == dstrow) { //if I own the dst row
+      if(myrow == dstrow) { // if I own the dst row
         int il;
         Mindxg2l(il, dst, nb, nb, myrow, 0, nprow);
-        LINDXA[ip] = il - iroff; //Local A index of incoming row
+        LINDXA[ip] = il - iroff; // Local A index of incoming row
         ip++;
       }
       /*
@@ -187,30 +187,30 @@ void HPL_plindx(HPL_T_panel* PANEL,
        * PERMU[i] is the local (final) destination index in U
        */
 
-      //if the src row is coming from the current row rank
+      // if the src row is coming from the current row rank
       if(srcrow == icurrow) {
 
         if((dstrow == icurrow) && (dst - ia < jb)) {
-          //If the row is going into U
-          PERMU[ipU] = dst - ia;      //row index in U
-          iwork[ipU] = IPLEN[dstrow]; //Index in AllGathered U
+          // If the row is going into U
+          PERMU[ipU] = dst - ia;      // row index in U
+          iwork[ipU] = IPLEN[dstrow]; // Index in AllGathered U
           IPLEN[dstrow]++;
           ipU++;
         } else if(dstrow != icurrow) {
-          //If the row is going to another rank
+          // If the row is going to another rank
           // (So src must be in U)
 
-          //Find the IPID pair with dst as the source
+          // Find the IPID pair with dst as the source
           int j = 0;
           int fndd;
           do {
             fndd = (dst == IPID[j]);
             j += 2;
           } while(!fndd && (j < K));
-          //This pair must have dst being sent to a position in U
+          // This pair must have dst being sent to a position in U
 
-          PERMU[ipU] = IPID[j - 1] - ia; //row index in U
-          iwork[ipU] = IPLEN[dstrow];    //Index in AllGathered U
+          PERMU[ipU] = IPID[j - 1] - ia; // row index in U
+          iwork[ipU] = IPLEN[dstrow];    // Index in AllGathered U
           IPLEN[dstrow]++;
           ipU++;
         }

@@ -34,8 +34,8 @@ static char host_name[MPI_MAX_PROCESSOR_NAME];
 void HPL_InitGPU(const HPL_T_grid* GRID) {
   char host_name[MPI_MAX_PROCESSOR_NAME];
 
-  int    i, n, namelen, rank, nprocs;
-  int    dev;
+  int i, n, namelen, rank, nprocs;
+  int dev;
 
   int nprow, npcol, myrow, mycol;
   (void)HPL_grid_info(GRID, &nprow, &npcol, &myrow, &mycol);
@@ -46,8 +46,8 @@ void HPL_InitGPU(const HPL_T_grid* GRID) {
   MPI_Get_processor_name(host_name, &namelen);
 
   MPI_Comm nodeComm;
-  MPI_Comm_split_type(MPI_COMM_WORLD, MPI_COMM_TYPE_SHARED, rank,
-                      MPI_INFO_NULL, &nodeComm);
+  MPI_Comm_split_type(
+      MPI_COMM_WORLD, MPI_COMM_TYPE_SHARED, rank, MPI_INFO_NULL, &nodeComm);
 
   int localRank;
   int localSize;
@@ -67,17 +67,16 @@ void HPL_InitGPU(const HPL_T_grid* GRID) {
   int2 pq[localSize];
   MPI_Allgather(&mypq, 2, MPI_INT, pq, 2, MPI_INT, nodeComm);
 
-  //sort by P then by Q
-  std::sort(pq, pq+localSize,
-            [](const int2& a, const int2& b) {
-              if(a.p < b.p) return true;
-              if(a.p > b.p) return false;
+  // sort by P then by Q
+  std::sort(pq, pq + localSize, [](const int2& a, const int2& b) {
+    if(a.p < b.p) return true;
+    if(a.p > b.p) return false;
 
-              return (a.q < b.q);
-            });
+    return (a.q < b.q);
+  });
 
-  for (int i=0;i<localSize;++i) {
-    if (pq[i].p == mypq.p && pq[i].q == mypq.q) {
+  for(int i = 0; i < localSize; ++i) {
+    if(pq[i].p == mypq.p && pq[i].q == mypq.q) {
       dev = i;
       break;
     }

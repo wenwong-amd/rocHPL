@@ -100,7 +100,7 @@ void HPL_dlocswpT(HPL_T_panel* PANEL,
           A1 = Mptr(PANEL->A, II, 0, lda);
           A2 = Mptr(A1, ilindx, 0, lda);
 
-          HPL_dcopy(n0, Wmx, 1,  L, 1);
+          HPL_dcopy(n0, Wmx, 1, L, 1);
           HPL_dcopy(n0, Wmx, 1, A1, lda);
           HPL_dcopy(n0, Wr0, 1, A2, lda);
 
@@ -111,7 +111,7 @@ void HPL_dlocswpT(HPL_T_panel* PANEL,
            */
           *Mptr(PANEL->A, II, JJ, lda) = gmax;
 
-          HPL_dcopy(n0, Wmx, 1,  L, 1);
+          HPL_dcopy(n0, Wmx, 1, L, 1);
         }
 
       } else {
@@ -121,7 +121,7 @@ void HPL_dlocswpT(HPL_T_panel* PANEL,
          */
         A1 = Mptr(PANEL->A, II, 0, lda);
 
-        HPL_dcopy(n0, Wmx, 1,  L, 1);
+        HPL_dcopy(n0, Wmx, 1, L, 1);
         HPL_dcopy(n0, Wmx, 1, A1, lda);
       }
 
@@ -130,7 +130,7 @@ void HPL_dlocswpT(HPL_T_panel* PANEL,
        * otherwise I do not own the current row of A, so copy the max row  Wmx
        * into L1.
        */
-      HPL_dcopy(n0, Wmx, 1,  L, 1);
+      HPL_dcopy(n0, Wmx, 1, L, 1);
 
       /*
        * and if I own the max row, overwrite it with the current row Wr0.

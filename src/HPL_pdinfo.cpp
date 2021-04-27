@@ -19,9 +19,8 @@
 #include <cstdio>
 #include <cstring>
 
-
-void HPL_pdinfo(int ARGC,
-                char** ARGV,
+void HPL_pdinfo(int          ARGC,
+                char**       ARGV,
                 HPL_T_test*  TEST,
                 int*         NS,
                 int*         N,
@@ -220,55 +219,65 @@ void HPL_pdinfo(int ARGC,
   TEST->thrsh = 16.0;
   TEST->kfail = TEST->kpass = TEST->kskip = TEST->ktest = 0;
 
-  //parse settings
-  int p=1, q=1, n=45312, nb=384;
-  bool cmdlinerun=false;
-  bool inputfile=false;
-  std::string inputFileName="HPL.dat";
+  // parse settings
+  int         p = 1, q = 1, n = 45312, nb = 384;
+  bool        cmdlinerun    = false;
+  bool        inputfile     = false;
+  std::string inputFileName = "HPL.dat";
 
-  for (int i = 1; i < ARGC; i++) {
-    if (strcmp(ARGV[i], "-h") == 0 || strcmp(ARGV[i], "--help") == 0)
-    {
-      if (rank==0) {
-        std::cout << "rocHPL client command line options:                                 \n"
-           "-P  [ --ranksP ] arg (=1)          Specific MPI grid size: the number of      \n"
-           "                                   rows in MPI grid.                          \n"
-           "-Q  [ --ranksQ ] arg (=1)          Specific MPI grid size: the number of      \n"
-           "                                   columns in MPI grid.                       \n"
-           "-N  [ --sizeN ]  arg (=45312)      Specific matrix size: the number of rows   \n"
-           "                                   /columns in global matrix.                 \n"
-           "-NB [ --sizeNB ] arg (=384)        Specific panel size: the number of rows    \n"
-           "                                   /columns in panels.                        \n"
-           "-i  [ --input ]  arg (=HPL.dat)    Input file. When set, all other commnand   \n"
-           "                                   line parameters are ignored, and problem   \n"
-           "                                   parameters are read from input file.       \n"
-           "-h  [ --help ]                     Produces this help message                 \n"
-           "--version                          Prints the version number                  \n";
-       }
-       MPI_Barrier(MPI_COMM_WORLD);
-       MPI_Finalize();
-       exit(0);
-    }
-
-    if(strcmp(ARGV[i], "--version")==0)
-    {
-      if (rank==0) {
-        std::cout << "rocHPL version: " << __ROCHPL_VER_MAJOR
-                                << "."  << __ROCHPL_VER_MINOR
-                                << "."  << __ROCHPL_VER_PATCH
-                                << std::endl;
+  for(int i = 1; i < ARGC; i++) {
+    if(strcmp(ARGV[i], "-h") == 0 || strcmp(ARGV[i], "--help") == 0) {
+      if(rank == 0) {
+        std::cout << "rocHPL client command line options:                      "
+                     "           \n"
+                     "-P  [ --ranksP ] arg (=1)          Specific MPI grid "
+                     "size: the number of      \n"
+                     "                                   rows in MPI grid.     "
+                     "                     \n"
+                     "-Q  [ --ranksQ ] arg (=1)          Specific MPI grid "
+                     "size: the number of      \n"
+                     "                                   columns in MPI grid.  "
+                     "                     \n"
+                     "-N  [ --sizeN ]  arg (=45312)      Specific matrix size: "
+                     "the number of rows   \n"
+                     "                                   /columns in global "
+                     "matrix.                 \n"
+                     "-NB [ --sizeNB ] arg (=384)        Specific panel size: "
+                     "the number of rows    \n"
+                     "                                   /columns in panels.   "
+                     "                     \n"
+                     "-i  [ --input ]  arg (=HPL.dat)    Input file. When set, "
+                     "all other commnand   \n"
+                     "                                   line parameters are "
+                     "ignored, and problem   \n"
+                     "                                   parameters are read "
+                     "from input file.       \n"
+                     "-h  [ --help ]                     Produces this help "
+                     "message                 \n"
+                     "--version                          Prints the version "
+                     "number                  \n";
       }
       MPI_Barrier(MPI_COMM_WORLD);
       MPI_Finalize();
       exit(0);
     }
 
-    if (strcmp(ARGV[i], "-P") == 0 || strcmp(ARGV[i], "--ranksP") == 0)
-    {
-      p = atoi(ARGV[i+1]);
-      cmdlinerun=true;
+    if(strcmp(ARGV[i], "--version") == 0) {
+      if(rank == 0) {
+        std::cout << "rocHPL version: " << __ROCHPL_VER_MAJOR << "."
+                  << __ROCHPL_VER_MINOR << "." << __ROCHPL_VER_PATCH
+                  << std::endl;
+      }
+      MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Finalize();
+      exit(0);
+    }
+
+    if(strcmp(ARGV[i], "-P") == 0 || strcmp(ARGV[i], "--ranksP") == 0) {
+      p          = atoi(ARGV[i + 1]);
+      cmdlinerun = true;
       i++;
-      if (p<1) {
+      if(p < 1) {
         if(rank == 0)
           HPL_pwarn(stderr,
                     __LINE__,
@@ -278,12 +287,11 @@ void HPL_pdinfo(int ARGC,
         exit(1);
       }
     }
-    if (strcmp(ARGV[i], "-Q") == 0 || strcmp(ARGV[i], "--ranksQ") == 0)
-    {
-      q = atoi(ARGV[i+1]);
-      cmdlinerun=true;
+    if(strcmp(ARGV[i], "-Q") == 0 || strcmp(ARGV[i], "--ranksQ") == 0) {
+      q          = atoi(ARGV[i + 1]);
+      cmdlinerun = true;
       i++;
-      if (q<1) {
+      if(q < 1) {
         if(rank == 0)
           HPL_pwarn(stderr,
                     __LINE__,
@@ -293,12 +301,11 @@ void HPL_pdinfo(int ARGC,
         exit(1);
       }
     }
-    if (strcmp(ARGV[i], "-N") == 0 || strcmp(ARGV[i], "--sizeN") == 0)
-    {
-      n = atoi(ARGV[i+1]);
-      cmdlinerun=true;
+    if(strcmp(ARGV[i], "-N") == 0 || strcmp(ARGV[i], "--sizeN") == 0) {
+      n          = atoi(ARGV[i + 1]);
+      cmdlinerun = true;
       i++;
-      if (n<1) {
+      if(n < 1) {
         if(rank == 0)
           HPL_pwarn(stderr,
                     __LINE__,
@@ -308,12 +315,11 @@ void HPL_pdinfo(int ARGC,
         exit(1);
       }
     }
-    if (strcmp(ARGV[i], "-NB") == 0 || strcmp(ARGV[i], "--sizeNB") == 0)
-    {
-      nb = atoi(ARGV[i+1]);
-      cmdlinerun=true;
+    if(strcmp(ARGV[i], "-NB") == 0 || strcmp(ARGV[i], "--sizeNB") == 0) {
+      nb         = atoi(ARGV[i + 1]);
+      cmdlinerun = true;
       i++;
-      if (nb<1) {
+      if(nb < 1) {
         if(rank == 0)
           HPL_pwarn(stderr,
                     __LINE__,
@@ -323,10 +329,9 @@ void HPL_pdinfo(int ARGC,
         exit(1);
       }
     }
-    if (strcmp(ARGV[i], "-i") == 0 || strcmp(ARGV[i], "--input") == 0)
-    {
-      inputFileName = ARGV[i+1];
-      inputfile=true;
+    if(strcmp(ARGV[i], "-i") == 0 || strcmp(ARGV[i], "--input") == 0) {
+      inputFileName = ARGV[i + 1];
+      inputfile     = true;
       i++;
     }
   }
@@ -334,7 +339,7 @@ void HPL_pdinfo(int ARGC,
   /*
    * Check for enough processes in machine configuration
    */
-  maxp = p*q;
+  maxp = p * q;
   if(maxp > size) {
     if(rank == 0)
       HPL_pwarn(stderr,
@@ -346,48 +351,48 @@ void HPL_pdinfo(int ARGC,
     exit(1);
   }
 
-  if (inputfile==false && cmdlinerun==true) {
-    //We were given run paramters via the cmd line so skip
+  if(inputfile == false && cmdlinerun == true) {
+    // We were given run paramters via the cmd line so skip
     // trying to read from an input file and just fill a
     // TEST structure.
 
     /*
      * Problem size (>=0) (N)
      */
-    *NS = 1;
+    *NS  = 1;
     N[0] = n;
     /*
      * Block size (>=1) (NB)
      */
-    *NBS = 1;
+    *NBS  = 1;
     NB[0] = nb;
     /*
      * Process grids, mapping, (>=1) (P, Q)
      */
-    *PMAPPIN = HPL_COLUMN_MAJOR; //HPL_ROW_MAJOR
-    *NPQS = 1;
-    P[0] = p;
-    Q[0] = q;
+    *PMAPPIN = HPL_COLUMN_MAJOR; // HPL_ROW_MAJOR
+    *NPQS    = 1;
+    P[0]     = p;
+    Q[0]     = q;
     /*
      * Panel factorization algorithm (PF)
      */
     *NPFS = 1;
-    PF[i] = HPL_RIGHT_LOOKING; //HPL_LEFT_LOOKING, HPL_CROUT;
+    PF[i] = HPL_RIGHT_LOOKING; // HPL_LEFT_LOOKING, HPL_CROUT;
     /*
      * Recursive stopping criterium (>=1) (NBM)
      */
-    *NBMS = 1;
+    *NBMS  = 1;
     NBM[0] = 2;
     /*
      * Number of panels in recursion (>=2) (NDV)
      */
-    *NDVS = 1;
+    *NDVS  = 1;
     NDV[0] = 2;
     /*
      * Recursive panel factorization (RF)
      */
     *NRFS = 1;
-    RF[0] = HPL_RIGHT_LOOKING; //HPL_LEFT_LOOKING, HPL_CROUT;
+    RF[0] = HPL_RIGHT_LOOKING; // HPL_LEFT_LOOKING, HPL_CROUT;
     /*
      * Broadcast topology (TP) (0=rg, 1=2rg, 2=rgM, 3=2rgM, 4=L)
      */
@@ -429,9 +434,7 @@ void HPL_pdinfo(int ARGC,
     TEST->epsil = HPL_pdlamch(MPI_COMM_WORLD, HPL_MACH_EPS);
 
     if(rank == 0) {
-      if((TEST->outfp = fopen("HPL.out", "w")) == NULL) {
-        error = 1;
-      }
+      if((TEST->outfp = fopen("HPL.out", "w")) == NULL) { error = 1; }
     }
     (void)HPL_all_reduce((void*)(&error), 1, HPL_INT, HPL_MAX, MPI_COMM_WORLD);
     if(error) {
@@ -451,7 +454,11 @@ void HPL_pdinfo(int ARGC,
        * Open file and skip data file header
        */
       if((infp = fopen(inputFileName.c_str(), "r")) == NULL) {
-        HPL_pwarn(stderr, __LINE__, "HPL_pdinfo", "cannot open file %s", inputFileName.c_str());
+        HPL_pwarn(stderr,
+                  __LINE__,
+                  "HPL_pdinfo",
+                  "cannot open file %s",
+                  inputFileName.c_str());
         error = 1;
         goto label_error;
       }
@@ -656,7 +663,8 @@ void HPL_pdinfo(int ARGC,
         (void)sscanf(lineptr, "%s", num);
         lineptr += strlen(num) + 1;
         if((NBM[i] = atoi(num)) < 1) {
-          HPL_pwarn(stderr, __LINE__, "HPL_pdinfo", "Value of NBMIN less than 1");
+          HPL_pwarn(
+              stderr, __LINE__, "HPL_pdinfo", "Value of NBMIN less than 1");
           error = 1;
           goto label_error;
         }
@@ -684,7 +692,8 @@ void HPL_pdinfo(int ARGC,
         (void)sscanf(lineptr, "%s", num);
         lineptr += strlen(num) + 1;
         if((NDV[i] = atoi(num)) < 2) {
-          HPL_pwarn(stderr, __LINE__, "HPL_pdinfo", "Value of NDIV less than 2");
+          HPL_pwarn(
+              stderr, __LINE__, "HPL_pdinfo", "Value of NDIV less than 2");
           error = 1;
           goto label_error;
         }
@@ -782,7 +791,8 @@ void HPL_pdinfo(int ARGC,
         (void)sscanf(lineptr, "%s", num);
         lineptr += strlen(num) + 1;
         if((DH[i] = atoi(num)) < 0) {
-          HPL_pwarn(stderr, __LINE__, "HPL_pdinfo", "Value of DEPTH less than 0");
+          HPL_pwarn(
+              stderr, __LINE__, "HPL_pdinfo", "Value of DEPTH less than 0");
           error = 1;
           goto label_error;
         }
@@ -823,9 +833,12 @@ void HPL_pdinfo(int ARGC,
       *UNOTRAN = atoi(num);
       if((*UNOTRAN != 0) && (*UNOTRAN != 1)) *UNOTRAN = 0;
 
-      //NC: We don't support holding U in no-transpose form anymore
+      // NC: We don't support holding U in no-transpose form anymore
       if(*UNOTRAN != 0) {
-        HPL_pwarn(stderr, __LINE__, "HPL_pdinfo", "U  in no-transposed form unsupported");
+        HPL_pwarn(stderr,
+                  __LINE__,
+                  "HPL_pdinfo",
+                  "U  in no-transposed form unsupported");
         error = 1;
         goto label_error;
       }
@@ -837,9 +850,12 @@ void HPL_pdinfo(int ARGC,
       *EQUIL = atoi(num);
       if((*EQUIL != 0) && (*EQUIL != 1)) *EQUIL = 1;
 
-      //NC: We don't currently support Equilibration
+      // NC: We don't currently support Equilibration
       if(*EQUIL != 0) {
-        HPL_pwarn(stderr, __LINE__, "HPL_pdinfo", "Equilibration currently unsupported");
+        HPL_pwarn(stderr,
+                  __LINE__,
+                  "HPL_pdinfo",
+                  "Equilibration currently unsupported");
         error = 1;
         goto label_error;
       }
@@ -852,8 +868,8 @@ void HPL_pdinfo(int ARGC,
       if(*ALIGN <= 0) *ALIGN = 4;
 
       /*
-      * Close input file
-      */
+       * Close input file
+       */
     label_error:
       (void)fclose(infp);
     } else {
@@ -925,8 +941,8 @@ void HPL_pdinfo(int ARGC,
     /*
      * Pack information arrays and broadcast
      */
-    lwork = (*NS) + (*NBS) + 2 * (*NPQS) + (*NPFS) + (*NBMS) + (*NDVS) + (*NRFS) +
-            (*NTPS) + (*NDHS) + 1;
+    lwork = (*NS) + (*NBS) + 2 * (*NPQS) + (*NPFS) + (*NBMS) + (*NDVS) +
+            (*NRFS) + (*NTPS) + (*NDHS) + 1;
     iwork = (int*)malloc((size_t)(lwork) * sizeof(int));
     if(rank == 0) {
       j = 0;

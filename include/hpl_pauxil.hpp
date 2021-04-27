@@ -252,11 +252,7 @@ void HPL_dlaswp04T(const int,
                    const int,
                    const int*);
 
-void HPL_dlaswp10N(const int,
-                   const int,
-                   double*,
-                   const int,
-                   const int*);
+void HPL_dlaswp10N(const int, const int, double*, const int, const int*);
 
 void   HPL_pabort(int, const char*, const char*, ...);
 void   HPL_pwarn(FILE*, int, const char*, const char*, ...);

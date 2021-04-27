@@ -70,13 +70,13 @@ void HPL_pdtrsv(HPL_T_grid* GRID, HPL_T_pmat* AMAT) {
    */
 
   MPI_Comm Ccomm, Rcomm;
-  double *Aprev = NULL, *XC = NULL, *XR = NULL, *Xd = NULL,
-         *Xdprev = NULL, *W = NULL;
+  double * Aprev = NULL, *XC = NULL, *XR = NULL, *Xd = NULL, *Xdprev = NULL,
+         *W  = NULL;
   double *dA = NULL, *dAprev = NULL, *dAptr, *dXC = NULL, *dXR = NULL,
          *dXd = NULL, *dXdprev = NULL, *dW = NULL;
   int Alcol, Alrow, Anpprev, Anp, Anq, Bcol, Cmsgid, GridIsNotPx1, GridIsNot1xQ,
       Rmsgid, colprev, kb, kbprev, lda, mycol, myrow, n, n1, n1p,
-              n1pprev = 0, nb, npcol, nprow, rowprev, tmp1, tmp2;
+      n1pprev = 0, nb, npcol, nprow, rowprev, tmp1, tmp2;
 /* ..
  * .. Executable Statements ..
  */
@@ -101,13 +101,13 @@ void HPL_pdtrsv(HPL_T_grid* GRID, HPL_T_pmat* AMAT) {
 
   dA  = AMAT->dA;
   dXR = AMAT->dX;
-  XR  = AMAT->W + 2*Anp;
+  XR  = AMAT->W + 2 * Anp;
 
   XC  = AMAT->W;
   dXC = AMAT->dW;
 
-  W   = AMAT->W  + Anp;
-  dW  = AMAT->dW + Anp;
+  W  = AMAT->W + Anp;
+  dW = AMAT->dW + Anp;
 
   hipStream_t stream;
   rocblas_get_stream(handle, &stream);
@@ -121,32 +121,34 @@ void HPL_pdtrsv(HPL_T_grid* GRID, HPL_T_pmat* AMAT) {
   Alcol = tmp1 - (tmp1 / npcol) * npcol;
   kb    = n - tmp1 * nb;
 
-  dAptr = (double*)(dA);
-  double* dB   = Mptr(dAptr, 0, Anq, lda);
+  dAptr      = (double*)(dA);
+  double* dB = Mptr(dAptr, 0, Anq, lda);
 
   Mindxg2p(n, nb, nb, Bcol, 0, npcol);
 
   if(Anp > 0) {
-    if (Alcol != Bcol) {
+    if(Alcol != Bcol) {
       if(mycol == Bcol) {
-  // #ifdef GPU_AWARE_MPI
-  //       hipMemcpy(dXC, dB, Anp * sizeof(double), hipMemcpyDeviceToDevice);
-  //       printf("Rank (%d,%d) sending dXC, Anp=%d entries, to rank (%d, %d) \n",
-  //         myrow, mycol, Anp, myrow, Alcol);
-  //       (void)HPL_send(dXC, Anp, Alcol, Rmsgid, Rcomm);
-  // #else
+        // #ifdef GPU_AWARE_MPI
+        //       hipMemcpy(dXC, dB, Anp * sizeof(double),
+        //       hipMemcpyDeviceToDevice); printf("Rank (%d,%d) sending dXC,
+        //       Anp=%d entries, to rank (%d, %d) \n",
+        //         myrow, mycol, Anp, myrow, Alcol);
+        //       (void)HPL_send(dXC, Anp, Alcol, Rmsgid, Rcomm);
+        // #else
         if(Anp) hipMemcpy(XC, dB, Anp * sizeof(double), hipMemcpyDeviceToHost);
         (void)HPL_send(XC, Anp, Alcol, Rmsgid, Rcomm);
-  // #endif
+        // #endif
       } else if(mycol == Alcol) {
-  // #ifdef GPU_AWARE_MPI
-  //       printf("Rank (%d,%d) receiving dXC, Anp=%d entries, from rank (%d, %d) \n",
-  //         myrow, mycol, Anp, myrow, Bcol);
-  //       (void)HPL_recv(dXC, Anp, Bcol, Rmsgid, Rcomm);
-  // #else
+        // #ifdef GPU_AWARE_MPI
+        //       printf("Rank (%d,%d) receiving dXC, Anp=%d entries, from rank
+        //       (%d, %d) \n",
+        //         myrow, mycol, Anp, myrow, Bcol);
+        //       (void)HPL_recv(dXC, Anp, Bcol, Rmsgid, Rcomm);
+        // #else
         (void)HPL_recv(XC, Anp, Bcol, Rmsgid, Rcomm);
         if(Anp) hipMemcpy(dXC, XC, Anp * sizeof(double), hipMemcpyHostToDevice);
-  // #endif
+        // #endif
       }
     } else {
       if(mycol == Bcol) {
@@ -172,18 +174,18 @@ void HPL_pdtrsv(HPL_T_grid* GRID, HPL_T_pmat* AMAT) {
   n1 = Mmax(n1, nb);
 
   Anpprev = Anp;
-  dAprev  = dAptr = Mptr(dAptr, 0, Anq, lda);
-  Xdprev  = XR;
-  dXdprev = dXR;
-  tmp1  = n - kb;
+  dAprev = dAptr = Mptr(dAptr, 0, Anq, lda);
+  Xdprev         = XR;
+  dXdprev        = dXR;
+  tmp1           = n - kb;
   tmp1 -= (tmp2 = Mmin(tmp1, n1));
   MnumrocI(n1pprev, tmp2, Mmax(0, tmp1), nb, nb, myrow, 0, nprow);
 
   if(myrow == Alrow) { Anpprev = (Anp -= kb); }
   if(mycol == Alcol) {
-    dAprev  = (dAptr -= lda * kb);
+    dAprev = (dAptr -= lda * kb);
     Anq -= kb;
-    Xdprev  = ( Xd =  XR + Anq);
+    Xdprev  = (Xd = XR + Anq);
     dXdprev = (dXd = dXR + Anq);
     if(myrow == Alrow) {
       rocblas_dtrsv(handle,
@@ -215,7 +217,7 @@ void HPL_pdtrsv(HPL_T_grid* GRID, HPL_T_pmat* AMAT) {
     if(mycol == Alcol) {
       dAptr -= lda * kb;
       Anq -= kb;
-      Xd  =  XR + Anq;
+      Xd  = XR + Anq;
       dXd = dXR + Anq;
     }
     if(myrow == Alrow) { Anp -= kb; }
@@ -230,32 +232,38 @@ void HPL_pdtrsv(HPL_T_grid* GRID, HPL_T_pmat* AMAT) {
        */
       if(myrow == rowprev) {
         if(GridIsNot1xQ) {
-// #ifdef GPU_AWARE_MPI
-//           hipDeviceSynchronize();
-//           printf("Rank (%d,%d) sending dXdprev, kbprev=%d entries, to rank (%d, %d) \n",
-//                   myrow, mycol, kbprev, MModSub1(myrow, nprow), mycol);
-//           (void)HPL_send(
-//              dXdprev, kbprev, MModSub1(myrow, nprow), Cmsgid, Ccomm);
-// #else
+          // #ifdef GPU_AWARE_MPI
+          //           hipDeviceSynchronize();
+          //           printf("Rank (%d,%d) sending dXdprev, kbprev=%d entries,
+          //           to rank (%d, %d) \n",
+          //                   myrow, mycol, kbprev, MModSub1(myrow, nprow),
+          //                   mycol);
+          //           (void)HPL_send(
+          //              dXdprev, kbprev, MModSub1(myrow, nprow), Cmsgid,
+          //              Ccomm);
+          // #else
           if(kbprev)
             hipMemcpy(Xdprev,
                       dXdprev,
                       kbprev * sizeof(double),
                       hipMemcpyDeviceToHost);
           (void)HPL_send(Xdprev, kbprev, MModSub1(myrow, nprow), Cmsgid, Ccomm);
-// #endif
+          // #endif
         }
       } else {
-// #ifdef GPU_AWARE_MPI
-//         printf("Rank (%d,%d) receiving dXdprev, kbprev=%d entries, from rank (%d, %d) \n",
-//                   myrow, mycol, kbprev, MModAdd1(myrow, nprow), mycol);
-//         (void)HPL_recv(dXdprev, kbprev, MModAdd1(myrow, nprow), Cmsgid, Ccomm);
-// #else
+        // #ifdef GPU_AWARE_MPI
+        //         printf("Rank (%d,%d) receiving dXdprev, kbprev=%d entries,
+        //         from rank (%d, %d) \n",
+        //                   myrow, mycol, kbprev, MModAdd1(myrow, nprow),
+        //                   mycol);
+        //         (void)HPL_recv(dXdprev, kbprev, MModAdd1(myrow, nprow),
+        //         Cmsgid, Ccomm);
+        // #else
         (void)HPL_recv(Xdprev, kbprev, MModAdd1(myrow, nprow), Cmsgid, Ccomm);
         if(kbprev)
           hipMemcpy(
               dXdprev, Xdprev, kbprev * sizeof(double), hipMemcpyHostToDevice);
-// #endif
+        // #endif
       }
       /*
        * Compute partial update of previous solution block and send it to cur-
@@ -278,19 +286,21 @@ void HPL_pdtrsv(HPL_T_grid* GRID, HPL_T_pmat* AMAT) {
                       dXC + tmp1,
                       1);
         if(GridIsNotPx1) {
-// #ifdef GPU_AWARE_MPI
-//           hipDeviceSynchronize();
-//           printf("Rank (%d,%d) sending dXC+tmp1, tmp1=%d, n1pprev=%d entries, to rank (%d, %d) \n",
-//                   myrow, mycol, tmp1, n1pprev, myrow, Alcol);
-//           (void)HPL_send(dXC + tmp1, n1pprev, Alcol, Rmsgid, Rcomm);
-// #else
+          // #ifdef GPU_AWARE_MPI
+          //           hipDeviceSynchronize();
+          //           printf("Rank (%d,%d) sending dXC+tmp1, tmp1=%d,
+          //           n1pprev=%d entries, to rank (%d, %d) \n",
+          //                   myrow, mycol, tmp1, n1pprev, myrow, Alcol);
+          //           (void)HPL_send(dXC + tmp1, n1pprev, Alcol, Rmsgid,
+          //           Rcomm);
+          // #else
           if(n1pprev)
             hipMemcpy(XC + tmp1,
                       dXC + tmp1,
                       n1pprev * sizeof(double),
                       hipMemcpyDeviceToHost);
           (void)HPL_send(XC + tmp1, n1pprev, Alcol, Rmsgid, Rcomm);
-// #endif
+          // #endif
         }
       }
       /*
@@ -298,17 +308,20 @@ void HPL_pdtrsv(HPL_T_grid* GRID, HPL_T_pmat* AMAT) {
        * vious process column
        */
       if((myrow != rowprev) && (myrow != MModAdd1(rowprev, nprow))) {
-// #ifdef GPU_AWARE_MPI
-//         hipDeviceSynchronize();
-//         printf("Rank (%d,%d) sending dXdprev, kbprev=%d entries, to rank (%d, %d) \n",
-//                   myrow, mycol, kbprev, MModSub1(myrow, nprow), mycol);
-//         (void)HPL_send(dXdprev, kbprev, MModSub1(myrow, nprow), Cmsgid, Ccomm);
-// #else
+        // #ifdef GPU_AWARE_MPI
+        //         hipDeviceSynchronize();
+        //         printf("Rank (%d,%d) sending dXdprev, kbprev=%d entries, to
+        //         rank (%d, %d) \n",
+        //                   myrow, mycol, kbprev, MModSub1(myrow, nprow),
+        //                   mycol);
+        //         (void)HPL_send(dXdprev, kbprev, MModSub1(myrow, nprow),
+        //         Cmsgid, Ccomm);
+        // #else
         if(kbprev)
           hipMemcpy(
               Xdprev, dXdprev, kbprev * sizeof(double), hipMemcpyDeviceToHost);
         (void)HPL_send(Xdprev, kbprev, MModSub1(myrow, nprow), Cmsgid, Ccomm);
-// #endif
+        // #endif
       }
     } else if(mycol == Alcol) {
       /*
@@ -316,15 +329,16 @@ void HPL_pdtrsv(HPL_T_grid* GRID, HPL_T_pmat* AMAT) {
        * solution block
        */
       if(n1pprev > 0) {
-// #ifdef GPU_AWARE_MPI
-//         printf("Rank (%d,%d) receiving dW, n1pprev=%d entries, from rank (%d, %d) \n",
-//                   myrow, mycol, n1pprev, myrow, colprev);
-//         (void)HPL_recv(dW, n1pprev, colprev, Rmsgid, Rcomm);
-// #else
+        // #ifdef GPU_AWARE_MPI
+        //         printf("Rank (%d,%d) receiving dW, n1pprev=%d entries, from
+        //         rank (%d, %d) \n",
+        //                   myrow, mycol, n1pprev, myrow, colprev);
+        //         (void)HPL_recv(dW, n1pprev, colprev, Rmsgid, Rcomm);
+        // #else
         (void)HPL_recv(W, n1pprev, colprev, Rmsgid, Rcomm);
         if(n1pprev)
           hipMemcpy(dW, W, n1pprev * sizeof(double), hipMemcpyHostToDevice);
-// #endif
+        // #endif
         const double one = 1.0;
         rocblas_daxpy(handle, n1pprev, &one, dW, 1, dXC + Anpprev - n1pprev, 1);
       }
@@ -392,22 +406,22 @@ void HPL_pdtrsv(HPL_T_grid* GRID, HPL_T_pmat* AMAT) {
    * Replicate last solution block
    */
   if(mycol == colprev) {
-// #ifdef GPU_AWARE_MPI
-//     hipDeviceSynchronize();
-//     printf("Rank (%d,%d) bcast dXR, kbprev=%d entries, from rank (%d, %d) \n",
-//                   myrow, mycol, kbprev, rowprev, mycol);
-//     (void)HPL_broadcast((void*)(dXR), kbprev, HPL_DOUBLE, rowprev, Ccomm);
-// #else
+    // #ifdef GPU_AWARE_MPI
+    //     hipDeviceSynchronize();
+    //     printf("Rank (%d,%d) bcast dXR, kbprev=%d entries, from rank (%d, %d)
+    //     \n",
+    //                   myrow, mycol, kbprev, rowprev, mycol);
+    //     (void)HPL_broadcast((void*)(dXR), kbprev, HPL_DOUBLE, rowprev,
+    //     Ccomm);
+    // #else
     hipDeviceSynchronize();
     if(kbprev)
       hipMemcpy(XR, dXR, kbprev * sizeof(double), hipMemcpyDeviceToHost);
     (void)HPL_broadcast((void*)(XR), kbprev, HPL_DOUBLE, rowprev, Ccomm);
     if(kbprev)
       hipMemcpy(dXR, XR, kbprev * sizeof(double), hipMemcpyHostToDevice);
-// #endif
+    // #endif
   }
-
-
 
 #ifdef HPL_DETAILED_TIMING
   HPL_ptimer(HPL_TIMING_PTRSV);

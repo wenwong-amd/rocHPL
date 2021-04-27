@@ -63,12 +63,12 @@ int HPL_reduce(void*            BUFFER,
   int rank;
   MPI_Comm_rank(COMM, &rank);
 
-  if (rank==ROOT)
-    ierr =  MPI_Reduce(MPI_IN_PLACE, BUFFER, COUNT, HPL_2_MPI_TYPE(DTYPE),
-                       OP, ROOT, COMM);
+  if(rank == ROOT)
+    ierr = MPI_Reduce(
+        MPI_IN_PLACE, BUFFER, COUNT, HPL_2_MPI_TYPE(DTYPE), OP, ROOT, COMM);
   else
-    ierr =  MPI_Reduce(BUFFER, NULL, COUNT, HPL_2_MPI_TYPE(DTYPE),
-                       OP, ROOT, COMM);
+    ierr =
+        MPI_Reduce(BUFFER, NULL, COUNT, HPL_2_MPI_TYPE(DTYPE), OP, ROOT, COMM);
 
   return ((ierr == MPI_SUCCESS ? HPL_SUCCESS : HPL_FAILURE));
 }

@@ -51,12 +51,12 @@ void   HPL_setran(const int, int*);
 void   HPL_jumpit(int*, int*, int*, int*);
 double HPL_rand(void);
 void   HPL_pdrandmat(const HPL_T_grid*,
-                    const int,
-                    const int,
-                    const int,
-                    double*,
-                    const int,
-                    const int);
+                     const int,
+                     const int,
+                     const int,
+                     double*,
+                     const int,
+                     const int);
 
 int  HPL_pdmatgen(HPL_T_test*,
                   HPL_T_grid*,

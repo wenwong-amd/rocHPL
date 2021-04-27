@@ -16,8 +16,7 @@
 
 #include "hpl.hpp"
 
-void HPL_pdupdateNT(HPL_T_panel* PANEL,
-                    const int    NN) {
+void HPL_pdupdateNT(HPL_T_panel* PANEL, const int NN) {
   /*
    * Purpose
    * =======
@@ -43,7 +42,7 @@ void HPL_pdupdateNT(HPL_T_panel* PANEL,
   double *Aptr, *L1ptr, *L2ptr, *Uptr, *dpiv;
   int*    dipiv;
 
-  int               curr, i, iroff, jb, lda, ldl2, mp, n, nb;
+  int curr, i, iroff, jb, lda, ldl2, mp, n, nb;
 #define LDU n
 /* ..
  * .. Executable Statements ..
@@ -128,8 +127,7 @@ void HPL_pdupdateNT(HPL_T_panel* PANEL,
     hipEventRecord(dgemmStop, stream);
 #endif
 
-  }
-  else /* nprow > 1 ... */
+  } else /* nprow > 1 ... */
   {
 
     curr  = (PANEL->grid->myrow == PANEL->prow ? 1 : 0);

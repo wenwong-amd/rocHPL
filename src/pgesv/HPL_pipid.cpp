@@ -16,7 +16,7 @@
 
 #include "hpl.hpp"
 
-void HPL_pipid(HPL_T_panel* PANEL, int* K, int* IPID){
+void HPL_pipid(HPL_T_panel* PANEL, int* K, int* IPID) {
   /*
    * Purpose
    * =======

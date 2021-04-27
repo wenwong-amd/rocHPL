@@ -100,7 +100,7 @@ void HPL_dlocswpN(HPL_T_panel* PANEL,
           A1 = Mptr(PANEL->A, II, 0, lda);
           A2 = Mptr(A1, ilindx, 0, lda);
 
-          HPL_dcopy(n0, Wmx, 1,  L, n0);
+          HPL_dcopy(n0, Wmx, 1, L, n0);
           HPL_dcopy(n0, Wmx, 1, A1, lda);
           HPL_dcopy(n0, Wr0, 1, A2, lda);
 
@@ -111,7 +111,7 @@ void HPL_dlocswpN(HPL_T_panel* PANEL,
            */
           *Mptr(PANEL->A, II, JJ, lda) = gmax;
 
-          HPL_dcopy(n0, Wmx, 1,  L, n0);
+          HPL_dcopy(n0, Wmx, 1, L, n0);
         }
 
       } else {
@@ -121,7 +121,7 @@ void HPL_dlocswpN(HPL_T_panel* PANEL,
          */
         A1 = Mptr(PANEL->A, II, 0, lda);
 
-        HPL_dcopy(n0, Wmx, 1,  L, n0);
+        HPL_dcopy(n0, Wmx, 1, L, n0);
         HPL_dcopy(n0, Wmx, 1, A1, lda);
       }
 
@@ -130,7 +130,7 @@ void HPL_dlocswpN(HPL_T_panel* PANEL,
        * otherwise I do not own the current row of A, so copy the max row  Wmx
        * into L1.
        */
-      HPL_dcopy(n0, Wmx, 1,  L, n0);
+      HPL_dcopy(n0, Wmx, 1, L, n0);
 
       /*
        * and if I own the max row, overwrite it with the current row Wr0.
@@ -146,7 +146,7 @@ void HPL_dlocswpN(HPL_T_panel* PANEL,
      * Otherwise the max element in the current column is zero,  simply copy
      * the current row Wr0 into L1. The matrix is singular.
      */
-    HPL_dcopy(n0, Wr0, 1,  L, n0);
+    HPL_dcopy(n0, Wr0, 1, L, n0);
 
     /*
      * set INFO.

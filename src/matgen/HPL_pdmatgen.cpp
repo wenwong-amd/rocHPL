@@ -46,7 +46,7 @@ int HPL_pdmatgen(HPL_T_test* TEST,
       ip2 <<= 1;
     }
     im4096 = (mat->ld % 4096) ? 0 : 1;
-  } while((mat->ld == ip2) || im4096 );
+  } while((mat->ld == ip2) || im4096);
 
   mat->nq = nq + 1;
 
@@ -61,8 +61,7 @@ int HPL_pdmatgen(HPL_T_test* TEST,
    */
 
   // allocate on device
-  size_t numbytes = ((size_t)(mat->ld) * (size_t)(mat->nq))
-                      * sizeof(double);
+  size_t numbytes = ((size_t)(mat->ld) * (size_t)(mat->nq)) * sizeof(double);
 
 #ifdef HPL_VERBOSE_PRINT
   if((myrow == 0) && (mycol == 0)) {
@@ -93,11 +92,11 @@ int HPL_pdmatgen(HPL_T_test* TEST,
   if((myrow == 0) && (mycol == 0)) printf("done.\n");
 #endif
 
-  //seperate space for X vector
-  hipMalloc(&(mat->dX), mat->nq*sizeof(double));
+  // seperate space for X vector
+  hipMalloc(&(mat->dX), mat->nq * sizeof(double));
 
   /*Check vector allocation is valid*/
-  info[0] = (  mat->dX == NULL);
+  info[0] = (mat->dX == NULL);
   info[1] = myrow;
   info[2] = mycol;
   (void)HPL_all_reduce((void*)(info), 3, HPL_INT, HPL_MAX, GRID->all_comm);
@@ -116,15 +115,13 @@ int HPL_pdmatgen(HPL_T_test* TEST,
   Mnumroc(Anp, mat->n, mat->nb, mat->nb, myrow, 0, nprow);
 
   size_t dworkspace_size = 0;
-  size_t  workspace_size = 0;
+  size_t workspace_size  = 0;
 
-
-
-#if HIP_VERSION>=40100
-  //determine how much workspace rocBLAS needs for DTRSM
+#if HIP_VERSION >= 40100
+  // determine how much workspace rocBLAS needs for DTRSM
   rocblas_start_device_memory_size_query(handle);
 
-  //sample DTRSM call used in pdupdate
+  // sample DTRSM call used in pdupdate
   const double one = 1.0;
   rocblas_dtrsm(handle,
                 rocblas_side_right,
@@ -139,7 +136,7 @@ int HPL_pdmatgen(HPL_T_test* TEST,
                 mat->dA,
                 mat->ld);
 
-  //also sample some reductions to be safe
+  // also sample some reductions to be safe
   int id;
   rocblas_idamax(handle, mat->mp, mat->dA, 1, &id);
   rocblas_idamax(handle, mat->nq, mat->dA, 1, &id);
@@ -150,17 +147,15 @@ int HPL_pdmatgen(HPL_T_test* TEST,
 #endif
 
   /*pdtrsv needs two vectors for B and W (and X on host) */
-  dworkspace_size = Mmax(2*Anp*sizeof(double), dworkspace_size);
-  workspace_size  = Mmax((2*Anp+nq)*sizeof(double), workspace_size);
+  dworkspace_size = Mmax(2 * Anp * sizeof(double), dworkspace_size);
+  workspace_size  = Mmax((2 * Anp + nq) * sizeof(double), workspace_size);
 
   /*Need space for a column of panels for pdfact on CPU*/
-  workspace_size  = Mmax(mat->ld * mat->nb * sizeof(double), workspace_size);
+  workspace_size = Mmax(mat->ld * mat->nb * sizeof(double), workspace_size);
 
   /*Scratch space for rows in pdlaswp */
-  dworkspace_size = Mmax(nq*mat->nb*sizeof(double), dworkspace_size);
-  workspace_size  = Mmax(nq*mat->nb*sizeof(double), workspace_size);
-
-
+  dworkspace_size = Mmax(nq * mat->nb * sizeof(double), dworkspace_size);
+  workspace_size  = Mmax(nq * mat->nb * sizeof(double), workspace_size);
 
 #ifdef HPL_VERBOSE_PRINT
   if((myrow == 0) && (mycol == 0)) {
@@ -220,8 +215,8 @@ int HPL_pdmatgen(HPL_T_test* TEST,
   if((myrow == 0) && (mycol == 0)) printf("done.\n");
 #endif
 
-#if HIP_VERSION>=40100
-  //tell rocBLAS to use our device workspace
+#if HIP_VERSION >= 40100
+  // tell rocBLAS to use our device workspace
   rocblas_set_workspace(handle, mat->dW, dworkspace_size);
 #endif
 
@@ -235,10 +230,10 @@ void HPL_pdmatfree(HPL_T_pmat* mat) {
   if(mat->dW) hipFree(mat->dW);
 
   if(mat->W) hipHostFree(mat->W);
-  // if(mat->W) free(mat->W);
+    // if(mat->W) free(mat->W);
 
-#if HIP_VERSION>=40100
-  //tell rocblas we free'd the workspace
+#if HIP_VERSION >= 40100
+  // tell rocblas we free'd the workspace
   rocblas_set_device_memory_size(handle, 0);
 #endif
 }

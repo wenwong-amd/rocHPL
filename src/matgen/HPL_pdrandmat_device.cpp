@@ -27,12 +27,12 @@ __global__ void hpl_init_shift(double* __restrict__ A, const size_t n) {
 }
 
 void HPL_pdrandmat(const HPL_T_grid* GRID,
-                  const int         M,
-                  const int         N,
-                  const int         NB,
-                  double*           A,
-                  const int         LDA,
-                  const int         ISEED) {
+                   const int         M,
+                   const int         N,
+                   const int         NB,
+                   double*           A,
+                   const int         LDA,
+                   const int         ISEED) {
   /*
    * Purpose
    * =======

@@ -24,7 +24,7 @@
 #define HPL_NO_DETAILED_TIMING
 #endif
 
-//Always need this now
+// Always need this now
 #define HPL_COPY_L
 
 /*
@@ -32,7 +32,7 @@
  * Include files
  * ---------------------------------------------------------------------
  */
-//NC: hipcc in ROCm 3.7 complains if __HIP_PLATFORM_HCC__ is defined in the
+// NC: hipcc in ROCm 3.7 complains if __HIP_PLATFORM_HCC__ is defined in the
 // compile line
 #ifdef __HIPCC__
 #ifdef __HIP_PLATFORM_HCC__

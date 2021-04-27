@@ -71,12 +71,21 @@ int HPL_sdrv(double*  SBUF,
    * ---------------------------------------------------------------------
    */
 
-  MPI_Status  status;
-  int         ierr;
+  MPI_Status status;
+  int        ierr;
 
-  ierr = MPI_Sendrecv(SBUF, SCOUNT, MPI_DOUBLE, PARTNER, STAG,
-                      RBUF, RCOUNT, MPI_DOUBLE, PARTNER, RTAG,
-                      COMM, &status);
+  ierr = MPI_Sendrecv(SBUF,
+                      SCOUNT,
+                      MPI_DOUBLE,
+                      PARTNER,
+                      STAG,
+                      RBUF,
+                      RCOUNT,
+                      MPI_DOUBLE,
+                      PARTNER,
+                      RTAG,
+                      COMM,
+                      &status);
 
   return ((ierr == MPI_SUCCESS ? HPL_SUCCESS : HPL_FAILURE));
 }

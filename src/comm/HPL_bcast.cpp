@@ -66,9 +66,9 @@ int HPL_bcast(HPL_T_panel* PANEL, int* IFLAG) {
    * Single Bcast call
    */
 #if defined(GPU_AWARE_MPI)
-  ierr  = MPI_Bcast(PANEL->dL2, PANEL->len, MPI_DOUBLE, root, comm);
+  ierr = MPI_Bcast(PANEL->dL2, PANEL->len, MPI_DOUBLE, root, comm);
 #else
-  ierr  = MPI_Bcast(PANEL->L2, PANEL->len, MPI_DOUBLE, root, comm);
+  ierr = MPI_Bcast(PANEL->L2, PANEL->len, MPI_DOUBLE, root, comm);
 #endif
 
   /*

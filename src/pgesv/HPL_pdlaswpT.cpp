@@ -65,9 +65,10 @@ void HPL_pdlaswpT(HPL_T_panel* PANEL, const int NN) {
    */
   double *U, *W;
   double *dA, *dU, *dW;
-  int *ipID, *iplen, *ipcounts, *ipoffsets, *iwork, *lindxA = NULL, *lindxAU, *permU;
-  int *dlindxA     = NULL, *dlindxAU, *dpermU, *dpermU_ex;
-  int        icurrow, *iflag, *ipA, *ipl, jb, k, lda, myrow, n, nprow, LDU, LDW;
+  int *   ipID, *iplen, *ipcounts, *ipoffsets, *iwork, *lindxA = NULL, *lindxAU,
+                                                    *permU;
+  int *dlindxA = NULL, *dlindxAU, *dpermU, *dpermU_ex;
+  int  icurrow, *iflag, *ipA, *ipl, jb, k, lda, myrow, n, nprow, LDU, LDW;
 
   /* ..
    * .. Executable Statements ..
@@ -87,19 +88,19 @@ void HPL_pdlaswpT(HPL_T_panel* PANEL, const int NN) {
   myrow = PANEL->grid->myrow;
   iflag = PANEL->IWORK;
 
-  MPI_Comm comm  = PANEL->grid->col_comm;
+  MPI_Comm comm = PANEL->grid->col_comm;
 
-  //quick return if we're 1xQ
-  if (nprow==1) return;
+  // quick return if we're 1xQ
+  if(nprow == 1) return;
 
   dA      = PANEL->dA;
   lda     = PANEL->dlda;
   icurrow = PANEL->prow;
 
-  U       = PANEL->U;
-  W       = PANEL->W;
-  dU      = PANEL->dU;
-  dW      = PANEL->dW;
+  U  = PANEL->U;
+  W  = PANEL->W;
+  dU = PANEL->dU;
+  dW = PANEL->dW;
 #define LDU n
 #define LDW n
 
@@ -111,11 +112,11 @@ void HPL_pdlaswpT(HPL_T_panel* PANEL, const int NN) {
    * 1(iflag) + 1(ipl) + 1(ipA) + 9*jb + 3*nprow + 1 + MAX(2*jb,nprow+1)
    * i.e. 4 + 9*jb + 3*nprow + max(2*jb, nprow+1);
    */
-  k       = (int)((unsigned int)(jb) << 1);
-  ipl     = iflag + 1;
-  ipID    = ipl + 1;
-  ipA     = ipID + ((unsigned int)(k) << 1);
-  iplen   = ipA + 1;
+  k         = (int)((unsigned int)(jb) << 1);
+  ipl       = iflag + 1;
+  ipID      = ipl + 1;
+  ipA       = ipID + ((unsigned int)(k) << 1);
+  iplen     = ipA + 1;
   ipcounts  = iplen + nprow + 1;
   ipoffsets = ipcounts + nprow;
   iwork     = ipoffsets + nprow;
@@ -132,7 +133,7 @@ void HPL_pdlaswpT(HPL_T_panel* PANEL, const int NN) {
   if(*iflag == -1) /* no index arrays have been computed so far */
   {
 #ifdef GPU_AWARE_MPI
-    //get the ipivs on the host after the Bcast
+    // get the ipivs on the host after the Bcast
     if(PANEL->grid->mycol != PANEL->pcol) {
       hipMemcpy2DAsync(PANEL->ipiv,
                        PANEL->jb * sizeof(int),
@@ -146,27 +147,19 @@ void HPL_pdlaswpT(HPL_T_panel* PANEL, const int NN) {
     hipStreamSynchronize(dataStream);
 #endif
 
-    //compute spreading info
+    // compute spreading info
     HPL_pipid(PANEL, ipl, ipID);
-    HPL_plindx(PANEL,
-               *ipl,
-               ipID,
-               ipA,
-               lindxA,
-               lindxAU,
-               iplen,
-               permU,
-               iwork);
+    HPL_plindx(PANEL, *ipl, ipID, ipA, lindxA, lindxAU, iplen, permU, iwork);
     *iflag = 1;
   }
 
   /* Set MPI message counts and offsets */
-  ipcounts[0]  = (iplen[1]-iplen[0])*n;
+  ipcounts[0]  = (iplen[1] - iplen[0]) * n;
   ipoffsets[0] = 0;
 
-  for (int i=1;i<nprow;++i) {
-    ipcounts[i]  = (iplen[i+1]-iplen[i])*n;
-    ipoffsets[i] = ipcounts[i-1] + ipoffsets[i-1];
+  for(int i = 1; i < nprow; ++i) {
+    ipcounts[i]  = (iplen[i + 1] - iplen[i]) * n;
+    ipoffsets[i] = ipcounts[i - 1] + ipoffsets[i - 1];
   }
 
   /*
@@ -190,13 +183,26 @@ void HPL_pdlaswpT(HPL_T_panel* PANEL, const int NN) {
 
     hipEventSynchronize(swapStartEvent);
 
-    //send rows to other ranks
-    MPI_Scatterv(dU, ipcounts, ipoffsets, MPI_DOUBLE,
-                 MPI_IN_PLACE, ipcounts[myrow], MPI_DOUBLE, icurrow, comm);
+    // send rows to other ranks
+    MPI_Scatterv(dU,
+                 ipcounts,
+                 ipoffsets,
+                 MPI_DOUBLE,
+                 MPI_IN_PLACE,
+                 ipcounts[myrow],
+                 MPI_DOUBLE,
+                 icurrow,
+                 comm);
 
-    //All gather dU
-    MPI_Allgatherv(MPI_IN_PLACE, ipcounts[myrow], MPI_DOUBLE,
-                   dU, ipcounts, ipoffsets, MPI_DOUBLE, comm);
+    // All gather dU
+    MPI_Allgatherv(MPI_IN_PLACE,
+                   ipcounts[myrow],
+                   MPI_DOUBLE,
+                   dU,
+                   ipcounts,
+                   ipoffsets,
+                   MPI_DOUBLE,
+                   comm);
 #else
     // Copy U to host
     hipStreamWaitEvent(dataStream, swapStartEvent, 0);
@@ -214,15 +220,28 @@ void HPL_pdlaswpT(HPL_T_panel* PANEL, const int NN) {
 
     hipStreamSynchronize(dataStream);
 
-    //send rows to other ranks
-    MPI_Scatterv(U, ipcounts, ipoffsets, MPI_DOUBLE,
-                 MPI_IN_PLACE, ipcounts[myrow], MPI_DOUBLE, icurrow, comm);
+    // send rows to other ranks
+    MPI_Scatterv(U,
+                 ipcounts,
+                 ipoffsets,
+                 MPI_DOUBLE,
+                 MPI_IN_PLACE,
+                 ipcounts[myrow],
+                 MPI_DOUBLE,
+                 icurrow,
+                 comm);
 
-    //All gather U
-    MPI_Allgatherv(MPI_IN_PLACE, ipcounts[myrow], MPI_DOUBLE,
-                   U, ipcounts, ipoffsets, MPI_DOUBLE, comm);
+    // All gather U
+    MPI_Allgatherv(MPI_IN_PLACE,
+                   ipcounts[myrow],
+                   MPI_DOUBLE,
+                   U,
+                   ipcounts,
+                   ipoffsets,
+                   MPI_DOUBLE,
+                   comm);
 
-    //send U to device
+    // send U to device
     hipMemcpy2DAsync(dU,
                      LDU * sizeof(double),
                      U,
@@ -237,28 +256,46 @@ void HPL_pdlaswpT(HPL_T_panel* PANEL, const int NN) {
 
   } else {
 
-    //queue copy kernel for needed rows from A into U(:, iplen[myrow])
-    HPL_dlaswp03T(iplen[myrow + 1] - iplen[myrow], n, dA, lda,
-                  Mptr(dU, 0, iplen[myrow], LDU), LDU, dlindxA);
+    // queue copy kernel for needed rows from A into U(:, iplen[myrow])
+    HPL_dlaswp03T(iplen[myrow + 1] - iplen[myrow],
+                  n,
+                  dA,
+                  lda,
+                  Mptr(dU, 0, iplen[myrow], LDU),
+                  LDU,
+                  dlindxA);
 
     // record when packing completes
     hipEventRecord(swapStartEvent, computeStream);
 
 #if defined(GPU_AWARE_MPI)
-    //receive rows from icurrow into dW
-    MPI_Scatterv(NULL, ipcounts, ipoffsets, MPI_DOUBLE,
-                 dW, ipcounts[myrow], MPI_DOUBLE, icurrow, comm);
+    // receive rows from icurrow into dW
+    MPI_Scatterv(NULL,
+                 ipcounts,
+                 ipoffsets,
+                 MPI_DOUBLE,
+                 dW,
+                 ipcounts[myrow],
+                 MPI_DOUBLE,
+                 icurrow,
+                 comm);
 
     // Queue inserting recieved rows in W into A on device
-    HPL_dlaswp04T(iplen[myrow + 1] - iplen[myrow], n,
-                  dA, lda, dW, LDW, dlindxA);
+    HPL_dlaswp04T(
+        iplen[myrow + 1] - iplen[myrow], n, dA, lda, dW, LDW, dlindxA);
 
-    //wait for dU to be ready
+    // wait for dU to be ready
     hipEventSynchronize(swapStartEvent);
 
-    //All gather dU
-    MPI_Allgatherv(MPI_IN_PLACE, ipcounts[myrow], MPI_DOUBLE,
-                   dU, ipcounts, ipoffsets, MPI_DOUBLE, comm);
+    // All gather dU
+    MPI_Allgatherv(MPI_IN_PLACE,
+                   ipcounts[myrow],
+                   MPI_DOUBLE,
+                   dU,
+                   ipcounts,
+                   ipoffsets,
+                   MPI_DOUBLE,
+                   comm);
 #else
 
     // Copy my U piece to host
@@ -273,11 +310,18 @@ void HPL_pdlaswpT(HPL_T_panel* PANEL, const int NN) {
                      dataStream);
     hipEventRecord(swapUCopyEvent, dataStream);
 
-    //receive rows from icurrow into W
-    MPI_Scatterv(NULL, ipcounts, ipoffsets, MPI_DOUBLE,
-                 W, ipcounts[myrow], MPI_DOUBLE, icurrow, comm);
+    // receive rows from icurrow into W
+    MPI_Scatterv(NULL,
+                 ipcounts,
+                 ipoffsets,
+                 MPI_DOUBLE,
+                 W,
+                 ipcounts[myrow],
+                 MPI_DOUBLE,
+                 icurrow,
+                 comm);
 
-    //wait for U to be ready
+    // wait for U to be ready
     hipEventSynchronize(swapUCopyEvent);
 
     // Copy recieved W piece to device
@@ -293,14 +337,20 @@ void HPL_pdlaswpT(HPL_T_panel* PANEL, const int NN) {
 
     // Queue inserting recieved rows in W into A on device
     hipStreamWaitEvent(computeStream, swapWCopyEvent, 0);
-    HPL_dlaswp04T(iplen[myrow + 1] - iplen[myrow], n,
-                  dA, lda, dW, LDW, dlindxA);
+    HPL_dlaswp04T(
+        iplen[myrow + 1] - iplen[myrow], n, dA, lda, dW, LDW, dlindxA);
 
-    //All gather U
-    MPI_Allgatherv(MPI_IN_PLACE, ipcounts[myrow], MPI_DOUBLE,
-                   U, ipcounts, ipoffsets, MPI_DOUBLE, comm);
+    // All gather U
+    MPI_Allgatherv(MPI_IN_PLACE,
+                   ipcounts[myrow],
+                   MPI_DOUBLE,
+                   U,
+                   ipcounts,
+                   ipoffsets,
+                   MPI_DOUBLE,
+                   comm);
 
-    //send U to device
+    // send U to device
     hipMemcpy2DAsync(dU,
                      LDU * sizeof(double),
                      U,

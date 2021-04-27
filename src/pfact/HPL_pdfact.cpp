@@ -75,12 +75,7 @@ void HPL_pdfact(HPL_T_panel* PANEL) {
   /*
    * Factor the panel - Update the panel pointers
    */
-  PANEL->algo->rffun(
-      PANEL,
-      PANEL->mp,
-      jb,
-      0,
-      PANEL->fWORK);
+  PANEL->algo->rffun(PANEL, PANEL->mp, jb, 0, PANEL->fWORK);
 
   // PANEL->A   = Mptr( PANEL->A, 0, jb, PANEL->lda );
   PANEL->dA = Mptr(PANEL->dA, 0, jb, PANEL->dlda);

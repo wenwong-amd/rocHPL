@@ -20,7 +20,7 @@ void HPL_piplen(HPL_T_panel* PANEL,
                 const int    K,
                 const int*   IPID,
                 int*         IPLEN,
-                int*         IWORK){
+                int*         IWORK) {
 
   const int nprow   = PANEL->grid->nprow;
   const int jb      = PANEL->jb;
@@ -28,7 +28,7 @@ void HPL_piplen(HPL_T_panel* PANEL,
   const int ia      = PANEL->ia;
   const int icurrow = PANEL->prow;
 
-  int *iwork = IWORK + jb;
+  int* iwork = IWORK + jb;
 
   /*
    * Compute IPLEN
@@ -44,17 +44,15 @@ void HPL_piplen(HPL_T_panel* PANEL,
    */
   for(int i = 0; i < K; i += 2) {
     const int src = IPID[i];
-    int srcrow;
+    int       srcrow;
     Mindxg2p(src, nb, nb, srcrow, 0, nprow);
     if(srcrow == icurrow) {
       const int dst = IPID[i + 1];
-      int dstrow;
+      int       dstrow;
       Mindxg2p(dst, nb, nb, dstrow, 0, nprow);
       if((dstrow != srcrow) || (dst - ia < jb)) IPLEN[dstrow + 1]++;
     }
   }
 
-  for(int i = 1; i <= nprow; i++) {
-    IPLEN[i] += IPLEN[i-1];
-  }
+  for(int i = 1; i <= nprow; i++) { IPLEN[i] += IPLEN[i - 1]; }
 }

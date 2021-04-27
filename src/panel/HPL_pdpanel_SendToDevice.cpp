@@ -31,8 +31,8 @@ void HPL_unroll_ipiv(const int mp,
 }
 
 void HPL_pdpanel_SendToDevice(HPL_T_panel* PANEL) {
-  double *   A, *dA;
-  int        jb, i, ml2;
+  double *A, *dA;
+  int     jb, i, ml2;
 
   jb = PANEL->jb;
 
@@ -183,15 +183,8 @@ void HPL_pdpanel_SendToDevice(HPL_T_panel* PANEL) {
       if(*iflag == -1) /* no index arrays have been computed so far */
       {
         HPL_pipid(PANEL, ipl, ipID);
-        HPL_plindx(PANEL,
-                   *ipl,
-                   ipID,
-                   ipA,
-                   lindxA,
-                   lindxAU,
-                   iplen,
-                   permU,
-                   iwork);
+        HPL_plindx(
+            PANEL, *ipl, ipID, ipA, lindxA, lindxAU, iplen, permU, iwork);
         *iflag = 1;
       }
 
@@ -224,7 +217,7 @@ void HPL_pdpanel_SendToDevice(HPL_T_panel* PANEL) {
                        hipMemcpyHostToDevice,
                        dataStream);
 #ifdef GPU_AWARE_MPI
-      //send the ipivs along with L2 in the Bcast
+      // send the ipivs along with L2 in the Bcast
       hipMemcpy2DAsync(dipiv,
                        jb * sizeof(int),
                        ipiv,
