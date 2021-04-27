@@ -88,8 +88,12 @@ void HPL_InitGPU(const HPL_T_grid* GRID) {
   MPI_Comm_free(&nodeComm);
 
 #ifdef HPL_VERBOSE_PRINT
-  printf("Assigning device %d on node %s to rank %d \n",
+  hipDeviceProp_t props;
+  hipGetDeviceProperties(&props, dev);
+
+  printf("Assigning device %d, pciBusID %x, on node %s to rank %d \n",
          dev,
+         props.pciBusID,
          host_name,
          rank);
 #endif
