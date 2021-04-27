@@ -7,7 +7,7 @@
  *    (C) Copyright 2000-2008 All Rights Reserved
  *
  *    Modified by: Noel Chalmers
- *    (C) 2018-2020 Advanced Micro Devices, Inc.
+ *    (C) 2018-2021 Advanced Micro Devices, Inc.
  *    See the rocHPL/LICENCE file for details.
  *
  *    SPDX-License-Identifier: (BSD-3-Clause)
@@ -18,28 +18,20 @@
 #include <hip/hip_runtime.h>
 #include <cassert>
 
-#define assertm(exp, msg) assert(((void)msg, exp))
-
-/*
- * Define default value for unrolling factor
- */
-#ifndef HPL_LASWP01T_DEPTH
-#define HPL_LASWP01T_DEPTH 32
-#define HPL_LASWP01T_LOG2_DEPTH 5
-#endif
-
 #define TILE_DIM 32
 #define BLOCK_ROWS 8
 
+#define assertm(exp, msg) assert(((void)msg, exp))
+
 /* Build U matrix from rows of A */
-__global__ void dlaswp01T_1(const int M,
-                            const int N,
-                            double* __restrict__ A,
-                            const int LDA,
-                            double* __restrict__ U,
-                            const int LDU,
-                            const int* __restrict__ LINDXA,
-                            const int* __restrict__ LINDXAU) {
+__global__ void dlaswp01T(const int M,
+                          const int N,
+                          double* __restrict__ A,
+                          const int LDA,
+                          double* __restrict__ U,
+                          const int LDU,
+                          const int* __restrict__ LINDXA,
+                          const int* __restrict__ LINDXAU) {
 
   __shared__ double s_U[TILE_DIM][TILE_DIM + 1];
 
@@ -87,39 +79,6 @@ __global__ void dlaswp01T_1(const int M,
   }
 }
 
-#define BLOCK_SIZE 1024
-
-/* Perform any local row swaps of A */
-__global__ void dlaswp01T_2(const int M,
-                            const int N,
-                            double* __restrict__ A,
-                            const int LDA,
-                            const int* __restrict__ LINDXA,
-                            const int* __restrict__ LINDXAU) {
-
-  __shared__ double s_A[BLOCK_SIZE];
-
-  const int n = blockIdx.x;
-  const int m = threadIdx.x;
-
-  int ipau, ipa;
-
-  if(m < M) {
-    ipau = LINDXAU[m];
-    ipa  = LINDXA[m];
-
-    // read in
-    s_A[m] = (ipau < 0) ? A[ipa + n * ((size_t)LDA)] : 0.0;
-  }
-  __syncthreads();
-
-  if(m < M) {
-    if(ipau < 0) { // swap into A
-      A[-ipau + n * ((size_t)LDA)] = s_A[m];
-    }
-  }
-}
-
 void HPL_dlaswp01T(const int  M,
                    const int  N,
                    double*    A,
@@ -132,9 +91,9 @@ void HPL_dlaswp01T(const int  M,
    * Purpose
    * =======
    *
-   * HPL_dlaswp01T copies  scattered rows  of  A  into itself  and into an
-   * array U.  The row offsets in  A  of the source rows  are specified by
-   * LINDXA.  The  destination of those rows are specified by  LINDXAU.  A
+   * HPL_dlaswp01T copies  scattered rows  of  A  into an array U.  The
+   * row offsets in  A  of the source rows  are specified by LINDXA.  The
+   * destination of those rows are specified by  LINDXAU.  A
    * positive value of LINDXAU indicates that the array  destination is U,
    * and A otherwise. Rows of A are stored as columns in U.
    *
@@ -185,19 +144,19 @@ void HPL_dlaswp01T(const int  M,
    *
    * ---------------------------------------------------------------------
    */
+  /*
+   * .. Local Variables ..
+   */
 
   if((M <= 0) || (N <= 0)) return;
 
-  hipStream_t stream;
-  rocblas_get_stream(handle, &stream);
-
   dim3 grid_size((M + TILE_DIM - 1) / TILE_DIM, (N + TILE_DIM - 1) / TILE_DIM);
   dim3 block_size(TILE_DIM, BLOCK_ROWS);
-  hipLaunchKernelGGL((dlaswp01T_1),
+  hipLaunchKernelGGL((dlaswp01T),
                      grid_size,
                      block_size,
                      0,
-                     stream,
+                     computeStream,
                      M,
                      N,
                      A,
@@ -207,118 +166,7 @@ void HPL_dlaswp01T(const int  M,
                      LINDXA,
                      LINDXAU);
 
-  assertm(M <= BLOCK_SIZE, "NB too large in HPL_dlaswp01T");
-
-  hipLaunchKernelGGL(
-      (dlaswp01T_2), N, M, 0, stream, M, N, A, LDA, LINDXA, LINDXAU);
-
-// original
-#if 0
-   double                     * a0, * a1;
-   const int                  incA = (int)( (unsigned int)(LDA) <<
-                                            HPL_LASWP01T_LOG2_DEPTH ),
-                              incU = ( 1 << HPL_LASWP01T_LOG2_DEPTH );
-   int                        nu, nr;
-   register int               i, j;
-/* ..
- * .. Executable Statements ..
- */
-
-   if( ( M <= 0 ) || ( N <= 0 ) ) return;
-
-   nr = N - ( nu = (int)( ( (unsigned int)(N) >> HPL_LASWP01T_LOG2_DEPTH ) <<
-                            HPL_LASWP01T_LOG2_DEPTH ) );
-
-   for( j = 0; j < nu; j += HPL_LASWP01T_DEPTH, A += incA, U += incU )
-   {
-      for( i = 0; i < M; i++ )
-      {
-         a0 = A + (size_t)(LINDXA[i]);
-
-         if( LINDXAU[i] >= 0 )
-         {
-            a1 = U + (size_t)(LINDXAU[i]) * (size_t)(LDU);
-
-            a1[ 0] = *a0; a0 += LDA;
-#if(HPL_LASWP01T_DEPTH > 1)
-            a1[ 1] = *a0; a0 += LDA;
-#endif
-#if(HPL_LASWP01T_DEPTH > 2)
-            a1[ 2] = *a0; a0 += LDA; a1[ 3] = *a0; a0 += LDA;
-#endif
-#if(HPL_LASWP01T_DEPTH > 4)
-            a1[ 4] = *a0; a0 += LDA; a1[ 5] = *a0; a0 += LDA;
-            a1[ 6] = *a0; a0 += LDA; a1[ 7] = *a0; a0 += LDA;
-#endif
-#if(HPL_LASWP01T_DEPTH > 8)
-            a1[ 8] = *a0; a0 += LDA; a1[ 9] = *a0; a0 += LDA;
-            a1[10] = *a0; a0 += LDA; a1[11] = *a0; a0 += LDA;
-            a1[12] = *a0; a0 += LDA; a1[13] = *a0; a0 += LDA;
-            a1[14] = *a0; a0 += LDA; a1[15] = *a0; a0 += LDA;
-#endif
-#if(HPL_LASWP01T_DEPTH > 16)
-            a1[16] = *a0; a0 += LDA; a1[17] = *a0; a0 += LDA;
-            a1[18] = *a0; a0 += LDA; a1[19] = *a0; a0 += LDA;
-            a1[20] = *a0; a0 += LDA; a1[21] = *a0; a0 += LDA;
-            a1[22] = *a0; a0 += LDA; a1[23] = *a0; a0 += LDA;
-            a1[24] = *a0; a0 += LDA; a1[25] = *a0; a0 += LDA;
-            a1[26] = *a0; a0 += LDA; a1[27] = *a0; a0 += LDA;
-            a1[28] = *a0; a0 += LDA; a1[29] = *a0; a0 += LDA;
-            a1[30] = *a0; a0 += LDA; a1[31] = *a0; a0 += LDA;
-#endif
-         }
-         else
-         {
-            a1 = A - (size_t)(LINDXAU[i]);
-
-            *a1 = *a0; a1 += LDA; a0 += LDA;
-#if(HPL_LASWP01T_DEPTH > 1)
-            *a1 = *a0; a1 += LDA; a0 += LDA;
-#endif
-#if(HPL_LASWP01T_DEPTH > 2)
-            *a1 = *a0; a1 += LDA; a0 += LDA; *a1 = *a0; a1 += LDA; a0 += LDA;
-#endif
-#if(HPL_LASWP01T_DEPTH > 4)
-            *a1 = *a0; a1 += LDA; a0 += LDA; *a1 = *a0; a1 += LDA; a0 += LDA;
-            *a1 = *a0; a1 += LDA; a0 += LDA; *a1 = *a0; a1 += LDA; a0 += LDA;
-#endif
-#if(HPL_LASWP01T_DEPTH > 8)
-            *a1 = *a0; a1 += LDA; a0 += LDA; *a1 = *a0; a1 += LDA; a0 += LDA;
-            *a1 = *a0; a1 += LDA; a0 += LDA; *a1 = *a0; a1 += LDA; a0 += LDA;
-            *a1 = *a0; a1 += LDA; a0 += LDA; *a1 = *a0; a1 += LDA; a0 += LDA;
-            *a1 = *a0; a1 += LDA; a0 += LDA; *a1 = *a0; a1 += LDA; a0 += LDA;
-#endif
-#if(HPL_LASWP01T_DEPTH > 16)
-            *a1 = *a0; a1 += LDA; a0 += LDA; *a1 = *a0; a1 += LDA; a0 += LDA;
-            *a1 = *a0; a1 += LDA; a0 += LDA; *a1 = *a0; a1 += LDA; a0 += LDA;
-            *a1 = *a0; a1 += LDA; a0 += LDA; *a1 = *a0; a1 += LDA; a0 += LDA;
-            *a1 = *a0; a1 += LDA; a0 += LDA; *a1 = *a0; a1 += LDA; a0 += LDA;
-            *a1 = *a0; a1 += LDA; a0 += LDA; *a1 = *a0; a1 += LDA; a0 += LDA;
-            *a1 = *a0; a1 += LDA; a0 += LDA; *a1 = *a0; a1 += LDA; a0 += LDA;
-            *a1 = *a0; a1 += LDA; a0 += LDA; *a1 = *a0; a1 += LDA; a0 += LDA;
-            *a1 = *a0; a1 += LDA; a0 += LDA; *a1 = *a0; a1 += LDA; a0 += LDA;
-#endif
-         }
-      }
-   }
-
-   if( nr > 0 )
-   {
-      for( i = 0; i < M; i++ )
-      {
-         a0 = A + (size_t)(LINDXA[i]);
-
-         if( LINDXAU[i] >= 0 )
-         {
-            a1 = U + (size_t)(LINDXAU[i]) * (size_t)(LDU);
-            for( j = 0; j < nr; j++, a0 += LDA ) { a1[j] = *a0; }
-         }
-         else
-         {
-            a1 = A - (size_t)(LINDXAU[i]);
-            for( j = 0; j < nr; j++, a1 += LDA, a0 += LDA ) { *a1 = *a0; }
-         }
-      }
-   }
-#endif
+  /*
+   * End of HPL_dlaswp01T
+   */
 }

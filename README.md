@@ -4,8 +4,7 @@ rocHPL is a benchmark based on the [HPL][] benchmark application, implemented on
 ## Requirements
 * Git
 * CMake (3.10 or later)
-* MPI
-* NUMA library
+* MPI (Optional)
 * AMD [ROCm] platform (3.5 or later)
 * [rocBLAS][]
 * [rocRAND][]
@@ -96,12 +95,11 @@ HPL.out      output file name (if any)
 ```
 
 ## Performance evaluation
-rocHPL is typically weak scaled so that the global matrix fills all available VRAM on all GPUs. The matrix size N is usually selected to be a multiple of the blocksize NB. Typical values for N when NB=384 include:
-* 16 GB  - N=45312
-* 32 GB  - N=64128
-* 64 GB  - N=91008
-* 128 GB - N=128000
-* 256 GB - N=180224
+rocHPL is typically weak scaled so that the global matrix fills all available VRAM on all GPUs. The matrix size N is usually selected to be a multiple of the blocksize NB. Some sample runs on 32GB MI100 GPUs include:
+* 1 MI100: `run_rochpl -P 1 -Q 1 -N  64512 --NB 512 --ppn 1 -v`
+* 2 MI100: `run_rochpl -P 1 -Q 2 -N  90624 --NB 512 --ppn 2 -v`
+* 4 MI100: `run_rochpl -P 2 -Q 2 -N 126976 --NB 512 --ppn 2 -v`
+* 8 MI100: `run_rochpl -P 2 -Q 4 -N 180224 --NB 512 --ppn 2 -v`
 
 Overall performance of the benchmark is measured in 64-bit floating point operations (FLOPs) per second. Performance is reported at the end of the run to the user's specified output (by default the performance is printed to stdout and a results file HPL.out).
 

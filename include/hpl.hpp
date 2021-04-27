@@ -7,7 +7,7 @@
  *    (C) Copyright 2000-2008 All Rights Reserved
  *
  *    Modified by: Noel Chalmers
- *    (C) 2018-2020 Advanced Micro Devices, Inc.
+ *    (C) 2018-2021 Advanced Micro Devices, Inc.
  *    See the rocHPL/LICENCE file for details.
  *
  *    SPDX-License-Identifier: (BSD-3-Clause)
@@ -24,7 +24,7 @@
 #define HPL_NO_DETAILED_TIMING
 #endif
 
-//Always need this now
+// Always need this now
 #define HPL_COPY_L
 
 /*
@@ -32,7 +32,7 @@
  * Include files
  * ---------------------------------------------------------------------
  */
-//NC: hipcc in ROCm 3.7 complains if __HIP_PLATFORM_HCC__ is defined in the
+// NC: hipcc in ROCm 3.7 complains if __HIP_PLATFORM_HCC__ is defined in the
 // compile line
 #ifdef __HIPCC__
 #ifdef __HIP_PLATFORM_HCC__

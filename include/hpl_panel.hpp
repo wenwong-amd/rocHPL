@@ -7,7 +7,7 @@
  *    (C) Copyright 2000-2008 All Rights Reserved
  *
  *    Modified by: Noel Chalmers
- *    (C) 2018-2020 Advanced Micro Devices, Inc.
+ *    (C) 2018-2021 Advanced Micro Devices, Inc.
  *    See the rocHPL/LICENCE file for details.
  *
  *    SPDX-License-Identifier: (BSD-3-Clause)
@@ -36,6 +36,7 @@ typedef struct HPL_S_panel {
   double*            dA;     /* ptr to trailing part of A */
   double*            WORK;   /* work space */
   double*            dWORK;  /* device-copy work space */
+  double*            fWORK;  /* pdfact work space */
   double*            L2;     /* ptr to L */
   double*            L1;     /* ptr to jb x jb upper block of A */
   double*            dL2;    /* ptr to L */
@@ -52,6 +53,8 @@ typedef struct HPL_S_panel {
   int*               dpermU;
   double*            U;          /* ptr to U */
   double*            dU;         /* ptr to U */
+  double*            W;          /* ptr to W */
+  double*            dW;         /* ptr to W */
   int*               IWORK;      /* integer workspace for swapping */
   void*              buffers[2]; /* buffers for panel bcast */
   int                counts[2];  /* counts for panel bcast */
@@ -79,6 +82,7 @@ typedef struct HPL_S_panel {
   unsigned int       max_pinned_work_size; /* largest size of pinned A space */
   unsigned int       max_work_size;        /* largest size of WORK space */
   unsigned int       max_iwork_size;       /* largest size of IWORK space */
+  unsigned int       max_fwork_size;       /* largest size of fWORK space */
   unsigned int       free_work_now;        /* should we deallocate */
 } HPL_T_panel;
 

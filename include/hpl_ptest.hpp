@@ -7,7 +7,7 @@
  *    (C) Copyright 2000-2008 All Rights Reserved
  *
  *    Modified by: Noel Chalmers
- *    (C) 2018-2020 Advanced Micro Devices, Inc.
+ *    (C) 2018-2021 Advanced Micro Devices, Inc.
  *    See the rocHPL/LICENCE file for details.
  *
  *    SPDX-License-Identifier: (BSD-3-Clause)
@@ -75,7 +75,7 @@ typedef struct HPL_S_test {
  * Function prototypes
  * ---------------------------------------------------------------------
  */
-void HPL_pdinfo(int ARGC,
+void HPL_pdinfo(int    ARGC,
                 char** ARGV,
                 HPL_T_test*,
                 int*,
@@ -106,7 +106,8 @@ void HPL_pdinfo(int ARGC,
                 int*);
 void HPL_pdtest(HPL_T_test*, HPL_T_grid*, HPL_T_palg*, const int, const int);
 
-void HPL_InitGPU();
+void HPL_InitGPU(const HPL_T_grid* GRID);
+void Free_gpu();
 
 #endif
 /*

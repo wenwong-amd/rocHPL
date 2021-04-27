@@ -7,7 +7,7 @@
  *    (C) Copyright 2000-2008 All Rights Reserved
  *
  *    Modified by: Noel Chalmers
- *    (C) 2018-2020 Advanced Micro Devices, Inc.
+ *    (C) 2018-2021 Advanced Micro Devices, Inc.
  *    See the rocHPL/LICENCE file for details.
  *
  *    SPDX-License-Identifier: (BSD-3-Clause)
@@ -90,10 +90,12 @@ void HPL_pdpanel_new(HPL_T_grid*   GRID,
   p->max_pinned_work_size = 0;
   p->max_work_size        = 0;
   p->max_iwork_size       = 0;
+  p->max_fwork_size       = 0;
   p->free_work_now        = 0;
   p->A                    = NULL;
   p->WORK                 = NULL;
   p->dWORK                = NULL;
+  p->fWORK                = NULL;
   p->IWORK                = NULL;
   HPL_pdpanel_init(GRID, ALGO, M, N, JB, A, IA, JA, TAG, p);
   *PANEL = p;

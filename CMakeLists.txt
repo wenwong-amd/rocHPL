@@ -77,10 +77,7 @@ option(BUILD_TEST "Build rocHPL single-node test" OFF)
 include(cmake/Dependencies.cmake)
 
 # Setup version
-rocm_setup_version(VERSION 4.1.0)
-
-# AMD targets
-#set(AMDGPU_TARGETS gfx900;gfx906;gfx90a;gfx908 CACHE STRING "List of specific machine types for library to target")
+rocm_setup_version(VERSION 4.1.1)
 
 # This option only works for make/nmake and the ninja generators, but no reason it shouldn't be on all the time
 # This tells cmake to create a compile_commands.json file that can be used with clang tooling or vim

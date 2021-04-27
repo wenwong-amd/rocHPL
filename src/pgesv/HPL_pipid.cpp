@@ -7,7 +7,7 @@
  *    (C) Copyright 2000-2008 All Rights Reserved
  *
  *    Modified by: Noel Chalmers
- *    (C) 2018-2020 Advanced Micro Devices, Inc.
+ *    (C) 2018-2021 Advanced Micro Devices, Inc.
  *    See the rocHPL/LICENCE file for details.
  *
  *    SPDX-License-Identifier: (BSD-3-Clause)
@@ -16,7 +16,7 @@
 
 #include "hpl.hpp"
 
-void HPL_pipid(HPL_T_panel* PANEL, int* K, int* IPID){
+void HPL_pipid(HPL_T_panel* PANEL, int* K, int* IPID) {
   /*
    * Purpose
    * =======

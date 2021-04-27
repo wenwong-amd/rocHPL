@@ -7,7 +7,7 @@
  *    (C) Copyright 2000-2008 All Rights Reserved
  *
  *    Modified by: Noel Chalmers
- *    (C) 2018-2020 Advanced Micro Devices, Inc.
+ *    (C) 2018-2021 Advanced Micro Devices, Inc.
  *    See the rocHPL/LICENCE file for details.
  *
  *    SPDX-License-Identifier: (BSD-3-Clause)
@@ -37,7 +37,7 @@ typedef void (
     *HPL_T_PFA_FUN)(HPL_T_panel*, const int, const int, const int, double*);
 typedef void (
     *HPL_T_RFA_FUN)(HPL_T_panel*, const int, const int, const int, double*);
-typedef void (*HPL_T_UPD_FUN)(HPL_T_panel*, int*, HPL_T_panel*, const int);
+typedef void (*HPL_T_UPD_FUN)(HPL_T_panel*, const int);
 /*
  * ---------------------------------------------------------------------
  * Function prototypes

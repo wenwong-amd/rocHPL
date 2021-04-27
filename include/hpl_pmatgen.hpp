@@ -7,7 +7,7 @@
  *    (C) Copyright 2000-2008 All Rights Reserved
  *
  *    Modified by: Noel Chalmers
- *    (C) 2018-2020 Advanced Micro Devices, Inc.
+ *    (C) 2018-2021 Advanced Micro Devices, Inc.
  *    See the rocHPL/LICENCE file for details.
  *
  *    SPDX-License-Identifier: (BSD-3-Clause)
@@ -24,6 +24,8 @@
 
 #include "hpl_pmisc.hpp"
 #include "hpl_pauxil.hpp"
+#include "hpl_pgesv.hpp"
+#include "hpl_ptest.hpp"
 
 /*
  * ---------------------------------------------------------------------
@@ -48,13 +50,21 @@ void   HPL_xjumpm(const int, int*, int*, int*, int*, int*, int*);
 void   HPL_setran(const int, int*);
 void   HPL_jumpit(int*, int*, int*, int*);
 double HPL_rand(void);
-void   HPL_pdmatgen(const HPL_T_grid*,
-                    const int,
-                    const int,
-                    const int,
-                    double*,
-                    const int,
-                    const int);
+void   HPL_pdrandmat(const HPL_T_grid*,
+                     const int,
+                     const int,
+                     const int,
+                     double*,
+                     const int,
+                     const int);
+
+int  HPL_pdmatgen(HPL_T_test*,
+                  HPL_T_grid*,
+                  HPL_T_palg*,
+                  HPL_T_pmat*,
+                  const int,
+                  const int);
+void HPL_pdmatfree(HPL_T_pmat*);
 
 #endif
 /*

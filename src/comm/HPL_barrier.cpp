@@ -7,7 +7,7 @@
  *    (C) Copyright 2000-2008 All Rights Reserved
  *
  *    Modified by: Noel Chalmers
- *    (C) 2018-2020 Advanced Micro Devices, Inc.
+ *    (C) 2018-2021 Advanced Micro Devices, Inc.
  *    See the rocHPL/LICENCE file for details.
  *
  *    SPDX-License-Identifier: (BSD-3-Clause)
@@ -34,7 +34,9 @@ int HPL_barrier(MPI_Comm COMM) {
    * ---------------------------------------------------------------------
    */
 
-  int i = 0;
+  int ierr;
 
-  return (HPL_broadcast((void*)(&i), 1, HPL_INT, 0, COMM));
+  ierr = MPI_Barrier(COMM);
+
+  return ((ierr == MPI_SUCCESS ? HPL_SUCCESS : HPL_FAILURE));
 }

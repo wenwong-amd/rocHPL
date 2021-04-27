@@ -7,7 +7,7 @@
  *    (C) Copyright 2000-2008 All Rights Reserved
  *
  *    Modified by: Noel Chalmers
- *    (C) 2018-2020 Advanced Micro Devices, Inc.
+ *    (C) 2018-2021 Advanced Micro Devices, Inc.
  *    See the rocHPL/LICENCE file for details.
  *
  *    SPDX-License-Identifier: (BSD-3-Clause)
@@ -52,9 +52,9 @@ int HPL_all_reduce(void*            BUFFER,
    * ---------------------------------------------------------------------
    */
 
-  int hplerr;
+  int ierr;
 
-  hplerr = HPL_reduce(BUFFER, COUNT, DTYPE, OP, 0, COMM);
-  if(hplerr != MPI_SUCCESS) return (hplerr);
-  return (HPL_broadcast(BUFFER, COUNT, DTYPE, 0, COMM));
+  MPI_Allreduce(MPI_IN_PLACE, BUFFER, COUNT, HPL_2_MPI_TYPE(DTYPE), OP, COMM);
+
+  return ((ierr == MPI_SUCCESS ? HPL_SUCCESS : HPL_FAILURE));
 }

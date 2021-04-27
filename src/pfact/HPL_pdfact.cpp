@@ -7,7 +7,7 @@
  *    (C) Copyright 2000-2008 All Rights Reserved
  *
  *    Modified by: Noel Chalmers
- *    (C) 2018-2020 Advanced Micro Devices, Inc.
+ *    (C) 2018-2021 Advanced Micro Devices, Inc.
  *    See the rocHPL/LICENCE file for details.
  *
  *    SPDX-License-Identifier: (BSD-3-Clause)
@@ -72,23 +72,10 @@ void HPL_pdfact(HPL_T_panel* PANEL) {
 #ifdef HPL_DETAILED_TIMING
   HPL_ptimer(HPL_TIMING_RPFACT);
 #endif
-  align = PANEL->algo->align;
-  vptr  = (void*)malloc(
-      ((size_t)(align) + (size_t)(((4 + ((unsigned int)(jb) << 1)) << 1))) *
-      sizeof(double));
-  if(vptr == NULL) {
-    HPL_pabort(__LINE__, "HPL_pdfact", "Memory allocation failed");
-  }
   /*
    * Factor the panel - Update the panel pointers
    */
-  PANEL->algo->rffun(
-      PANEL,
-      PANEL->mp,
-      jb,
-      0,
-      (double*)HPL_PTR(vptr, ((size_t)(align) * sizeof(double))));
-  if(vptr) free(vptr);
+  PANEL->algo->rffun(PANEL, PANEL->mp, jb, 0, PANEL->fWORK);
 
   // PANEL->A   = Mptr( PANEL->A, 0, jb, PANEL->lda );
   PANEL->dA = Mptr(PANEL->dA, 0, jb, PANEL->dlda);

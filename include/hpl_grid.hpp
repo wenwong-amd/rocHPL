@@ -7,7 +7,7 @@
  *    (C) Copyright 2000-2008 All Rights Reserved
  *
  *    Modified by: Noel Chalmers
- *    (C) 2018-2020 Advanced Micro Devices, Inc.
+ *    (C) 2018-2021 Advanced Micro Devices, Inc.
  *    See the rocHPL/LICENCE file for details.
  *
  *    SPDX-License-Identifier: (BSD-3-Clause)
@@ -54,12 +54,6 @@ typedef struct HPL_S_grid {
 
 /*
  * ---------------------------------------------------------------------
- * Data Structures
- * ---------------------------------------------------------------------
- */
-typedef void (*HPL_T_OP)(const int, const void*, void*, const HPL_T_TYPE);
-/*
- * ---------------------------------------------------------------------
  * #define macros definitions
  * ---------------------------------------------------------------------
  */
@@ -100,24 +94,6 @@ int HPL_grid_exit(HPL_T_grid*);
 
 int HPL_grid_info(const HPL_T_grid*, int*, int*, int*, int*);
 int HPL_pnum(const HPL_T_grid*, const int, const int);
-
-int HPL_barrier(MPI_Comm);
-int HPL_broadcast(void*, const int, const HPL_T_TYPE, const int, MPI_Comm);
-int HPL_reduce(void*,
-               const int,
-               const HPL_T_TYPE,
-               const HPL_T_OP,
-               const int,
-               MPI_Comm);
-int HPL_all_reduce(void*,
-                   const int,
-                   const HPL_T_TYPE,
-                   const HPL_T_OP,
-                   MPI_Comm);
-
-void HPL_max(const int, const void*, void*, const HPL_T_TYPE);
-void HPL_min(const int, const void*, void*, const HPL_T_TYPE);
-void HPL_sum(const int, const void*, void*, const HPL_T_TYPE);
 
 #endif
 /*

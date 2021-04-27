@@ -7,7 +7,7 @@
  *    (C) Copyright 2000-2008 All Rights Reserved
  *
  *    Modified by: Noel Chalmers
- *    (C) 2018-2020 Advanced Micro Devices, Inc.
+ *    (C) 2018-2021 Advanced Micro Devices, Inc.
  *    See the rocHPL/LICENCE file for details.
  *
  *    SPDX-License-Identifier: (BSD-3-Clause)
@@ -219,7 +219,7 @@ int  HPL_numrocI(const int,
                  const int);
 
 void HPL_dlaswp00N(const int, const int, double*, const int, const int*);
-void HPL_dlaswp10N(const int, const int, double*, const int, const int*);
+
 void HPL_dlaswp01T(const int,
                    const int,
                    double*,
@@ -228,49 +228,31 @@ void HPL_dlaswp01T(const int,
                    const int,
                    const int*,
                    const int*);
-void HPL_dlaswp02N(const int,
+
+void HPL_dlaswp02T(const int,
                    const int,
-                   const double*,
-                   const int,
-                   double*,
                    double*,
                    const int,
                    const int*,
                    const int*);
+
 void HPL_dlaswp03T(const int,
                    const int,
                    double*,
                    const int,
-                   const double*,
-                   const double*,
-                   const int);
+                   double*,
+                   const int,
+                   const int*);
+
 void HPL_dlaswp04T(const int,
                    const int,
-                   const int,
-                   double*,
-                   const int,
-                   double*,
-                   const int,
-                   const double*,
-                   const double*,
-                   const int,
-                   const int*,
-                   const int*);
-void HPL_dlaswp05T(const int,
-                   const int,
-                   double*,
-                   const int,
-                   const double*,
-                   const int,
-                   const int*,
-                   const int*);
-void HPL_dlaswp06T(const int,
-                   const int,
                    double*,
                    const int,
                    double*,
                    const int,
                    const int*);
+
+void HPL_dlaswp10N(const int, const int, double*, const int, const int*);
 
 void   HPL_pabort(int, const char*, const char*, ...);
 void   HPL_pwarn(FILE*, int, const char*, const char*, ...);

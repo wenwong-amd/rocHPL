@@ -7,7 +7,7 @@
  *    (C) Copyright 2000-2008 All Rights Reserved
  *
  *    Modified by: Noel Chalmers
- *    (C) 2018-2020 Advanced Micro Devices, Inc.
+ *    (C) 2018-2021 Advanced Micro Devices, Inc.
  *    See the rocHPL/LICENCE file for details.
  *
  *    SPDX-License-Identifier: (BSD-3-Clause)
@@ -74,11 +74,11 @@ double HPL_pdlamch(MPI_Comm COMM, const HPL_T_MACH CMACH) {
     case HPL_MACH_SFMIN:
     case HPL_MACH_EMIN:
     case HPL_MACH_RMIN:
-      (void)HPL_all_reduce((void*)(&param), 1, HPL_DOUBLE, HPL_max, COMM);
+      (void)HPL_all_reduce((void*)(&param), 1, HPL_DOUBLE, HPL_MAX, COMM);
       break;
     case HPL_MACH_EMAX:
     case HPL_MACH_RMAX:
-      (void)HPL_all_reduce((void*)(&param), 1, HPL_DOUBLE, HPL_min, COMM);
+      (void)HPL_all_reduce((void*)(&param), 1, HPL_DOUBLE, HPL_MIN, COMM);
       break;
     default: break;
   }

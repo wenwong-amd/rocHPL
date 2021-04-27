@@ -7,7 +7,7 @@
  *    (C) Copyright 2000-2008 All Rights Reserved
  *
  *    Modified by: Noel Chalmers
- *    (C) 2018-2020 Advanced Micro Devices, Inc.
+ *    (C) 2018-2021 Advanced Micro Devices, Inc.
  *    See the rocHPL/LICENCE file for details.
  *
  *    SPDX-License-Identifier: (BSD-3-Clause)
@@ -67,9 +67,7 @@ typedef struct HPL_S_palg {
 } HPL_T_palg;
 
 typedef struct HPL_S_pmat {
-  double* A;    /* pointer to local piece of A */
   double* dA;   /* pointer to local piece of A */
-  double* X;    /* pointer to solution vector */
   double* dX;   /* pointer to solution vector */
   int     n;    /* global problem size */
   int     nb;   /* blocking factor */
@@ -77,10 +75,6 @@ typedef struct HPL_S_pmat {
   int     mp;   /* local number of rows */
   int     nq;   /* local number of columns */
   int     info; /* computational flag */
-  double* XR;
-  double* XC;
-  double* dXR;
-  double* dXC;
   double* W;
   double* dW;
 } HPL_T_pmat;
@@ -109,59 +103,25 @@ typedef struct HPL_S_pmat {
  * Function prototypes
  * ---------------------------------------------------------------------
  */
+
 void HPL_pipid(HPL_T_panel*, int*, int*);
-void HPL_plindx0(HPL_T_panel*, const int, int*, int*, int*, int*);
-void HPL_pdlaswp00T(HPL_T_panel*, int*, HPL_T_panel*, const int);
+void HPL_piplen(HPL_T_panel*, const int, const int*, int*, int*);
 
 void HPL_perm(const int, int*, int*, int*);
-void HPL_logsort(const int, const int, int*, int*, int*);
-void HPL_plindx10(HPL_T_panel*, const int, const int*, int*, int*, int*);
-void HPL_plindx1(HPL_T_panel*,
-                 const int,
-                 const int*,
-                 int*,
-                 int*,
-                 int*,
-                 int*,
-                 int*,
-                 int*,
-                 int*,
-                 int*);
-void HPL_spreadT(HPL_T_panel*,
-                 int*,
-                 HPL_T_panel*,
-                 const enum HPL_SIDE,
-                 const int,
-                 double*,
-                 const int,
-                 const int,
-                 const int*,
-                 const int*,
-                 const int*);
-void HPL_equil(HPL_T_panel*,
-               int*,
-               HPL_T_panel*,
-               const enum HPL_TRANS,
-               const int,
-               double*,
-               const int,
-               int*,
-               const int*,
-               const int*,
-               int*);
-void HPL_rollT(HPL_T_panel*,
-               int*,
-               HPL_T_panel*,
-               const int,
-               double*,
-               const int,
-               const int*,
-               const int*,
-               const int*);
-void HPL_pdlaswp01T(HPL_T_panel*, int*, HPL_T_panel*, const int);
+void HPL_plindx(HPL_T_panel*,
+                const int,
+                const int*,
+                int*,
+                int*,
+                int*,
+                int*,
+                int*,
+                int*);
 
-void HPL_pdupdateNT(HPL_T_panel*, int*, HPL_T_panel*, const int);
-void HPL_pdupdateTT(HPL_T_panel*, int*, HPL_T_panel*, const int);
+void HPL_pdlaswpT(HPL_T_panel*, const int);
+
+void HPL_pdupdateNT(HPL_T_panel*, const int);
+void HPL_pdupdateTT(HPL_T_panel*, const int);
 
 void HPL_pdgesvK2(HPL_T_grid*, HPL_T_palg*, HPL_T_pmat*);
 void HPL_pdgesv(HPL_T_grid*, HPL_T_palg*, HPL_T_pmat*);

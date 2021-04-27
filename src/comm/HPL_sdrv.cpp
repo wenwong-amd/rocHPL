@@ -7,7 +7,7 @@
  *    (C) Copyright 2000-2008 All Rights Reserved
  *
  *    Modified by: Noel Chalmers
- *    (C) 2018-2020 Advanced Micro Devices, Inc.
+ *    (C) 2018-2021 Advanced Micro Devices, Inc.
  *    See the rocHPL/LICENCE file for details.
  *
  *    SPDX-License-Identifier: (BSD-3-Clause)
@@ -71,42 +71,21 @@ int HPL_sdrv(double*  SBUF,
    * ---------------------------------------------------------------------
    */
 
-  MPI_Request request;
-  MPI_Status  status;
-  int         ierr;
+  MPI_Status status;
+  int        ierr;
 
-  if(RCOUNT > 0) {
-    if(SCOUNT > 0) {
-      /*
-       * Post asynchronous receive
-       */
-      ierr = MPI_Irecv(
-          (void*)(RBUF), RCOUNT, MPI_DOUBLE, PARTNER, RTAG, COMM, &request);
-      /*
-       * Blocking send
-       */
-      if(ierr == MPI_SUCCESS)
-        ierr = MPI_Send((void*)(SBUF), SCOUNT, MPI_DOUBLE, PARTNER, STAG, COMM);
-      /*
-       * Wait for the receive to complete
-       */
-      if(ierr == MPI_SUCCESS) ierr = MPI_Wait(&request, &status);
-
-    } else {
-      /*
-       * Blocking receive
-       */
-      ierr = MPI_Recv(
-          (void*)(RBUF), RCOUNT, MPI_DOUBLE, PARTNER, RTAG, COMM, &status);
-    }
-  } else if(SCOUNT > 0) {
-    /*
-     * Blocking send
-     */
-    ierr = MPI_Send((void*)(SBUF), SCOUNT, MPI_DOUBLE, PARTNER, STAG, COMM);
-  } else {
-    ierr = MPI_SUCCESS;
-  }
+  ierr = MPI_Sendrecv(SBUF,
+                      SCOUNT,
+                      MPI_DOUBLE,
+                      PARTNER,
+                      STAG,
+                      RBUF,
+                      RCOUNT,
+                      MPI_DOUBLE,
+                      PARTNER,
+                      RTAG,
+                      COMM,
+                      &status);
 
   return ((ierr == MPI_SUCCESS ? HPL_SUCCESS : HPL_FAILURE));
 }

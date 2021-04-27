@@ -7,7 +7,7 @@
  *    (C) Copyright 2000-2008 All Rights Reserved
  *
  *    Modified by: Noel Chalmers
- *    (C) 2018-2020 Advanced Micro Devices, Inc.
+ *    (C) 2018-2021 Advanced Micro Devices, Inc.
  *    See the rocHPL/LICENCE file for details.
  *
  *    SPDX-License-Identifier: (BSD-3-Clause)
@@ -37,6 +37,12 @@ typedef enum {
   HPL_BLONG_M = 406, /* long broadcast (modified) */
   HPL_IBCST   = 407  /* MPI IBCST */
 } HPL_T_TOP;
+
+typedef MPI_Op HPL_T_OP;
+#define HPL_SUM MPI_SUM
+#define HPL_MAX MPI_MAX
+#define HPL_MIN MPI_MIN
+
 /*
  * ---------------------------------------------------------------------
  * #define macro constants
@@ -44,7 +50,6 @@ typedef enum {
  */
 #define HPL_FAILURE 0
 #define HPL_SUCCESS 1
-#define HPL_KEEP_TESTING 2
 /*
  * ---------------------------------------------------------------------
  * comm function prototypes
@@ -53,39 +58,22 @@ typedef enum {
 int  HPL_send(double*, int, int, int, MPI_Comm);
 int  HPL_recv(double*, int, int, int, MPI_Comm);
 int  HPL_sdrv(double*, int, int, double*, int, int, int, MPI_Comm);
-int  HPL_binit(HPL_T_panel*);
 int  HPL_bcast(HPL_T_panel*, int*);
-int  HPL_bwait(HPL_T_panel*);
-int  HPL_packL(HPL_T_panel*, const int, const int, const int);
 void HPL_copyL(HPL_T_panel*);
 
-int HPL_binit_1ring(HPL_T_panel*);
-int HPL_bcast_1ring(HPL_T_panel*, int*);
-int HPL_bwait_1ring(HPL_T_panel*);
-
-int HPL_binit_1rinM(HPL_T_panel*);
-int HPL_bcast_1rinM(HPL_T_panel*, int*);
-int HPL_bwait_1rinM(HPL_T_panel*);
-
-int HPL_binit_2ring(HPL_T_panel*);
-int HPL_bcast_2ring(HPL_T_panel*, int*);
-int HPL_bwait_2ring(HPL_T_panel*);
-
-int HPL_binit_2rinM(HPL_T_panel*);
-int HPL_bcast_2rinM(HPL_T_panel*, int*);
-int HPL_bwait_2rinM(HPL_T_panel*);
-
-int HPL_binit_blong(HPL_T_panel*);
-int HPL_bcast_blong(HPL_T_panel*, int*);
-int HPL_bwait_blong(HPL_T_panel*);
-
-int HPL_binit_blonM(HPL_T_panel*);
-int HPL_bcast_blonM(HPL_T_panel*, int*);
-int HPL_bwait_blonM(HPL_T_panel*);
-
-int HPL_binit_ibcst(HPL_T_panel*);
-int HPL_bcast_ibcst(HPL_T_panel*, int*);
-int HPL_bwait_ibcst(HPL_T_panel*);
+int HPL_barrier(MPI_Comm);
+int HPL_broadcast(void*, const int, const HPL_T_TYPE, const int, MPI_Comm);
+int HPL_reduce(void*,
+               const int,
+               const HPL_T_TYPE,
+               const HPL_T_OP,
+               const int,
+               MPI_Comm);
+int HPL_all_reduce(void*,
+                   const int,
+                   const HPL_T_TYPE,
+                   const HPL_T_OP,
+                   MPI_Comm);
 
 #endif
 /*

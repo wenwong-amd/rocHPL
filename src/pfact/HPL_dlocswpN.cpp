@@ -7,7 +7,7 @@
  *    (C) Copyright 2000-2008 All Rights Reserved
  *
  *    Modified by: Noel Chalmers
- *    (C) 2018-2020 Advanced Micro Devices, Inc.
+ *    (C) 2018-2021 Advanced Micro Devices, Inc.
  *    See the rocHPL/LICENCE file for details.
  *
  *    SPDX-License-Identifier: (BSD-3-Clause)
@@ -65,8 +65,7 @@ void HPL_dlocswpN(HPL_T_panel* PANEL,
 
   double  gmax;
   double *A1, *A2, *L, *Wr0, *Wmx;
-  int     ilindx, lda, myrow, n0, nr, nu;
-  int     i;
+  int     ilindx, lda, myrow, n0;
 
   myrow = PANEL->grid->myrow;
   n0    = PANEL->jb;
@@ -74,11 +73,6 @@ void HPL_dlocswpN(HPL_T_panel* PANEL,
 
   Wr0     = (Wmx = WORK + 4) + n0;
   Wmx[JJ] = gmax = WORK[0];
-  nu             = (int)(((unsigned int)(n0) >> HPL_LOCSWP_LOG2_DEPTH)
-             << HPL_LOCSWP_LOG2_DEPTH);
-  nr             = n0 - nu;
-
-  double* dWmx = PANEL->dWORK + 4;
 
   /*
    * Replicated swap and copy of the current (new) row of A into L1
@@ -106,184 +100,10 @@ void HPL_dlocswpN(HPL_T_panel* PANEL,
           A1 = Mptr(PANEL->A, II, 0, lda);
           A2 = Mptr(A1, ilindx, 0, lda);
 
-          for(i = 0; i < nu; i += HPL_LOCSWP_DEPTH,
-          Wmx += HPL_LOCSWP_DEPTH,
-          Wr0 += HPL_LOCSWP_DEPTH) {
-            *L = *A1 = Wmx[0];
-            *A2      = Wr0[0];
-            L += n0;
-            A1 += lda;
-            A2 += lda;
-#if(HPL_LOCSWP_DEPTH > 1)
-            *L = *A1 = Wmx[1];
-            *A2      = Wr0[1];
-            L += n0;
-            A1 += lda;
-            A2 += lda;
-#endif
-#if(HPL_LOCSWP_DEPTH > 2)
-            *L = *A1 = Wmx[2];
-            *A2      = Wr0[2];
-            L += n0;
-            A1 += lda;
-            A2 += lda;
-            *L = *A1 = Wmx[3];
-            *A2      = Wr0[3];
-            L += n0;
-            A1 += lda;
-            A2 += lda;
-#endif
-#if(HPL_LOCSWP_DEPTH > 4)
-            *L = *A1 = Wmx[4];
-            *A2      = Wr0[4];
-            L += n0;
-            A1 += lda;
-            A2 += lda;
-            *L = *A1 = Wmx[5];
-            *A2      = Wr0[5];
-            L += n0;
-            A1 += lda;
-            A2 += lda;
-            *L = *A1 = Wmx[6];
-            *A2      = Wr0[6];
-            L += n0;
-            A1 += lda;
-            A2 += lda;
-            *L = *A1 = Wmx[7];
-            *A2      = Wr0[7];
-            L += n0;
-            A1 += lda;
-            A2 += lda;
-#endif
-#if(HPL_LOCSWP_DEPTH > 8)
-            *L = *A1 = Wmx[8];
-            *A2      = Wr0[8];
-            L += n0;
-            A1 += lda;
-            A2 += lda;
-            *L = *A1 = Wmx[9];
-            *A2      = Wr0[9];
-            L += n0;
-            A1 += lda;
-            A2 += lda;
-            *L = *A1 = Wmx[10];
-            *A2      = Wr0[10];
-            L += n0;
-            A1 += lda;
-            A2 += lda;
-            *L = *A1 = Wmx[11];
-            *A2      = Wr0[11];
-            L += n0;
-            A1 += lda;
-            A2 += lda;
-            *L = *A1 = Wmx[12];
-            *A2      = Wr0[12];
-            L += n0;
-            A1 += lda;
-            A2 += lda;
-            *L = *A1 = Wmx[13];
-            *A2      = Wr0[13];
-            L += n0;
-            A1 += lda;
-            A2 += lda;
-            *L = *A1 = Wmx[14];
-            *A2      = Wr0[14];
-            L += n0;
-            A1 += lda;
-            A2 += lda;
-            *L = *A1 = Wmx[15];
-            *A2      = Wr0[15];
-            L += n0;
-            A1 += lda;
-            A2 += lda;
-#endif
-#if(HPL_LOCSWP_DEPTH > 16)
-            *L = *A1 = Wmx[16];
-            *A2      = Wr0[16];
-            L += n0;
-            A1 += lda;
-            A2 += lda;
-            *L = *A1 = Wmx[17];
-            *A2      = Wr0[17];
-            L += n0;
-            A1 += lda;
-            A2 += lda;
-            *L = *A1 = Wmx[18];
-            *A2      = Wr0[18];
-            L += n0;
-            A1 += lda;
-            A2 += lda;
-            *L = *A1 = Wmx[19];
-            *A2      = Wr0[19];
-            L += n0;
-            A1 += lda;
-            A2 += lda;
-            *L = *A1 = Wmx[20];
-            *A2      = Wr0[20];
-            L += n0;
-            A1 += lda;
-            A2 += lda;
-            *L = *A1 = Wmx[21];
-            *A2      = Wr0[21];
-            L += n0;
-            A1 += lda;
-            A2 += lda;
-            *L = *A1 = Wmx[22];
-            *A2      = Wr0[22];
-            L += n0;
-            A1 += lda;
-            A2 += lda;
-            *L = *A1 = Wmx[23];
-            *A2      = Wr0[23];
-            L += n0;
-            A1 += lda;
-            A2 += lda;
-            *L = *A1 = Wmx[24];
-            *A2      = Wr0[24];
-            L += n0;
-            A1 += lda;
-            A2 += lda;
-            *L = *A1 = Wmx[25];
-            *A2      = Wr0[25];
-            L += n0;
-            A1 += lda;
-            A2 += lda;
-            *L = *A1 = Wmx[26];
-            *A2      = Wr0[26];
-            L += n0;
-            A1 += lda;
-            A2 += lda;
-            *L = *A1 = Wmx[27];
-            *A2      = Wr0[27];
-            L += n0;
-            A1 += lda;
-            A2 += lda;
-            *L = *A1 = Wmx[28];
-            *A2      = Wr0[28];
-            L += n0;
-            A1 += lda;
-            A2 += lda;
-            *L = *A1 = Wmx[29];
-            *A2      = Wr0[29];
-            L += n0;
-            A1 += lda;
-            A2 += lda;
-            *L = *A1 = Wmx[30];
-            *A2      = Wr0[30];
-            L += n0;
-            A1 += lda;
-            A2 += lda;
-            *L = *A1 = Wmx[31];
-            *A2      = Wr0[31];
-            L += n0;
-            A1 += lda;
-            A2 += lda;
-#endif
-          }
-          for(i = 0; i < nr; i++, L += n0, A1 += lda, A2 += lda) {
-            *L = *A1 = Wmx[i];
-            *A2      = Wr0[i];
-          }
+          HPL_dcopy(n0, Wmx, 1, L, n0);
+          HPL_dcopy(n0, Wmx, 1, A1, lda);
+          HPL_dcopy(n0, Wr0, 1, A2, lda);
+
         } else {
           /*
            * otherwise the current row of  A  is swapped with itself, so just
@@ -291,86 +111,9 @@ void HPL_dlocswpN(HPL_T_panel* PANEL,
            */
           *Mptr(PANEL->A, II, JJ, lda) = gmax;
 
-          for(i = 0; i < nu; i += HPL_LOCSWP_DEPTH,
-          Wmx += HPL_LOCSWP_DEPTH,
-          Wr0 += HPL_LOCSWP_DEPTH) {
-            *L = Wmx[0];
-            L += n0;
-#if(HPL_LOCSWP_DEPTH > 1)
-            *L = Wmx[1];
-            L += n0;
-#endif
-#if(HPL_LOCSWP_DEPTH > 2)
-            *L = Wmx[2];
-            L += n0;
-            *L = Wmx[3];
-            L += n0;
-#endif
-#if(HPL_LOCSWP_DEPTH > 4)
-            *L = Wmx[4];
-            L += n0;
-            *L = Wmx[5];
-            L += n0;
-            *L = Wmx[6];
-            L += n0;
-            *L = Wmx[7];
-            L += n0;
-#endif
-#if(HPL_LOCSWP_DEPTH > 8)
-            *L = Wmx[8];
-            L += n0;
-            *L = Wmx[9];
-            L += n0;
-            *L = Wmx[10];
-            L += n0;
-            *L = Wmx[11];
-            L += n0;
-            *L = Wmx[12];
-            L += n0;
-            *L = Wmx[13];
-            L += n0;
-            *L = Wmx[14];
-            L += n0;
-            *L = Wmx[15];
-            L += n0;
-#endif
-#if(HPL_LOCSWP_DEPTH > 16)
-            *L = Wmx[16];
-            L += n0;
-            *L = Wmx[17];
-            L += n0;
-            *L = Wmx[18];
-            L += n0;
-            *L = Wmx[19];
-            L += n0;
-            *L = Wmx[20];
-            L += n0;
-            *L = Wmx[21];
-            L += n0;
-            *L = Wmx[22];
-            L += n0;
-            *L = Wmx[23];
-            L += n0;
-            *L = Wmx[24];
-            L += n0;
-            *L = Wmx[25];
-            L += n0;
-            *L = Wmx[26];
-            L += n0;
-            *L = Wmx[27];
-            L += n0;
-            *L = Wmx[28];
-            L += n0;
-            *L = Wmx[29];
-            L += n0;
-            *L = Wmx[30];
-            L += n0;
-            *L = Wmx[31];
-            L += n0;
-#endif
-          }
-          for(i = 0; i < nr; i++, L += n0) { *L = Wmx[i]; }
+          HPL_dcopy(n0, Wmx, 1, L, n0);
         }
+
       } else {
         /*
          * otherwise, the row to be swapped with the current row of A is in Wmx,
@@ -378,283 +121,24 @@ void HPL_dlocswpN(HPL_T_panel* PANEL,
          */
         A1 = Mptr(PANEL->A, II, 0, lda);
 
-        for(i = 0; i < nu; i += HPL_LOCSWP_DEPTH, Wmx += HPL_LOCSWP_DEPTH) {
-          *L = *A1 = Wmx[0];
-          L += n0;
-          A1 += lda;
-#if(HPL_LOCSWP_DEPTH > 1)
-          *L = *A1 = Wmx[1];
-          L += n0;
-          A1 += lda;
-#endif
-#if(HPL_LOCSWP_DEPTH > 2)
-          *L = *A1 = Wmx[2];
-          L += n0;
-          A1 += lda;
-          *L = *A1 = Wmx[3];
-          L += n0;
-          A1 += lda;
-#endif
-#if(HPL_LOCSWP_DEPTH > 4)
-          *L = *A1 = Wmx[4];
-          L += n0;
-          A1 += lda;
-          *L = *A1 = Wmx[5];
-          L += n0;
-          A1 += lda;
-          *L = *A1 = Wmx[6];
-          L += n0;
-          A1 += lda;
-          *L = *A1 = Wmx[7];
-          L += n0;
-          A1 += lda;
-#endif
-#if(HPL_LOCSWP_DEPTH > 8)
-          *L = *A1 = Wmx[8];
-          L += n0;
-          A1 += lda;
-          *L = *A1 = Wmx[9];
-          L += n0;
-          A1 += lda;
-          *L = *A1 = Wmx[10];
-          L += n0;
-          A1 += lda;
-          *L = *A1 = Wmx[11];
-          L += n0;
-          A1 += lda;
-          *L = *A1 = Wmx[12];
-          L += n0;
-          A1 += lda;
-          *L = *A1 = Wmx[13];
-          L += n0;
-          A1 += lda;
-          *L = *A1 = Wmx[14];
-          L += n0;
-          A1 += lda;
-          *L = *A1 = Wmx[15];
-          L += n0;
-          A1 += lda;
-#endif
-#if(HPL_LOCSWP_DEPTH > 16)
-          *L = *A1 = Wmx[16];
-          L += n0;
-          A1 += lda;
-          *L = *A1 = Wmx[17];
-          L += n0;
-          A1 += lda;
-          *L = *A1 = Wmx[18];
-          L += n0;
-          A1 += lda;
-          *L = *A1 = Wmx[19];
-          L += n0;
-          A1 += lda;
-          *L = *A1 = Wmx[20];
-          L += n0;
-          A1 += lda;
-          *L = *A1 = Wmx[21];
-          L += n0;
-          A1 += lda;
-          *L = *A1 = Wmx[22];
-          L += n0;
-          A1 += lda;
-          *L = *A1 = Wmx[23];
-          L += n0;
-          A1 += lda;
-          *L = *A1 = Wmx[24];
-          L += n0;
-          A1 += lda;
-          *L = *A1 = Wmx[25];
-          L += n0;
-          A1 += lda;
-          *L = *A1 = Wmx[26];
-          L += n0;
-          A1 += lda;
-          *L = *A1 = Wmx[27];
-          L += n0;
-          A1 += lda;
-          *L = *A1 = Wmx[28];
-          L += n0;
-          A1 += lda;
-          *L = *A1 = Wmx[29];
-          L += n0;
-          A1 += lda;
-          *L = *A1 = Wmx[30];
-          L += n0;
-          A1 += lda;
-          *L = *A1 = Wmx[31];
-          L += n0;
-          A1 += lda;
-#endif
-        }
-
-        for(i = 0; i < nr; i++, L += n0, A1 += lda) { *L = *A1 = Wmx[i]; }
+        HPL_dcopy(n0, Wmx, 1, L, n0);
+        HPL_dcopy(n0, Wmx, 1, A1, lda);
       }
+
     } else {
       /*
        * otherwise I do not own the current row of A, so copy the max row  Wmx
        * into L1.
        */
-      for(i = 0; i < nu; i += HPL_LOCSWP_DEPTH, Wmx += HPL_LOCSWP_DEPTH) {
-        *L = Wmx[0];
-        L += n0;
-#if(HPL_LOCSWP_DEPTH > 1)
-        *L = Wmx[1];
-        L += n0;
-#endif
-#if(HPL_LOCSWP_DEPTH > 2)
-        *L = Wmx[2];
-        L += n0;
-        *L = Wmx[3];
-        L += n0;
-#endif
-#if(HPL_LOCSWP_DEPTH > 4)
-        *L = Wmx[4];
-        L += n0;
-        *L = Wmx[5];
-        L += n0;
-        *L = Wmx[6];
-        L += n0;
-        *L = Wmx[7];
-        L += n0;
-#endif
-#if(HPL_LOCSWP_DEPTH > 8)
-        *L = Wmx[8];
-        L += n0;
-        *L = Wmx[9];
-        L += n0;
-        *L = Wmx[10];
-        L += n0;
-        *L = Wmx[11];
-        L += n0;
-        *L = Wmx[12];
-        L += n0;
-        *L = Wmx[13];
-        L += n0;
-        *L = Wmx[14];
-        L += n0;
-        *L = Wmx[15];
-        L += n0;
-#endif
-#if(HPL_LOCSWP_DEPTH > 16)
-        *L = Wmx[16];
-        L += n0;
-        *L = Wmx[17];
-        L += n0;
-        *L = Wmx[18];
-        L += n0;
-        *L = Wmx[19];
-        L += n0;
-        *L = Wmx[20];
-        L += n0;
-        *L = Wmx[21];
-        L += n0;
-        *L = Wmx[22];
-        L += n0;
-        *L = Wmx[23];
-        L += n0;
-        *L = Wmx[24];
-        L += n0;
-        *L = Wmx[25];
-        L += n0;
-        *L = Wmx[26];
-        L += n0;
-        *L = Wmx[27];
-        L += n0;
-        *L = Wmx[28];
-        L += n0;
-        *L = Wmx[29];
-        L += n0;
-        *L = Wmx[30];
-        L += n0;
-        *L = Wmx[31];
-        L += n0;
-#endif
-      }
-      for(i = 0; i < nr; i++, L += n0) { *L = Wmx[i]; }
+      HPL_dcopy(n0, Wmx, 1, L, n0);
+
       /*
        * and if I own the max row, overwrite it with the current row Wr0.
        */
       if(myrow == (int)(WORK[3])) {
         A2 = Mptr(PANEL->A, II + (size_t)(WORK[1]), 0, lda);
 
-        for(i = 0; i < nu; i += HPL_LOCSWP_DEPTH, Wr0 += HPL_LOCSWP_DEPTH) {
-          *A2 = Wr0[0];
-          A2 += lda;
-#if(HPL_LOCSWP_DEPTH > 1)
-          *A2 = Wr0[1];
-          A2 += lda;
-#endif
-#if(HPL_LOCSWP_DEPTH > 2)
-          *A2 = Wr0[2];
-          A2 += lda;
-          *A2 = Wr0[3];
-          A2 += lda;
-#endif
-#if(HPL_LOCSWP_DEPTH > 4)
-          *A2 = Wr0[4];
-          A2 += lda;
-          *A2 = Wr0[5];
-          A2 += lda;
-          *A2 = Wr0[6];
-          A2 += lda;
-          *A2 = Wr0[7];
-          A2 += lda;
-#endif
-#if(HPL_LOCSWP_DEPTH > 8)
-          *A2 = Wr0[8];
-          A2 += lda;
-          *A2 = Wr0[9];
-          A2 += lda;
-          *A2 = Wr0[10];
-          A2 += lda;
-          *A2 = Wr0[11];
-          A2 += lda;
-          *A2 = Wr0[12];
-          A2 += lda;
-          *A2 = Wr0[13];
-          A2 += lda;
-          *A2 = Wr0[14];
-          A2 += lda;
-          *A2 = Wr0[15];
-          A2 += lda;
-#endif
-#if(HPL_LOCSWP_DEPTH > 16)
-          *A2 = Wr0[16];
-          A2 += lda;
-          *A2 = Wr0[17];
-          A2 += lda;
-          *A2 = Wr0[18];
-          A2 += lda;
-          *A2 = Wr0[19];
-          A2 += lda;
-          *A2 = Wr0[20];
-          A2 += lda;
-          *A2 = Wr0[21];
-          A2 += lda;
-          *A2 = Wr0[22];
-          A2 += lda;
-          *A2 = Wr0[23];
-          A2 += lda;
-          *A2 = Wr0[24];
-          A2 += lda;
-          *A2 = Wr0[25];
-          A2 += lda;
-          *A2 = Wr0[26];
-          A2 += lda;
-          *A2 = Wr0[27];
-          A2 += lda;
-          *A2 = Wr0[28];
-          A2 += lda;
-          *A2 = Wr0[29];
-          A2 += lda;
-          *A2 = Wr0[30];
-          A2 += lda;
-          *A2 = Wr0[31];
-          A2 += lda;
-#endif
-        }
-
-        for(i = 0; i < nr; i++, A2 += lda) { *A2 = Wr0[i]; }
+        HPL_dcopy(n0, Wr0, 1, A2, lda);
       }
     }
   } else {
@@ -662,84 +146,8 @@ void HPL_dlocswpN(HPL_T_panel* PANEL,
      * Otherwise the max element in the current column is zero,  simply copy
      * the current row Wr0 into L1. The matrix is singular.
      */
-    for(i = 0; i < nu; i += HPL_LOCSWP_DEPTH, Wr0 += HPL_LOCSWP_DEPTH) {
-      *L = Wr0[0];
-      L += n0;
-#if(HPL_LOCSWP_DEPTH > 1)
-      *L = Wr0[1];
-      L += n0;
-#endif
-#if(HPL_LOCSWP_DEPTH > 2)
-      *L = Wr0[2];
-      L += n0;
-      *L = Wr0[3];
-      L += n0;
-#endif
-#if(HPL_LOCSWP_DEPTH > 4)
-      *L = Wr0[4];
-      L += n0;
-      *L = Wr0[5];
-      L += n0;
-      *L = Wr0[6];
-      L += n0;
-      *L = Wr0[7];
-      L += n0;
-#endif
-#if(HPL_LOCSWP_DEPTH > 8)
-      *L = Wr0[8];
-      L += n0;
-      *L = Wr0[9];
-      L += n0;
-      *L = Wr0[10];
-      L += n0;
-      *L = Wr0[11];
-      L += n0;
-      *L = Wr0[12];
-      L += n0;
-      *L = Wr0[13];
-      L += n0;
-      *L = Wr0[14];
-      L += n0;
-      *L = Wr0[15];
-      L += n0;
-#endif
-#if(HPL_LOCSWP_DEPTH > 16)
-      *L = Wr0[16];
-      L += n0;
-      *L = Wr0[17];
-      L += n0;
-      *L = Wr0[18];
-      L += n0;
-      *L = Wr0[19];
-      L += n0;
-      *L = Wr0[20];
-      L += n0;
-      *L = Wr0[21];
-      L += n0;
-      *L = Wr0[22];
-      L += n0;
-      *L = Wr0[23];
-      L += n0;
-      *L = Wr0[24];
-      L += n0;
-      *L = Wr0[25];
-      L += n0;
-      *L = Wr0[26];
-      L += n0;
-      *L = Wr0[27];
-      L += n0;
-      *L = Wr0[28];
-      L += n0;
-      *L = Wr0[29];
-      L += n0;
-      *L = Wr0[30];
-      L += n0;
-      *L = Wr0[31];
-      L += n0;
-#endif
-    }
+    HPL_dcopy(n0, Wr0, 1, L, n0);
 
-    for(i = 0; i < nr; i++, L += n0) { *L = Wr0[i]; }
     /*
      * set INFO.
      */

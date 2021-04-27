@@ -7,7 +7,7 @@
  *    (C) Copyright 2000-2008 All Rights Reserved
  *
  *    Modified by: Noel Chalmers
- *    (C) 2018-2020 Advanced Micro Devices, Inc.
+ *    (C) 2018-2021 Advanced Micro Devices, Inc.
  *    See the rocHPL/LICENCE file for details.
  *
  *    SPDX-License-Identifier: (BSD-3-Clause)
@@ -48,7 +48,7 @@ void HPL_pdgesvK2(HPL_T_grid* GRID, HPL_T_palg* ALGO, HPL_T_pmat* A) {
   HPL_T_panel * p, **panel = NULL;
   HPL_T_UPD_FUN HPL_pdupdate;
   int N, depth, icurcol = 0, j, jb, jj = 0, jstart, k, mycol, n, nb, nn, npcol,
-                nq, tag = MSGID_BEGIN_FACT, test = HPL_KEEP_TESTING;
+                nq, tag = MSGID_BEGIN_FACT, test;
 #ifdef HPL_PROGRESS_REPORT
   double start_time, time, gflops;
 #endif
@@ -135,9 +135,7 @@ void HPL_pdgesvK2(HPL_T_grid* GRID, HPL_T_palg* ALGO, HPL_T_pmat* A) {
 #endif
 #endif
 
-    (void)HPL_binit(panel[k]);
-    do { (void)HPL_bcast(panel[k], &test); } while(test != HPL_SUCCESS);
-    (void)HPL_bwait(panel[k]);
+    HPL_bcast(panel[k], &test);
 
 #if !defined(GPU_AWARE_MPI)
     HPL_pdpanel_SendToDevice(panel[k]);
@@ -155,7 +153,7 @@ void HPL_pdgesvK2(HPL_T_grid* GRID, HPL_T_palg* ALGO, HPL_T_pmat* A) {
      */
     if(k < depth - 1) {
       nn = HPL_numrocI(jstart - j, j, nb, nb, mycol, 0, npcol);
-      HPL_pdupdate(NULL, NULL, panel[k], nn);
+      HPL_pdupdate(panel[k], nn);
     }
 #ifdef HPL_DETAILED_TIMING
     HPL_ptimer(HPL_TIMING_UPDATE);
@@ -183,7 +181,7 @@ void HPL_pdgesvK2(HPL_T_grid* GRID, HPL_T_palg* ALGO, HPL_T_pmat* A) {
     if(mycol == icurcol) {
       nn = HPL_numrocI(jb, j, nb, nb, mycol, 0, npcol);
       for(k = 0; k < depth; k++) { /* partial updates 0..depth-1 */
-        (void)HPL_pdupdate(NULL, NULL, panel[k], nn);
+        (void)HPL_pdupdate(panel[k], nn);
       }
 #ifdef HPL_DETAILED_TIMING
       HPL_ptimer(HPL_TIMING_UPDATE);
@@ -197,7 +195,7 @@ void HPL_pdgesvK2(HPL_T_grid* GRID, HPL_T_palg* ALGO, HPL_T_pmat* A) {
       hipDeviceSynchronize();
 #endif
       /* Queue up finishing the latest update on device */
-      HPL_pdupdate(NULL, NULL, panel[0], nq - nn);
+      HPL_pdupdate(panel[0], nq - nn);
 
       // while computing, factor the current panel
       HPL_pdpanel_SendToHost(panel[depth]);
@@ -217,9 +215,8 @@ void HPL_pdgesvK2(HPL_T_grid* GRID, HPL_T_palg* ALGO, HPL_T_pmat* A) {
 #endif
 #endif
 
-      (void)HPL_binit(panel[depth]);
-      do { (void)HPL_bcast(panel[depth], &test); } while(test != HPL_SUCCESS);
-      (void)HPL_bwait(panel[depth]);
+      /* broadcast current panel */
+      HPL_bcast(panel[depth], &test);
 
 #if !defined(GPU_AWARE_MPI)
       HPL_pdpanel_SendToDevice(panel[depth]);
@@ -236,13 +233,11 @@ void HPL_pdgesvK2(HPL_T_grid* GRID, HPL_T_palg* ALGO, HPL_T_pmat* A) {
       nn = 0;
 
       /* Queue up finishing the latest update */
-      HPL_pdupdate(NULL, NULL, panel[0], nq - nn);
+      HPL_pdupdate(panel[0], nq - nn);
       // hipStreamSynchronize(dataStream);
 
       /* broadcast current panel */
-      (void)HPL_binit(panel[depth]);
-      do { (void)HPL_bcast(panel[depth], &test); } while(test != HPL_SUCCESS);
-      (void)HPL_bwait(panel[depth]);
+      HPL_bcast(panel[depth], &test);
 
 #if !defined(GPU_AWARE_MPI)
       HPL_pdpanel_SendToDevice(panel[depth]);
@@ -299,7 +294,7 @@ void HPL_pdgesvK2(HPL_T_grid* GRID, HPL_T_palg* ALGO, HPL_T_pmat* A) {
    * Clean-up: Finish updates - release panels and panel list
    */
   nn = HPL_numrocI(1, N, nb, nb, mycol, 0, npcol);
-  for(k = 0; k < depth; k++) { (void)HPL_pdupdate(NULL, NULL, panel[k], nn); }
+  for(k = 0; k < depth; k++) { (void)HPL_pdupdate(panel[k], nn); }
   hipDeviceSynchronize();
   for(k = 0; k < depth; k++) { (void)HPL_pdpanel_disp(&panel[k]); }
   (void)HPL_pdpanel_disp(&panel[depth]);

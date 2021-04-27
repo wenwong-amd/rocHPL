@@ -7,7 +7,7 @@
  *    (C) Copyright 2000-2008 All Rights Reserved
  *
  *    Modified by: Noel Chalmers
- *    (C) 2018-2020 Advanced Micro Devices, Inc.
+ *    (C) 2018-2021 Advanced Micro Devices, Inc.
  *    See the rocHPL/LICENCE file for details.
  *
  *    SPDX-License-Identifier: (BSD-3-Clause)
@@ -26,18 +26,18 @@ __global__ void hpl_init_shift(double* __restrict__ A, const size_t n) {
   if(id < n) A[id] -= 0.5;
 }
 
-void HPL_pdmatgen(const HPL_T_grid* GRID,
-                  const int         M,
-                  const int         N,
-                  const int         NB,
-                  double*           A,
-                  const int         LDA,
-                  const int         ISEED) {
+void HPL_pdrandmat(const HPL_T_grid* GRID,
+                   const int         M,
+                   const int         N,
+                   const int         NB,
+                   double*           A,
+                   const int         LDA,
+                   const int         ISEED) {
   /*
    * Purpose
    * =======
    *
-   * HPL_pdmatgen generates (or regenerates) a parallel random matrix A.
+   * HPL_pdrandmat generates (or regenerates) a parallel random matrix A.
    *
    * The  pseudo-random  generator uses the linear congruential algorithm:
    * X(n+1) = (a * X(n) + c) mod m  as  described  in the  Art of Computer

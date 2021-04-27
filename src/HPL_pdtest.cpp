@@ -7,7 +7,7 @@
  *    (C) Copyright 2000-2008 All Rights Reserved
  *
  *    Modified by: Noel Chalmers
- *    (C) 2018-2020 Advanced Micro Devices, Inc.
+ *    (C) 2018-2021 Advanced Micro Devices, Inc.
  *    See the rocHPL/LICENCE file for details.
  *
  *    SPDX-License-Identifier: (BSD-3-Clause)
@@ -78,12 +78,10 @@ void HPL_pdtest(HPL_T_test* TEST,
 #endif
   HPL_T_pmat mat;
   double     wtime[1];
-  int        info[3];
+  int        ierr;
   double     Anorm1, AnormI, Gflops, Xnorm1, XnormI, BnormI, resid0, resid1;
   double*    Bptr;
   double*    dBptr;
-  void*      vptr  = NULL;
-  void*      dvptr = NULL;
   static int first = 1;
   int        ii, ip2, mycol, myrow, npcol, nprow, nq;
   char       ctop, cpfact, crfact;
@@ -91,103 +89,25 @@ void HPL_pdtest(HPL_T_test* TEST,
 
   (void)HPL_grid_info(GRID, &nprow, &npcol, &myrow, &mycol);
 
-  mat.n    = N;
-  mat.nb   = NB;
-  mat.info = 0;
-  mat.mp   = HPL_numroc(N, NB, NB, myrow, 0, nprow);
-  nq       = HPL_numroc(N, NB, NB, mycol, 0, npcol);
-  mat.nq   = nq + 1;
   /*
    * Allocate matrix, right-hand-side, and vector solution x. [ A | b ] is
    * N by N+1.  One column is added in every process column for the solve.
    * The  result  however  is stored in a 1 x N vector replicated in every
    * process row. In every process, A is lda * (nq+1), x is 1 * nq and the
    * workspace is mp.
-   *
-   * Ensure that lda is a multiple of ALIGN and not a power of 2
    */
-  mat.ld = ((Mmax(1, mat.mp) - 1) / ALGO->align) * ALGO->align;
-  do {
-    ii  = (mat.ld += ALGO->align);
-    ip2 = 1;
-    while(ii > 1) {
-      ii >>= 1;
-      ip2 <<= 1;
-    }
-  } while(mat.ld == ip2);
-  /*
-   * Allocate dynamic memory
-   */
+  ierr = HPL_pdmatgen(TEST, GRID, ALGO, &mat, N, NB);
 
-  // allocate on device
-  size_t numbytes = (((size_t)((size_t)(ALGO->align) +
-                               (size_t)(mat.ld + 1) * (size_t)(mat.nq)) *
-                          sizeof(double) +
-                      (size_t)4095) /
-                     (size_t)4096) *
-                    (size_t)4096;
-
-#ifdef HPL_VERBOSE_PRINT
-  if((myrow == 0) && (mycol == 0)) {
-    printf("Allocating %g GBs of storage on GPU...",
-           ((double)numbytes) / (1024 * 1024 * 1024));
-    fflush(stdout);
-  }
-#endif
-
-  hipMalloc(&dvptr, numbytes);
-  info[0] = (dvptr == NULL);
-  info[1] = myrow;
-  info[2] = mycol;
-  (void)HPL_all_reduce((void*)(info), 3, HPL_INT, HPL_max, GRID->all_comm);
-  if(info[0] != 0) {
-    HPL_pwarn(TEST->outfp,
-              __LINE__,
-              "HPL_pdtest",
-              "[%d,%d] %s",
-              info[1],
-              info[2],
-              "Device memory allocation failed for A, x and b. Skip.");
+  if(ierr != HPL_SUCCESS) {
     (TEST->kskip)++;
+    HPL_pdmatfree(&mat);
     return;
   }
-#ifdef HPL_VERBOSE_PRINT
-  if((myrow == 0) && (mycol == 0)) printf("done.\n");
-#endif
 
   /*
    * generate matrix and right-hand-side, [ A | b ] which is N by N+1.
    */
-  mat.A = (double*)HPL_PTR(vptr, ((size_t)(ALGO->align) * sizeof(double)));
-  mat.X = Mptr(mat.A, 0, mat.nq, mat.ld);
-
-  mat.dA = (double*)HPL_PTR(dvptr, ((size_t)(ALGO->align) * sizeof(double)));
-  mat.dX = Mptr(mat.dA, 0, mat.nq, mat.ld);
-
-  HPL_pdmatgen(GRID, N, N + 1, NB, mat.dA, mat.ld, HPL_ISEED);
-
-  int Anp;
-  Mnumroc(Anp, mat.n, mat.nb, mat.nb, myrow, 0, nprow);
-  int n1    = (npcol - 1) * mat.nb;
-  n1        = Mmax(n1, mat.nb);
-  size_t nn = Mmin(n1, Anp);
-
-#ifdef GPU_AWARE_MPI
-  hipMalloc((void**)&(mat.dW), nn * sizeof(double));
-
-  if(mat.dW == NULL) {
-    HPL_pabort(__LINE__, "HPL_pdtest", "pdtest Memory allocation failed");
-  }
-#else
-  hipMalloc((void**)&(mat.dW), nn * sizeof(double));
-  hipHostMalloc((void**)&(mat.W), nn * sizeof(double), 0);
-  hipHostMalloc(&(mat.XR), mat.nq * sizeof(double), 0);
-  hipHostMalloc(&(mat.XC), Anp * sizeof(double), 0);
-
-  if(mat.W == NULL || mat.dW == NULL || mat.XR == NULL || mat.XC == NULL) {
-    HPL_pabort(__LINE__, "HPL_pdtest", "pdtest Memory allocation failed");
-  }
-#endif
+  HPL_pdrandmat(GRID, N, N + 1, NB, mat.dA, mat.ld, HPL_ISEED);
 
   /*
    * Solve linear system
@@ -347,7 +267,7 @@ void HPL_pdtest(HPL_T_test* TEST,
    */
   if(TEST->thrsh <= HPL_rzero) {
     (TEST->kpass)++;
-    if(vptr) free(vptr);
+    HPL_pdmatfree(&mat);
     return;
   }
   /*
@@ -363,14 +283,14 @@ void HPL_pdtest(HPL_T_test* TEST,
                 mat.info,
                 "skip");
     (TEST->kskip)++;
-    if(vptr) free(vptr);
+    HPL_pdmatfree(&mat);
     return;
   }
   /*
    * Check computation, re-generate [ A | b ], compute norm 1 and inf of A and
    * x, and norm inf of b - A x. Display residual checks.
    */
-  HPL_pdmatgen(GRID, N, N + 1, NB, mat.dA, mat.ld, HPL_ISEED);
+  HPL_pdrandmat(GRID, N, N + 1, NB, mat.dA, mat.ld, HPL_ISEED);
 
   Anorm1 = HPL_pdlange(GRID, HPL_NORM_1, N, N, NB, mat.dA, mat.ld);
   AnormI = HPL_pdlange(GRID, HPL_NORM_I, N, N, NB, mat.dA, mat.ld);
@@ -388,10 +308,9 @@ void HPL_pdtest(HPL_T_test* TEST,
 
   // Bptr  = Mptr( mat.A , 0, nq, mat.ld );
   size_t BptrBytes = Mmax(mat.nq, mat.ld) * sizeof(double);
-  hipHostMalloc(&(Bptr), BptrBytes, 0);
+  Bptr             = (double*)malloc(BptrBytes);
 
-  double* gBptr=NULL;
-  hipHostMalloc(&(gBptr), BptrBytes, 0);
+  nq    = HPL_numroc(N, NB, NB, mycol, 0, npcol);
   dBptr = Mptr(mat.dA, 0, nq, mat.ld);
   if(mycol == HPL_indxg2p(N, NB, NB, 0, npcol)) {
     if(mat.mp > 0) {
@@ -408,7 +327,7 @@ void HPL_pdtest(HPL_T_test* TEST,
       BnormI = HPL_rzero;
     }
     (void)HPL_all_reduce(
-        (void*)(&BnormI), 1, HPL_DOUBLE, HPL_max, GRID->col_comm);
+        (void*)(&BnormI), 1, HPL_DOUBLE, HPL_MAX, GRID->col_comm);
   }
   (void)HPL_broadcast((void*)(&BnormI),
                       1,
@@ -420,24 +339,32 @@ void HPL_pdtest(HPL_T_test* TEST,
    */
 
   // rocBLAS < v4.2 has an integer overflow problem in dgemv, so
-  //chunk the nq columns to compute the full dgemv
-  const int nq_chunk = std::numeric_limits<int>::max()/(mat.ld);
+  // chunk the nq columns to compute the full dgemv
+  const int nq_chunk = std::numeric_limits<int>::max() / (mat.ld);
 
   if(mycol == HPL_indxg2p(N, NB, NB, 0, npcol)) {
     const double one  = 1.0;
     const double mone = -1.0;
 
-    for (int nn=0;nn<nq;nn+=nq_chunk) {
-      int nb = Mmin(nq-nn, nq_chunk);
-      rocblas_dgemv(handle, rocblas_operation_none,
-                  mat.mp, nb, &mone,
-                  Mptr(mat.dA, 0, nn, mat.ld), mat.ld,
-                  Mptr(mat.dX, 0, nn, 1), 1,
-                  &one, dBptr, 1);
+    for(int nn = 0; nn < nq; nn += nq_chunk) {
+      int nb = Mmin(nq - nn, nq_chunk);
+      rocblas_dgemv(handle,
+                    rocblas_operation_none,
+                    mat.mp,
+                    nb,
+                    &mone,
+                    Mptr(mat.dA, 0, nn, mat.ld),
+                    mat.ld,
+                    Mptr(mat.dX, 0, nn, 1),
+                    1,
+                    &one,
+                    dBptr,
+                    1);
     }
 
     // rocblas_dgemv(handle, rocblas_operation_none,
-    //               mat.mp, nq, &mone, mat.dA, mat.ld, mat.dX, 1, &one, dBptr, 1);
+    //               mat.mp, nq, &mone, mat.dA, mat.ld, mat.dX, 1, &one, dBptr,
+    //               1);
     hipMemcpy(Bptr, dBptr, mat.mp * sizeof(double), hipMemcpyDeviceToHost);
   } else if(nq > 0) {
     const double one  = 1.0;
@@ -445,23 +372,38 @@ void HPL_pdtest(HPL_T_test* TEST,
     const double mone = -1.0;
 
     int nb = Mmin(nq, nq_chunk);
-    rocblas_dgemv(handle, rocblas_operation_none,
-                  mat.mp, nb, &mone,
-                  Mptr(mat.dA, 0, 0, mat.ld), mat.ld,
-                  Mptr(mat.dX, 0, 0, 1), 1,
-                  &zero, dBptr, 1);
+    rocblas_dgemv(handle,
+                  rocblas_operation_none,
+                  mat.mp,
+                  nb,
+                  &mone,
+                  Mptr(mat.dA, 0, 0, mat.ld),
+                  mat.ld,
+                  Mptr(mat.dX, 0, 0, 1),
+                  1,
+                  &zero,
+                  dBptr,
+                  1);
 
-    for (int nn=nb;nn<nq;nn+=nq_chunk) {
-      int nb = Mmin(nq-nn, nq_chunk);
-      rocblas_dgemv(handle, rocblas_operation_none,
-                  mat.mp, nb, &mone,
-                  Mptr(mat.dA, 0, nn, mat.ld), mat.ld,
-                  Mptr(mat.dX, 0, nn, 1), 1,
-                  &one, dBptr, 1);
+    for(int nn = nb; nn < nq; nn += nq_chunk) {
+      int nb = Mmin(nq - nn, nq_chunk);
+      rocblas_dgemv(handle,
+                    rocblas_operation_none,
+                    mat.mp,
+                    nb,
+                    &mone,
+                    Mptr(mat.dA, 0, nn, mat.ld),
+                    mat.ld,
+                    Mptr(mat.dX, 0, nn, 1),
+                    1,
+                    &one,
+                    dBptr,
+                    1);
     }
 
     // rocblas_dgemv(handle, rocblas_operation_none,
-    //               mat.mp, nq, &mone, mat.dA, mat.ld, mat.dX, 1, &zero, dBptr, 1);
+    //               mat.mp, nq, &mone, mat.dA, mat.ld, mat.dX, 1, &zero, dBptr,
+    //               1);
     hipMemcpy(Bptr, dBptr, mat.mp * sizeof(double), hipMemcpyDeviceToHost);
   } else {
     for(ii = 0; ii < mat.mp; ii++) Bptr[ii] = HPL_rzero;
@@ -470,12 +412,12 @@ void HPL_pdtest(HPL_T_test* TEST,
    * Reduce the distributed residual in process column 0
    */
   if(mat.mp > 0)
-    (void) MPI_Reduce(Bptr, gBptr, mat.mp, MPI_DOUBLE, MPI_SUM, 0, GRID->row_comm);
-    // (void)HPL_reduce(Bptr, mat.mp, HPL_DOUBLE, HPL_sum, 0, GRID->row_comm);
+    (void)HPL_reduce(Bptr, mat.mp, HPL_DOUBLE, HPL_SUM, 0, GRID->row_comm);
+
   /*
    * Compute || b - A x ||_oo
    */
-  hipMemcpy(dBptr, gBptr, mat.mp * sizeof(double), hipMemcpyHostToDevice);
+  hipMemcpy(dBptr, Bptr, mat.mp * sizeof(double), hipMemcpyHostToDevice);
   resid0 = HPL_pdlange(GRID, HPL_NORM_I, N, 1, NB, dBptr, mat.ld);
   /*
    * Computes and displays norms, residuals ...
@@ -538,16 +480,6 @@ void HPL_pdtest(HPL_T_test* TEST,
 #endif
   }
 
-  if(dvptr) hipFree(dvptr);
-  if(vptr) hipHostFree(vptr);
-  if(Bptr) hipHostFree(Bptr);
-  if(gBptr) hipHostFree(gBptr);
-
-  if(mat.dW) hipFree(mat.dW);
-
-#ifndef GPU_AWARE_MPI
-  if(mat.W) hipHostFree(mat.W);
-  if(mat.XR) hipHostFree(mat.XR);
-  if(mat.XC) hipHostFree(mat.XC);
-#endif
+  if(Bptr) free(Bptr);
+  HPL_pdmatfree(&mat);
 }
