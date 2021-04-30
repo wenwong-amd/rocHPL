@@ -35,7 +35,7 @@ int HPL_pdmatgen(HPL_T_test* TEST,
    * workspace is mp.
    *
    * Ensure that lda is a multiple of ALIGN and not a power of 2, and not
-   * a multiple of 4096
+   * a multiple of 4096 bytes
    */
   mat->ld = ((Mmax(1, mat->mp) - 1) / ALGO->align) * ALGO->align;
   do {
@@ -45,7 +45,7 @@ int HPL_pdmatgen(HPL_T_test* TEST,
       ii >>= 1;
       ip2 <<= 1;
     }
-    im4096 = (mat->ld % 4096) ? 0 : 1;
+    im4096 = (mat->ld % 512 ) ? 0 : 1;
   } while((mat->ld == ip2) || im4096);
 
   mat->nq = nq + 1;
