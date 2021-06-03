@@ -257,13 +257,14 @@ check_packages( )
   esac
 }
 
-# Clone and build OpenBLAS in rochpl/tpl
-install_openblas( )
+# Install BLIS in rochpl/tpl
+install_blis( )
 {
-  if [ ! -d "./tpl/openblas-st" ]; then
+  if [ ! -d "./tpl/blis" ]; then
     mkdir -p tpl && cd tpl
-    git clone --branch v0.3.14 https://github.com/xianyi/OpenBLAS openblas-st
-    cd openblas-st; make -j$(nproc); cd ../..
+    git clone https://github.com/amd/blis --branch AOCL-3.1-rc3
+    cd blis; ./configure --prefix=${PWD} --enable-cblas auto;
+    make -j$(nproc); make install -j$(nproc); cd ../..
   fi
 }
 
@@ -322,7 +323,7 @@ install_prefix=rochpl-install
 build_release=true
 with_rocm=/opt/rocm
 with_mpi=tpl/openmpi
-with_cpublas=tpl/openblas-st
+with_cpublas=tpl/blis/lib
 gpu_aware_mpi=OFF
 openmpi_ucx=false
 verbose_print=true
@@ -428,9 +429,9 @@ pushd .
   # #################################################
   # BLAS
   # #################################################
-  if [[ "${with_cpublas}" == tpl/openblas-st ]]; then
+  if [[ "${with_cpublas}" == tpl/blis/lib ]]; then
 
-    install_openblas
+    install_blis
 
   fi
 

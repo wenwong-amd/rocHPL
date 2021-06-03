@@ -184,6 +184,9 @@ void HPL_pdpanrlT(HPL_T_panel* PANEL,
                    thread_rank,
                    thread_size);
     }
+
+#pragma omp barrier
+
     if(curr != 0) {
       ii = iip1;
       iip1++;

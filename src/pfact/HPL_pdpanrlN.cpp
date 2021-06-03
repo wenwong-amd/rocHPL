@@ -181,6 +181,8 @@ void HPL_pdpanrlN(HPL_T_panel* PANEL,
                    thread_rank,
                    thread_size);
 
+#pragma omp barrier
+
     /*
      * Same thing as above but with worse data access on y (A += x * y^T)
      *

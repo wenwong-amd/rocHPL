@@ -33,7 +33,7 @@ find_package(Git REQUIRED)
 # so let's add our own library if we find one in tpl
 # set(BLA_VENDOR OpenBLAS)
 get_filename_component(HPL_BLAS_DIR ${HPL_BLAS_DIR} ABSOLUTE)
-find_library(BLAS_LIBRARIES NAMES openblas
+find_library(BLAS_LIBRARIES NAMES blis
              PATHS ${HPL_BLAS_DIR}
              NO_DEFAULT_PATH)
 if (BLAS_LIBRARIES)

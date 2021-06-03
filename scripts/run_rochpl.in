@@ -183,8 +183,6 @@ num_cpu_cores=$(grep '^core id' /proc/cpuinfo |sort -u|wc -l)
 # set the number pf threads to fill the node
 num_core_per_node=$((num_cpu_cores/ppn))
 
-export OPENBLAS_NUM_THREADS=1
-
 # For OpenMP, set number of threads
 export OMP_NUM_THREADS=${num_core_per_node}
 
