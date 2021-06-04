@@ -16,7 +16,8 @@ function display_help()
   echo "    [-d|--dependencies] install dependencies"
   echo "    [-g|--debug] Set build type to Debug (otherwise build Release)"
   echo "    [--with-rocm=<dir>] Path to ROCm install (Default: /opt/rocm)"
-  echo "    [--with-cpublas=<dir>] Path to external CPU BLAS library (Default: clone+build OpenBLAS v0.3.10 in tpl/)"
+  echo "    [--with-rocblas=<dir>] Path to rocBLAS library (Default: /opt/rocm/rocblas)"
+  echo "    [--with-cpublas=<dir>] Path to external CPU BLAS library (Default: clone+build BLIS in tpl/)"
   echo "    [--with-mpi=<dir>] Path to external MPI install (Default: clone+build OpenMPI v4.0.5 in tpl/)"
   echo "    [--gpu-aware-mpi] MPI library supports GPU-aware communication (Default: false)"
   echo "    [--verbose-print] Verbose output during HPL setup (Default: true)"
@@ -323,6 +324,7 @@ install_prefix=rochpl-install
 build_release=true
 with_rocm=/opt/rocm
 with_mpi=tpl/openmpi
+with_rocblas=/opt/rocm/rocblas
 with_cpublas=tpl/blis/lib
 gpu_aware_mpi=OFF
 openmpi_ucx=false
@@ -337,7 +339,7 @@ detailed_timing=true
 # check if we have a modern version of getopt that can handle whitespace and long parameters
 getopt -T
 if [[ $? -eq 4 ]]; then
-  GETOPT_PARSE=$(getopt --name "${0}" --longoptions help,install,dependencies,debug,with-rocm:,with-mpi:,with-cpublas:,gpu-aware-mpi:,verbose-print:,progress-report:,detailed-timing: --options hidg -- "$@")
+  GETOPT_PARSE=$(getopt --name "${0}" --longoptions help,install,dependencies,debug,with-rocm:,with-mpi:,with-rocblas:,with-cpublas:,gpu-aware-mpi:,verbose-print:,progress-report:,detailed-timing: --options hidg -- "$@")
 else
   echo "Need a new version of getopt"
   exit 1
@@ -370,6 +372,9 @@ while true; do
         shift 2 ;;
     --with-mpi)
         with_mpi=${2}
+        shift 2 ;;
+    --with-rocblas)
+        with_rocblas=${2}
         shift 2 ;;
     --with-cpublas)
         with_cpublas=${2}
@@ -449,7 +454,8 @@ pushd .
   # #################################################
   # configure & build
   # #################################################
-  cmake_common_options="-DCMAKE_INSTALL_PREFIX=${install_prefix} -DHPL_BLAS_DIR=${with_cpublas} -DHPL_MPI_DIR=${with_mpi} -DROCM_PATH=${with_rocm}"
+  cmake_common_options="-DCMAKE_INSTALL_PREFIX=${install_prefix} -DHPL_BLAS_DIR=${with_cpublas}
+                        -DHPL_MPI_DIR=${with_mpi} -DROCM_PATH=${with_rocm} -DROCBLAS_PATH=${with_rocblas}"
 
   # build type
   cmake_common_options="${cmake_common_options} -DCMAKE_BUILD_TYPE=Release"
