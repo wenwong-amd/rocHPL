@@ -80,6 +80,7 @@ supported_distro
 rochpl_bin=@CMAKE_INSTALL_PREFIX@/bin/rochpl
 mpi_bin=@MPIEXEC_EXECUTABLE@
 openmpi_ucx=@HPL_OPENMPI_UCX@
+rocblas_dir=@ROCBLAS_PATH@
 blas_dir=@HPL_BLAS_DIR@
 verbose=false
 np=1
@@ -94,7 +95,7 @@ filename=HPL.dat
 inputfile=false
 cmdrun=false
 
-export LD_LIBRARY_PATH=${blas_dir}:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=${rocblas_dir}:${blas_dir}:$LD_LIBRARY_PATH
 
 # #################################################
 # Parameter parsing
@@ -185,6 +186,9 @@ num_core_per_node=$((num_cpu_cores/ppn))
 
 # For OpenMP, set number of threads
 export OMP_NUM_THREADS=${num_core_per_node}
+
+export OMP_PLACES=cores
+export OMP_PROC_BIND=true
 
 #Default MPI options
 mpi_args="--map-by node:PE=${num_core_per_node} --bind-to core:overload-allowed"

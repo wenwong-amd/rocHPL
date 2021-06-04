@@ -105,8 +105,17 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug")
   list(APPEND CMAKE_HOST_FLAGS "-g")
 endif()
 
+
+# Availability of rocm_check_target_ids command assures that we can also build
+# for gfx90a target
+if(COMMAND rocm_check_target_ids)
+  set(DEFAULT_AMDGPU_TARGETS "gfx900:xnack-;gfx906:xnack-;gfx908:xnack-;gfx908:xnack+;gfx90a:xnack-;gfx90a:xnack+")
+else()
+  set(DEFAULT_AMDGPU_TARGETS "gfx900;gfx906;gfx908;gfx908")
+endif()
+set(TARGETS "${DEFAULT_AMDGPU_TARGETS}" CACHE STRING "List of specific machine types for library to target")
+
 # AMD targets
-set(TARGETS gfx900;gfx906;gfx908)
 foreach(target ${TARGETS})
   list(APPEND HIP_HIPCC_FLAGS "--amdgpu-target=${target}")
 endforeach()

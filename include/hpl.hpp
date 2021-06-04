@@ -32,6 +32,8 @@
  * Include files
  * ---------------------------------------------------------------------
  */
+#include <omp.h>
+
 // NC: hipcc in ROCm 3.7 complains if __HIP_PLATFORM_HCC__ is defined in the
 // compile line
 #ifdef __HIPCC__
