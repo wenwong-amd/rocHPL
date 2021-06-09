@@ -768,6 +768,15 @@ void HPL_pdinfo(int          ARGC,
         else
           TP[i] = HPL_IBCST;
       }
+      // NC: Only one broadcast implemented currently
+      if(TP[i] != 6) {
+        HPL_pwarn(stderr,
+                  __LINE__,
+                  "HPL_pdinfo",
+                  "Value of BCAST must be 6");
+        error = 1;
+        goto label_error;
+      }
       /*
        * Lookahead depth (>=0) (NDH)
        */
@@ -796,6 +805,15 @@ void HPL_pdinfo(int          ARGC,
           error = 1;
           goto label_error;
         }
+        // NC: We require lookahead depth of 1
+        if(DH[i] != 1) {
+          HPL_pwarn(stderr,
+                    __LINE__,
+                    "HPL_pdinfo",
+                    "Value of DEPTH must be 1");
+          error = 1;
+          goto label_error;
+        }
       }
       /*
        * Swapping algorithm (0,1 or 2) (FSWAP)
@@ -811,6 +829,15 @@ void HPL_pdinfo(int          ARGC,
         *FSWAP = HPL_SW_MIX;
       else
         *FSWAP = HPL_SWAP01;
+      // NC: Only one rowswapping algorithm implemented
+      if(*FSWAP != HPL_SWAP01) {
+        HPL_pwarn(stderr,
+                  __LINE__,
+                  "HPL_pdinfo",
+                  "Value of SWAP must be 1");
+        error = 1;
+        goto label_error;
+      }
       /*
        * Swapping threshold (>=0) (TSWAP)
        */
