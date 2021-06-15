@@ -15,14 +15,12 @@ rocblas_handle handle;
 
 hipStream_t computeStream, dataStream;
 
-hipEvent_t panelUpdate;
-hipEvent_t panelCopy;
-
-hipEvent_t swapStartEvent, swapUCopyEvent, swapWCopyEvent;
-
-hipEvent_t dlaswpStart, dlaswpStop;
-hipEvent_t dtrsmStart, dtrsmStop;
-hipEvent_t dgemmStart, dgemmStop;
+hipEvent_t panelCopy, swapDataTransfer, L1Transfer, L2Transfer;
+hipEvent_t pdlaswpStart_1, pdlaswpStart_2;
+hipEvent_t pdlaswpFinish_1, pdlaswpFinish_2;
+hipEvent_t swapStartEvent[HPL_N_UPD], update[HPL_N_UPD];
+hipEvent_t swapUCopyEvent[HPL_N_UPD], swapWCopyEvent[HPL_N_UPD];
+hipEvent_t dgemmStart[HPL_N_UPD], dgemmStop[HPL_N_UPD];
 
 static char host_name[MPI_MAX_PROCESSOR_NAME];
 
@@ -111,18 +109,39 @@ void HPL_InitGPU(const HPL_T_grid* GRID) {
 
   rocblas_set_stream(handle, computeStream);
 
-  hipEventCreate(&swapStartEvent);
-  hipEventCreate(&swapUCopyEvent);
-  hipEventCreate(&swapWCopyEvent);
-
-  hipEventCreate(&panelUpdate);
   hipEventCreate(&panelCopy);
-  hipEventCreate(&dlaswpStart);
-  hipEventCreate(&dlaswpStop);
-  hipEventCreate(&dtrsmStart);
-  hipEventCreate(&dtrsmStop);
-  hipEventCreate(&dgemmStart);
-  hipEventCreate(&dgemmStop);
+  hipEventCreate(&swapDataTransfer);
+  hipEventCreate(&L1Transfer);
+  hipEventCreate(&L2Transfer);
+
+  hipEventCreate(&pdlaswpStart_1);
+  hipEventCreate(&pdlaswpStart_2);
+  hipEventCreate(&pdlaswpFinish_1);
+  hipEventCreate(&pdlaswpFinish_2);
+
+  hipEventCreate(swapStartEvent + HPL_LOOK_AHEAD);
+  hipEventCreate(swapStartEvent + HPL_UPD_1);
+  hipEventCreate(swapStartEvent + HPL_UPD_2);
+
+  hipEventCreate(swapUCopyEvent + HPL_LOOK_AHEAD);
+  hipEventCreate(swapUCopyEvent + HPL_UPD_1);
+  hipEventCreate(swapUCopyEvent + HPL_UPD_2);
+
+  hipEventCreate(swapWCopyEvent + HPL_LOOK_AHEAD);
+  hipEventCreate(swapWCopyEvent + HPL_UPD_1);
+  hipEventCreate(swapWCopyEvent + HPL_UPD_2);
+
+  hipEventCreate(update + HPL_LOOK_AHEAD);
+  hipEventCreate(update + HPL_UPD_1);
+  hipEventCreate(update + HPL_UPD_2);
+
+  hipEventCreate(dgemmStart + HPL_LOOK_AHEAD);
+  hipEventCreate(dgemmStart + HPL_UPD_1);
+  hipEventCreate(dgemmStart + HPL_UPD_2);
+
+  hipEventCreate(dgemmStop + HPL_LOOK_AHEAD);
+  hipEventCreate(dgemmStop + HPL_UPD_1);
+  hipEventCreate(dgemmStop + HPL_UPD_2);
 }
 
 void Free_gpu() {

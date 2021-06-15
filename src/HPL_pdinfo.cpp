@@ -767,15 +767,16 @@ void HPL_pdinfo(int          ARGC,
           TP[i] = HPL_BLONG_M;
         else
           TP[i] = HPL_IBCST;
-      }
-      // NC: Only one broadcast implemented currently
-      if(TP[i] != 6) {
-        HPL_pwarn(stderr,
-                  __LINE__,
-                  "HPL_pdinfo",
-                  "Value of BCAST must be 6");
-        error = 1;
-        goto label_error;
+
+        // NC: Only one broadcast implemented currently
+        if(TP[i] != HPL_IBCST) {
+          HPL_pwarn(stderr,
+                    __LINE__,
+                    "HPL_pdinfo",
+                    "Value of BCAST must be 6");
+          error = 1;
+          goto label_error;
+        }
       }
       /*
        * Lookahead depth (>=0) (NDH)
