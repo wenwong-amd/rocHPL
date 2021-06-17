@@ -315,6 +315,9 @@ void HPL_pdgesv(HPL_T_grid* GRID, HPL_T_palg* ALGO, HPL_T_pmat* A) {
   HPL_pdlaswp_end(panel[0], HPL_LOOK_AHEAD);
   HPL_pdupdate(panel[0], HPL_LOOK_AHEAD);
 
+  HPL_pdlaswp_end(panel[0], HPL_UPD_2);
+  HPL_pdupdate(panel[0], HPL_UPD_2);
+
   hipDeviceSynchronize();
 
   HPL_pdpanel_disp(&panel[0]);

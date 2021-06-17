@@ -110,8 +110,11 @@ void HPL_pdpanel_init(HPL_T_grid*  GRID,
               &icurcol);
   mp = HPL_numrocI(M, IA, nb, nb, myrow, 0, nprow);
   nq = HPL_numrocI(N, JA, nb, nb, mycol, 0, npcol);
-  /* ptr to trailing part of A */
 
+  const int inxtcol = MModAdd1(icurcol, npcol);
+  const int inxtrow = MModAdd1(icurrow, nprow);
+
+  /* ptr to trailing part of A */
   PANEL->A  = A->W;
   PANEL->dA = Mptr((double*)(A->dA), ii, jj, A->ld);
 
@@ -333,10 +336,10 @@ void HPL_pdpanel_init(HPL_T_grid*  GRID,
 
     lwork = ALGO->align + PANEL->len + 1;
 
+    nu = Mmax(0,(mycol == icurcol ? nq - JB : nq));
     if(nprow > 1) /* space for U */
     {
-      nu = (mycol == icurcol ? nq - JB : nq);
-      lwork += JB * Mmax(0, nu);
+      lwork += JB * nu;
     }
 
     if(PANEL->max_work_size < (size_t)(lwork) * sizeof(double)) {
@@ -402,7 +405,7 @@ void HPL_pdpanel_init(HPL_T_grid*  GRID,
     PANEL->dldl2 = Mmax(1, ml2);
 
     if(nprow == 1) {
-      PANEL->nu0 = Mmin(JB, nu);
+      PANEL->nu0 = (mycol == inxtcol) ? Mmin(JB, nu) : 0;
       PANEL->nu1 = 0;
       PANEL->nu2 = nu-PANEL->nu0;
 
@@ -415,7 +418,7 @@ void HPL_pdpanel_init(HPL_T_grid*  GRID,
       PANEL->dDINFO = (double*)(PANEL->dipiv + 2 * JB);
     } else {
       const int NSplit = Mmax(0, ((((int)(N*fraction))/nb)*nb));
-      PANEL->nu0 = Mmin(JB, nu);
+      PANEL->nu0 = (mycol == inxtcol) ? Mmin(JB, nu) : 0;
       PANEL->nu2 = Mmax(nu-PANEL->nu0, NSplit);
       PANEL->nu1 = nu-PANEL->nu0-NSplit;
 
