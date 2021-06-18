@@ -50,10 +50,6 @@ void HPL_pdlaswp_start(HPL_T_panel* PANEL,
    */
   n  = PANEL->n;
   jb = PANEL->jb;
-  /*
-   * Quick return if there is nothing to do
-   */
-  if((n <= 0) || (jb <= 0)) return;
 
   /*
    * Retrieve parameters from the PANEL data structure
@@ -79,6 +75,7 @@ void HPL_pdlaswp_start(HPL_T_panel* PANEL,
     LDU     = PANEL->nu0;
     LDW     = PANEL->nu0;
     n  = Mmin(PANEL->nu0, n);
+
   } else if (UPD == HPL_UPD_1) {
     U       = PANEL->U1;
     W       = PANEL->W1;
@@ -90,6 +87,7 @@ void HPL_pdlaswp_start(HPL_T_panel* PANEL,
     //we call the row swap start before the first section is updated
     // so shift the pointers
     dA = Mptr(dA, 0, PANEL->nu0, lda);
+
   } else if (UPD == HPL_UPD_2) {
     U       = PANEL->U2;
     W       = PANEL->W2;
@@ -102,6 +100,13 @@ void HPL_pdlaswp_start(HPL_T_panel* PANEL,
     // so shift the pointers
     dA = Mptr(dA, 0, PANEL->nu0+PANEL->nu1, lda);
   }
+
+  /*
+   * Quick return if there is nothing to do
+   */
+  if((n <= 0) || (jb <= 0)) return;
+
+
 
   /*
    * Compute ipID (if not already done for this panel). lindxA and lindxAU
@@ -157,6 +162,10 @@ void HPL_pdlaswp_start(HPL_T_panel* PANEL,
    * offset in U where it should go to.
    */
 
+#if !defined(GPU_AWARE_MPI)
+  hipStreamWaitEvent(computeStream, swapDataTransfer, 0);
+#endif
+
   if(myrow == icurrow) {
     // copy needed rows of A into U
     HPL_dlaswp01T(*ipA, n, dA, lda, dU, LDU, dlindxA, dlindxAU);
@@ -179,9 +188,7 @@ void HPL_pdlaswp_start(HPL_T_panel* PANEL,
                      hipMemcpyDeviceToHost,
                      dataStream);
 #endif
-
   } else {
-
     // copy needed rows from A into U(:, iplen[myrow])
     HPL_dlaswp03T(iplen[myrow + 1] - iplen[myrow],
                   n,
@@ -262,10 +269,6 @@ void HPL_pdlaswp_exchange(HPL_T_panel* PANEL,
    */
   n  = PANEL->n;
   jb = PANEL->jb;
-  /*
-   * Quick return if there is nothing to do
-   */
-  if((n <= 0) || (jb <= 0)) return;
 
   /*
    * Retrieve parameters from the PANEL data structure
@@ -291,6 +294,7 @@ void HPL_pdlaswp_exchange(HPL_T_panel* PANEL,
     LDU     = PANEL->nu0;
     LDW     = PANEL->nu0;
     n  = Mmin(PANEL->nu0, n);
+
   } else if (UPD == HPL_UPD_1) {
     U       = PANEL->U1;
     W       = PANEL->W1;
@@ -302,6 +306,7 @@ void HPL_pdlaswp_exchange(HPL_T_panel* PANEL,
     //we call the row swap start before the first section is updated
     // so shift the pointers
     dA = Mptr(dA, 0, PANEL->nu0, lda);
+
   } else if (UPD == HPL_UPD_2) {
     U       = PANEL->U2;
     W       = PANEL->W2;
@@ -313,7 +318,13 @@ void HPL_pdlaswp_exchange(HPL_T_panel* PANEL,
     //we call the row swap start before the first section is updated
     // so shift the pointers
     dA = Mptr(dA, 0, PANEL->nu0+PANEL->nu1, lda);
+
   }
+
+  /*
+   * Quick return if there is nothing to do
+   */
+  if((n <= 0) || (jb <= 0)) return;
 
   /*
    * Compute ipID (if not already done for this panel). lindxA and lindxAU
@@ -407,6 +418,8 @@ void HPL_pdlaswp_exchange(HPL_T_panel* PANEL,
                    ipoffsets,
                    MPI_DOUBLE,
                    comm);
+
+
 
     // send U to device
     hipMemcpy2DAsync(dU,
@@ -536,10 +549,6 @@ void HPL_pdlaswp_end(HPL_T_panel* PANEL,
    */
   n  = PANEL->n;
   jb = PANEL->jb;
-  /*
-   * Quick return if there is nothing to do
-   */
-  if((n <= 0) || (jb <= 0)) return;
 
   /*
    * Retrieve parameters from the PANEL data structure
@@ -562,6 +571,7 @@ void HPL_pdlaswp_end(HPL_T_panel* PANEL,
     LDU     = PANEL->nu0;
     LDW     = PANEL->nu0;
     n  = Mmin(PANEL->nu0, n);
+
   } else if (UPD == HPL_UPD_1) {
     U       = PANEL->U1;
     W       = PANEL->W1;
@@ -573,6 +583,7 @@ void HPL_pdlaswp_end(HPL_T_panel* PANEL,
     //we call the row swap start before the first section is updated
     // so shift the pointers
     dA = Mptr(dA, 0, PANEL->nu0, lda);
+
   } else if (UPD == HPL_UPD_2) {
     U       = PANEL->U2;
     W       = PANEL->W2;
@@ -584,7 +595,13 @@ void HPL_pdlaswp_end(HPL_T_panel* PANEL,
     //we call the row swap start before the first section is updated
     // so shift the pointers
     dA = Mptr(dA, 0, PANEL->nu0+PANEL->nu1, lda);
+
   }
+
+  /*
+   * Quick return if there is nothing to do
+   */
+  if((n <= 0) || (jb <= 0)) return;
 
   // just local swaps if we're 1xQ
   if(nprow == 1) {

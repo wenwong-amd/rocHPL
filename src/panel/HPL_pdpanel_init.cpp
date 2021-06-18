@@ -296,8 +296,9 @@ void HPL_pdpanel_init(HPL_T_grid*  GRID,
     } else {
       const int NSplit = Mmax(0, ((((int)(N*fraction))/nb)*nb));
       PANEL->nu0 = Mmin(JB, nu);
-      PANEL->nu2 = Mmax(nu-PANEL->nu0, NSplit);
-      PANEL->nu1 = nu-PANEL->nu0-NSplit;
+      PANEL->nu2 = nu-PANEL->nu0;
+      // PANEL->nu2 = Mmax(nu-PANEL->nu0, NSplit);
+      PANEL->nu1 = nu-PANEL->nu0-PANEL->nu2;
 
       PANEL->U1  = PANEL->U   + PANEL->nu0*PANEL->nu0;
       PANEL->dU1 = PANEL->dU  + PANEL->nu0*PANEL->nu0;

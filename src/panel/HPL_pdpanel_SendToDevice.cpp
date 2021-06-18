@@ -38,7 +38,7 @@ void HPL_pdpanel_SendToDevice(HPL_T_panel* PANEL) {
 
   if(jb <= 0) return;
 
-  #ifdef GPU_AWARE_MPI
+#ifdef GPU_AWARE_MPI
   // only the root column copies to device
   if(PANEL->grid->mycol == PANEL->pcol) {
 #endif
