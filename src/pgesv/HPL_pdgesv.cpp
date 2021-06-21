@@ -188,20 +188,20 @@ void HPL_pdgesv(HPL_T_grid* GRID, HPL_T_palg* ALGO, HPL_T_pmat* A) {
       HPL_pdlaswp_end(panel[0], HPL_LOOK_AHEAD);
       HPL_pdupdate(panel[0], HPL_LOOK_AHEAD);
 
-      /* Queue up finishing the second section */
-      HPL_pdlaswp_end(panel[0], HPL_UPD_2);
-      HPL_pdupdate(panel[0], HPL_UPD_2);
-
       // when the look ahead update is finished, copy back the current panel
       hipStreamWaitEvent(dataStream, update[HPL_LOOK_AHEAD], 0);
       HPL_pdpanel_SendToHost(panel[1]);
+
+      /* Queue up finishing the second section */
+      HPL_pdlaswp_end(panel[0], HPL_UPD_2);
+      HPL_pdupdate(panel[0], HPL_UPD_2);
 
       //while the look ahead is updating and being copied, exchange the rows from the first section
       HPL_pdlaswp_exchange(panel[0], HPL_UPD_1);
 
       //wait for the panel to arrive
-      hipEventSynchronize(panelCopy);
-
+      // hipEventSynchronize(panelCopy);
+      hipStreamSynchronize(dataStream);
 #ifdef HPL_PROGRESS_REPORT
       //compute the GFLOPs of the look ahead update DGEMM
       hipEventElapsedTime(&smallDgemmTime,
@@ -218,7 +218,6 @@ void HPL_pdgesv(HPL_T_grid* GRID, HPL_T_palg* ALGO, HPL_T_pmat* A) {
       HPL_pdpanel_SendToDevice(panel[1]);
       hipStreamSynchronize(dataStream);
 #endif
-
     } else {
 
       nn = 0;
@@ -233,6 +232,8 @@ void HPL_pdgesv(HPL_T_grid* GRID, HPL_T_palg* ALGO, HPL_T_pmat* A) {
 
 #if !defined(GPU_AWARE_MPI)
     HPL_pdpanel_SendToDevice(panel[1]);
+    //wait for the panel to arrive
+    hipStreamSynchronize(dataStream);
 #endif
 
     // start Ubcast+row swapping for second part of A

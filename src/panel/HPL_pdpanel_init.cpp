@@ -115,7 +115,7 @@ void HPL_pdpanel_init(HPL_T_grid*  GRID,
   const int inxtrow = MModAdd1(icurrow, nprow);
 
   /* ptr to trailing part of A */
-  PANEL->A  = A->W;
+  PANEL->A  = A->A;
   PANEL->dA = Mptr((double*)(A->dA), ii, jj, A->ld);
 
   /*
@@ -200,8 +200,8 @@ void HPL_pdpanel_init(HPL_T_grid*  GRID,
    */
 
   /*Split fraction*/
-  // float fraction = 0.65;
-  float fraction = 1.0;
+  float fraction = 0.7;
+  // float fraction = 1.0;
 
 
   dalign      = ALGO->align * sizeof(double);
@@ -294,21 +294,22 @@ void HPL_pdpanel_init(HPL_T_grid*  GRID,
       PANEL->DINFO  = (double*)(PANEL->ipiv + 2 * JB);
       PANEL->dDINFO = (double*)(PANEL->dipiv + 2 * JB);
     } else {
-      const int NSplit = Mmax(0, ((((int)(N*fraction))/nb)*nb));
+      const int NSplit = Mmax(0, ((((int)(A->nq*fraction))/nb)*nb));
       PANEL->nu0 = Mmin(JB, nu);
-      PANEL->nu2 = nu-PANEL->nu0;
-      // PANEL->nu2 = Mmax(nu-PANEL->nu0, NSplit);
+      PANEL->nu2 = Mmin(nu-PANEL->nu0, NSplit);
       PANEL->nu1 = nu-PANEL->nu0-PANEL->nu2;
+      printf("Rank %d, NSplit = %d, nu = %d, nu0 = %d, nu1 = %d, nu2 = %d \n",
+              myrow, NSplit, nu, PANEL->nu0, PANEL->nu1, PANEL->nu2);
 
-      PANEL->U1  = PANEL->U   + PANEL->nu0*PANEL->nu0;
-      PANEL->dU1 = PANEL->dU  + PANEL->nu0*PANEL->nu0;
-      PANEL->U2  = PANEL->U1  + PANEL->nu1*PANEL->nu1;
-      PANEL->dU2 = PANEL->dU1 + PANEL->nu1*PANEL->nu1;
+      PANEL->U1  = PANEL->U   + PANEL->nu0*JB;
+      PANEL->dU1 = PANEL->dU  + PANEL->nu0*JB;
+      PANEL->U2  = PANEL->U1  + PANEL->nu1*JB;
+      PANEL->dU2 = PANEL->dU1 + PANEL->nu1*JB;
 
-      PANEL->W1  = PANEL->W   + PANEL->nu0*PANEL->nu0;
-      PANEL->dW1 = PANEL->dW  + PANEL->nu0*PANEL->nu0;
-      PANEL->W2  = PANEL->W1  + PANEL->nu1*PANEL->nu1;
-      PANEL->dW2 = PANEL->dW1 + PANEL->nu1*PANEL->nu1;
+      PANEL->W1  = PANEL->W   + PANEL->nu0*JB;
+      PANEL->dW1 = PANEL->dW  + PANEL->nu0*JB;
+      PANEL->W2  = PANEL->W1  + PANEL->nu1*JB;
+      PANEL->dW2 = PANEL->dW1 + PANEL->nu1*JB;
 
       PANEL->lindxA   = (int*)(PANEL->L1 + JB * JB);
       PANEL->dlindxA  = (int*)(PANEL->dL1 + JB * JB);
@@ -418,20 +419,22 @@ void HPL_pdpanel_init(HPL_T_grid*  GRID,
       PANEL->DINFO  = (double*)(PANEL->ipiv + 2 * JB);
       PANEL->dDINFO = (double*)(PANEL->dipiv + 2 * JB);
     } else {
-      const int NSplit = Mmax(0, ((((int)(N*fraction))/nb)*nb));
-      PANEL->nu0 = (mycol == inxtcol) ? Mmin(JB, nu) : 0;
-      PANEL->nu2 = Mmax(nu-PANEL->nu0, NSplit);
-      PANEL->nu1 = nu-PANEL->nu0-NSplit;
+      const int NSplit = Mmax(0, ((((int)(A->nq*fraction))/nb)*nb));
+      PANEL->nu0 = Mmin(JB, nu);
+      PANEL->nu2 = Mmin(nu-PANEL->nu0, NSplit);
+      PANEL->nu1 = nu-PANEL->nu0-PANEL->nu2;
+      printf("Rank (%d, %d), NSplit = %d, nu = %d, nu0 = %d, nu1 = %d, nu2 = %d \n",
+              myrow, mycol, NSplit, nu, PANEL->nu0, PANEL->nu1, PANEL->nu2);
 
-      PANEL->U1  = PANEL->U   + PANEL->nu0*PANEL->nu0;
-      PANEL->dU1 = PANEL->dU  + PANEL->nu0*PANEL->nu0;
-      PANEL->U2  = PANEL->U1  + PANEL->nu1*PANEL->nu1;
-      PANEL->dU2 = PANEL->dU1 + PANEL->nu1*PANEL->nu1;
+      PANEL->U1  = PANEL->U   + PANEL->nu0*JB;
+      PANEL->dU1 = PANEL->dU  + PANEL->nu0*JB;
+      PANEL->U2  = PANEL->U1  + PANEL->nu1*JB;
+      PANEL->dU2 = PANEL->dU1 + PANEL->nu1*JB;
 
-      PANEL->W1  = PANEL->W   + PANEL->nu0*PANEL->nu0;
-      PANEL->dW1 = PANEL->dW  + PANEL->nu0*PANEL->nu0;
-      PANEL->W2  = PANEL->W1  + PANEL->nu1*PANEL->nu1;
-      PANEL->dW2 = PANEL->dW1 + PANEL->nu1*PANEL->nu1;
+      PANEL->W1  = PANEL->W   + PANEL->nu0*JB;
+      PANEL->dW1 = PANEL->dW  + PANEL->nu0*JB;
+      PANEL->W2  = PANEL->W1  + PANEL->nu1*JB;
+      PANEL->dW2 = PANEL->dW1 + PANEL->nu1*JB;
 
       PANEL->lindxA   = (int*)(PANEL->L1 + JB * JB);
       PANEL->dlindxA  = (int*)(PANEL->dL1 + JB * JB);

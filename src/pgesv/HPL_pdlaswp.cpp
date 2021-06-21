@@ -74,7 +74,7 @@ void HPL_pdlaswp_start(HPL_T_panel* PANEL,
     dW      = PANEL->dW;
     LDU     = PANEL->nu0;
     LDW     = PANEL->nu0;
-    n  = Mmin(PANEL->nu0, n);
+    n       = PANEL->nu0;
 
   } else if (UPD == HPL_UPD_1) {
     U       = PANEL->U1;
@@ -83,7 +83,7 @@ void HPL_pdlaswp_start(HPL_T_panel* PANEL,
     dW      = PANEL->dW1;
     LDU     = PANEL->nu1;
     LDW     = PANEL->nu1;
-    n  = Mmin(PANEL->nu1, n);
+    n       = PANEL->nu1;
     //we call the row swap start before the first section is updated
     // so shift the pointers
     dA = Mptr(dA, 0, PANEL->nu0, lda);
@@ -95,7 +95,7 @@ void HPL_pdlaswp_start(HPL_T_panel* PANEL,
     dW      = PANEL->dW2;
     LDU     = PANEL->nu2;
     LDW     = PANEL->nu2;
-    n  = Mmin(PANEL->nu2, n);
+    n       = PANEL->nu2;
     //we call the row swap start before the first section is updated
     // so shift the pointers
     dA = Mptr(dA, 0, PANEL->nu0+PANEL->nu1, lda);
@@ -175,7 +175,6 @@ void HPL_pdlaswp_start(HPL_T_panel* PANEL,
 
     // swap rows local to A on device
     HPL_dlaswp02T(*ipA, n, dA, lda, dlindxA, dlindxAU);
-
 #if !defined(GPU_AWARE_MPI)
     // Copy U to host
     hipStreamWaitEvent(dataStream, swapStartEvent[UPD], 0);
@@ -293,7 +292,7 @@ void HPL_pdlaswp_exchange(HPL_T_panel* PANEL,
     dW      = PANEL->dW;
     LDU     = PANEL->nu0;
     LDW     = PANEL->nu0;
-    n  = Mmin(PANEL->nu0, n);
+    n       = PANEL->nu0;
 
   } else if (UPD == HPL_UPD_1) {
     U       = PANEL->U1;
@@ -302,7 +301,7 @@ void HPL_pdlaswp_exchange(HPL_T_panel* PANEL,
     dW      = PANEL->dW1;
     LDU     = PANEL->nu1;
     LDW     = PANEL->nu1;
-    n  = Mmin(PANEL->nu1, n);
+    n       = PANEL->nu1;
     //we call the row swap start before the first section is updated
     // so shift the pointers
     dA = Mptr(dA, 0, PANEL->nu0, lda);
@@ -314,7 +313,7 @@ void HPL_pdlaswp_exchange(HPL_T_panel* PANEL,
     dW      = PANEL->dW2;
     LDU     = PANEL->nu2;
     LDW     = PANEL->nu2;
-    n  = Mmin(PANEL->nu2, n);
+    n       = PANEL->nu2;
     //we call the row swap start before the first section is updated
     // so shift the pointers
     dA = Mptr(dA, 0, PANEL->nu0+PANEL->nu1, lda);
@@ -372,7 +371,8 @@ void HPL_pdlaswp_exchange(HPL_T_panel* PANEL,
   if(myrow == icurrow) {
 
 #if defined(GPU_AWARE_MPI)
-    hipEventSynchronize(swapStartEvent[UPD]);
+    // hipEventSynchronize(swapStartEvent[UPD]);
+    hipStreamSynchronize(dataStream);
 
     // send rows to other ranks
     MPI_Scatterv(dU,
@@ -434,7 +434,6 @@ void HPL_pdlaswp_exchange(HPL_T_panel* PANEL,
 #endif
 
   } else {
-
 #if defined(GPU_AWARE_MPI)
     // receive rows from icurrow into dW
     MPI_Scatterv(NULL,
@@ -448,7 +447,8 @@ void HPL_pdlaswp_exchange(HPL_T_panel* PANEL,
                  comm);
 
     // wait for dU to be ready
-    hipEventSynchronize(swapStartEvent[UPD]);
+    // hipEventSynchronize(swapStartEvent[UPD]);
+    hipStreamSynchronize(dataStream);
 
     // All gather dU
     MPI_Allgatherv(MPI_IN_PLACE,
@@ -472,7 +472,8 @@ void HPL_pdlaswp_exchange(HPL_T_panel* PANEL,
                  comm);
 
     // wait for U to be ready
-    hipEventSynchronize(swapUCopyEvent[UPD]);
+    // hipEventSynchronize(swapUCopyEvent[UPD]);
+    hipStreamSynchronize(dataStream);
 
     // Copy recieved W piece to device
     hipMemcpy2DAsync(dW,
@@ -570,7 +571,7 @@ void HPL_pdlaswp_end(HPL_T_panel* PANEL,
     dW      = PANEL->dW;
     LDU     = PANEL->nu0;
     LDW     = PANEL->nu0;
-    n  = Mmin(PANEL->nu0, n);
+    n       = PANEL->nu0;
 
   } else if (UPD == HPL_UPD_1) {
     U       = PANEL->U1;
@@ -579,7 +580,7 @@ void HPL_pdlaswp_end(HPL_T_panel* PANEL,
     dW      = PANEL->dW1;
     LDU     = PANEL->nu1;
     LDW     = PANEL->nu1;
-    n  = Mmin(PANEL->nu1, n);
+    n       = PANEL->nu1;
     //we call the row swap start before the first section is updated
     // so shift the pointers
     dA = Mptr(dA, 0, PANEL->nu0, lda);
@@ -591,7 +592,7 @@ void HPL_pdlaswp_end(HPL_T_panel* PANEL,
     dW      = PANEL->dW2;
     LDU     = PANEL->nu2;
     LDW     = PANEL->nu2;
-    n  = Mmin(PANEL->nu2, n);
+    n       = PANEL->nu2;
     //we call the row swap start before the first section is updated
     // so shift the pointers
     dA = Mptr(dA, 0, PANEL->nu0+PANEL->nu1, lda);
@@ -656,7 +657,6 @@ void HPL_pdlaswp_end(HPL_T_panel* PANEL,
   hipStreamWaitEvent(computeStream, swapUCopyEvent[UPD], 0);
 #endif
   HPL_dlaswp10N(n, jb, dU, LDU, dpermU);
-
   /*
    * End of HPL_pdlaswp_endT
    */

@@ -85,6 +85,7 @@ typedef struct HPL_S_pmat {
   int     mp;   /* local number of rows */
   int     nq;   /* local number of columns */
   int     info; /* computational flag */
+  double* A;
   double* W;
   double* dW;
 } HPL_T_pmat;
