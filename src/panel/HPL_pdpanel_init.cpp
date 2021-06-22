@@ -200,7 +200,7 @@ void HPL_pdpanel_init(HPL_T_grid*  GRID,
    */
 
   /*Split fraction*/
-  float fraction = 0.7;
+  float fraction = 0.5;
   // float fraction = 1.0;
 
 
@@ -298,8 +298,6 @@ void HPL_pdpanel_init(HPL_T_grid*  GRID,
       PANEL->nu0 = Mmin(JB, nu);
       PANEL->nu2 = Mmin(nu-PANEL->nu0, NSplit);
       PANEL->nu1 = nu-PANEL->nu0-PANEL->nu2;
-      printf("Rank %d, NSplit = %d, nu = %d, nu0 = %d, nu1 = %d, nu2 = %d \n",
-              myrow, NSplit, nu, PANEL->nu0, PANEL->nu1, PANEL->nu2);
 
       PANEL->U1  = PANEL->U   + PANEL->nu0*JB;
       PANEL->dU1 = PANEL->dU  + PANEL->nu0*JB;
@@ -420,11 +418,9 @@ void HPL_pdpanel_init(HPL_T_grid*  GRID,
       PANEL->dDINFO = (double*)(PANEL->dipiv + 2 * JB);
     } else {
       const int NSplit = Mmax(0, ((((int)(A->nq*fraction))/nb)*nb));
-      PANEL->nu0 = Mmin(JB, nu);
+      PANEL->nu0 = (mycol == inxtcol) ? Mmin(JB, nu) : 0;
       PANEL->nu2 = Mmin(nu-PANEL->nu0, NSplit);
       PANEL->nu1 = nu-PANEL->nu0-PANEL->nu2;
-      printf("Rank (%d, %d), NSplit = %d, nu = %d, nu0 = %d, nu1 = %d, nu2 = %d \n",
-              myrow, mycol, NSplit, nu, PANEL->nu0, PANEL->nu1, PANEL->nu2);
 
       PANEL->U1  = PANEL->U   + PANEL->nu0*JB;
       PANEL->dU1 = PANEL->dU  + PANEL->nu0*JB;

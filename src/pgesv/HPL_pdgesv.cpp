@@ -86,7 +86,6 @@ void HPL_pdgesv(HPL_T_grid* GRID, HPL_T_palg* ALGO, HPL_T_pmat* A) {
   nn     = N;
   jstart = 0;
 
-
   jb = Mmin(nn, nb);
   HPL_pdpanel_new(GRID,
                   ALGO,
@@ -225,6 +224,9 @@ void HPL_pdgesv(HPL_T_grid* GRID, HPL_T_palg* ALGO, HPL_T_pmat* A) {
       /* Queue up finishing the second section */
       HPL_pdlaswp_end(panel[0], HPL_UPD_2);
       HPL_pdupdate(panel[0], HPL_UPD_2);
+
+      //while the second section is updating, exchange the rows from the first section
+      HPL_pdlaswp_exchange(panel[0], HPL_UPD_1);
     }
 
     /* broadcast current panel */
@@ -270,6 +272,7 @@ void HPL_pdgesv(HPL_T_grid* GRID, HPL_T_palg* ALGO, HPL_T_pmat* A) {
 
     //wait here for the updates to compete
     hipDeviceSynchronize();
+
 
 #ifdef HPL_PROGRESS_REPORT
     largeDgemm1Time = 0.0;
