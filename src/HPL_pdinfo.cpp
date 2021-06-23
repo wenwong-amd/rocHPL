@@ -47,7 +47,8 @@ void HPL_pdinfo(int          ARGC,
                 int*         L1NOTRAN,
                 int*         UNOTRAN,
                 int*         EQUIL,
-                int*         ALIGN) {
+                int*         ALIGN,
+                double*      FRAC) {
   /*
    * Purpose
    * =======
@@ -199,6 +200,10 @@ void HPL_pdinfo(int          ARGC,
    *         allocated buffers in double precision words. ALIGN is greater
    *         than zero.
    *
+   * FRAC    (global output)               double *
+   *         On exit,  FRAC  specifies the percentage in which to split the
+   *         the trailing update.
+   *
    * ---------------------------------------------------------------------
    */
 
@@ -223,6 +228,7 @@ void HPL_pdinfo(int          ARGC,
   int         p = 1, q = 1, n = 45312, nb = 384;
   bool        cmdlinerun    = false;
   bool        inputfile     = false;
+  double      frac = 0.6;
   std::string inputFileName = "HPL.dat";
 
   for(int i = 1; i < ARGC; i++) {
@@ -246,6 +252,10 @@ void HPL_pdinfo(int          ARGC,
                      "the number of rows    \n"
                      "                                   /columns in panels.   "
                      "                     \n"
+                     "-f  [ --frac ] arg (=0.6)          Specific update split: "
+                     "the percentage to    \n"
+                     "                                   split the trailing "
+                     "submatrix.           \n"
                      "-i  [ --input ]  arg (=HPL.dat)    Input file. When set, "
                      "all other commnand   \n"
                      "                                   line parameters are "
@@ -328,6 +338,10 @@ void HPL_pdinfo(int          ARGC,
         MPI_Finalize();
         exit(1);
       }
+    }
+    if(strcmp(ARGV[i], "-f") == 0 || strcmp(ARGV[i], "--frac") == 0) {
+      frac = atof(ARGV[i + 1]);
+      i++;
     }
     if(strcmp(ARGV[i], "-i") == 0 || strcmp(ARGV[i], "--input") == 0) {
       inputFileName = ARGV[i + 1];
@@ -427,6 +441,11 @@ void HPL_pdinfo(int          ARGC,
      * Memory alignment in bytes (> 0) (ALIGN)
      */
     *ALIGN = 8;
+    /*
+     * Split fraction
+     */
+    *FRAC = frac;
+
 
     /*
      * Compute and broadcast machine epsilon

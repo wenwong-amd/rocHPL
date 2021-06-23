@@ -200,9 +200,7 @@ void HPL_pdpanel_init(HPL_T_grid*  GRID,
    */
 
   /*Split fraction*/
-  float fraction = 0.5;
-  // float fraction = 1.0;
-
+  const double fraction = ALGO->frac;
 
   dalign      = ALGO->align * sizeof(double);
   size_t lpiv = (6 * JB * sizeof(int) + sizeof(double) - 1) / (sizeof(double));
