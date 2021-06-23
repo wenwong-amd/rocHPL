@@ -171,7 +171,7 @@ void HPL_pdgesv(HPL_T_grid* GRID, HPL_T_palg* ALGO, HPL_T_pmat* A) {
    * Main loop over the remaining columns of A
    */
   float  smallDgemmTime, largeDgemm1Time, largeDgemm2Time;
-  double smallDgemmGflops, largeDgemmGflops;
+  double smallDgemmGflops, largeDgemm1Gflops, largeDgemm2Gflops;
   for(j = jstart; j < N; j += nb) {
     n  = N - j;
     jb = Mmin(n, nb);
@@ -202,12 +202,16 @@ void HPL_pdgesv(HPL_T_grid* GRID, HPL_T_palg* ALGO, HPL_T_pmat* A) {
       // hipEventSynchronize(panelCopy);
       hipStreamSynchronize(dataStream);
 #ifdef HPL_PROGRESS_REPORT
+
+      const int curr  = (panel[0]->grid->myrow == panel[0]->prow ? 1 : 0);
+      const int mp    = panel[0]->mp - (curr != 0 ? jb : 0);
+
       //compute the GFLOPs of the look ahead update DGEMM
       hipEventElapsedTime(&smallDgemmTime,
                           dgemmStart[HPL_LOOK_AHEAD],
                           dgemmStop[HPL_LOOK_AHEAD]);
       smallDgemmGflops =
-          (2.0 * (panel[0]->mp) * jb * jb) / (1000.0 * 1000.0 * smallDgemmTime);
+          (2.0 * mp * jb * jb) / (1000.0 * 1000.0 * smallDgemmTime);
 #endif
 
       HPL_pdfact(panel[1]); /* factor current panel */
@@ -275,34 +279,51 @@ void HPL_pdgesv(HPL_T_grid* GRID, HPL_T_palg* ALGO, HPL_T_pmat* A) {
 
 
 #ifdef HPL_PROGRESS_REPORT
+    const int curr  = (panel[0]->grid->myrow == panel[0]->prow ? 1 : 0);
+    const int mp    = panel[0]->mp - (curr != 0 ? jb : 0);
+
     largeDgemm1Time = 0.0;
     largeDgemm2Time = 0.0;
     if (panel[0]->nu1) {
       hipEventElapsedTime(&largeDgemm1Time,
                           dgemmStart[HPL_UPD_1],
                           dgemmStop[HPL_UPD_1]);
+      largeDgemm1Gflops = (2.0 * mp * jb * (panel[0]->nu1)) /
+                         (1000.0 * 1000.0 * (largeDgemm1Time));
     }
     if (panel[0]->nu2) {
       hipEventElapsedTime(&largeDgemm2Time,
                           dgemmStart[HPL_UPD_2],
                           dgemmStop[HPL_UPD_2]);
+      largeDgemm2Gflops = (2.0 * mp * jb * (panel[0]->nu2)) /
+                         (1000.0 * 1000.0 * (largeDgemm2Time));
     }
-    largeDgemmGflops = (2.0 * (panel[0]->mp) * jb * (panel[0]->nu2+panel[0]->nu1)) /
-                       (1000.0 * 1000.0 * (largeDgemm1Time+largeDgemm2Time));
 
     /* if this is process 0,0 and not the first panel */
     if(GRID->myrow == 0 && mycol == 0 && j > 0) {
       time   = HPL_ptimer_walltime() - start_time;
       gflops = 2.0 * (N * (double)N * N - n * (double)n * n) / 3.0 /
-               (time > 0.0 ? time : 1e-6) / 1e9;
-      HPL_fprintf(stdout,
-                  "Column=%09d Fraction=%4.1f%% Small DGEMM Gflops=%9.3e large "
-                  "DGEMM Gflops=%9.3e Overall Gflops=%9.3e\n",
-                  j,
-                  j * 100.0 / N,
-                  smallDgemmGflops,
-                  largeDgemmGflops,
-                  gflops);
+               (time > 0.0 ? time : 1.e-6) / 1.e9;
+      printf("Column=%09d (%4.1f%%) ", j, j * 100.0 / N);
+
+      if (panel[0]->nu0) {
+        printf("Small DGEMM Gflops=%9.3e ", smallDgemmGflops);
+      } else {
+        printf("Small DGEMM Gflops=--------- ");
+      }
+      if (panel[0]->nu2) {
+        printf("First DGEMM Gflops=%9.3e ", largeDgemm2Gflops);
+      } else {
+        printf("First DGEMM Gflops=--------- ");
+      }
+
+      if (panel[0]->nu1) {
+        printf("Second DGEMM Gflops=%9.3e ", largeDgemm1Gflops);
+      } else {
+        printf("Second DGEMM Gflops=--------- ");
+      }
+
+      printf("Overall Gflops=%9.3e\n", gflops);
     }
 #endif
 
