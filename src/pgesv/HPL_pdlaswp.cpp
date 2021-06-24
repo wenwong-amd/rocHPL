@@ -121,6 +121,9 @@ void HPL_pdlaswp_start(HPL_T_panel* PANEL,
   ipID      = ipl + 1;
   ipA       = ipID + ((unsigned int)(k) << 1);
   iplen     = ipA + 1;
+  ipcounts  = iplen + nprow + 1;
+  ipoffsets = ipcounts + nprow;
+  iwork     = ipoffsets + nprow;
 
   lindxA  = PANEL->lindxA;
   lindxAU = PANEL->lindxAU;
