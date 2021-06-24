@@ -274,7 +274,7 @@ install_openmpi( )
 {
   if [ ! -d "./tpl/ucx" ]; then
     mkdir -p tpl && cd tpl
-    git clone --branch v1.10.0 https://github.com/openucx/ucx.git ucx
+    git clone --branch master https://github.com/openucx/ucx.git ucx
     cd ucx; ./autogen.sh; ./autogen.sh #why do we have to run this twice?
     mkdir build; cd build
     ../contrib/configure-opt --prefix=${PWD}/../ --with-rocm=${with_rocm} --without-knem --without-cuda --without-java
@@ -283,7 +283,7 @@ install_openmpi( )
 
   if [ ! -d "./tpl/openmpi" ]; then
     mkdir -p tpl && cd tpl
-    git clone --branch v4.1.0 https://github.com/open-mpi/ompi.git openmpi
+    git clone --branch v4.1.1 https://github.com/open-mpi/ompi.git openmpi
     cd openmpi; ./autogen.pl; mkdir build; cd build
     ../configure --prefix=${PWD}/../ --with-ucx=${PWD}/../../ucx --without-verbs
     make -j$(nproc); make install; cd ../../..
