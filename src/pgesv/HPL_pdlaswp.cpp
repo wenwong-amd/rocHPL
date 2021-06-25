@@ -375,8 +375,11 @@ void HPL_pdlaswp_exchange(HPL_T_panel* PANEL,
   if(myrow == icurrow) {
 
 #if defined(GPU_AWARE_MPI)
-    // hipEventSynchronize(swapStartEvent[UPD]);
-    hipStreamSynchronize(computeStream);
+    hipEventSynchronize(swapStartEvent[UPD]);
+    // hipStreamSynchronize(computeStream);
+
+    // swap rows local to A on device
+    HPL_dlaswp02T(*ipA, n, dA, lda, dlindxA, dlindxAU);
 
     // send rows to other ranks
     MPI_Scatterv(dU,
@@ -388,9 +391,6 @@ void HPL_pdlaswp_exchange(HPL_T_panel* PANEL,
                  MPI_DOUBLE,
                  icurrow,
                  comm);
-
-    // swap rows local to A on device
-    HPL_dlaswp02T(*ipA, n, dA, lda, dlindxA, dlindxAU);
 
     // All gather dU
     MPI_Allgatherv(MPI_IN_PLACE,
@@ -442,6 +442,8 @@ void HPL_pdlaswp_exchange(HPL_T_panel* PANEL,
 
   } else {
 #if defined(GPU_AWARE_MPI)
+    hipEventSynchronize(swapStartEvent[UPD]);
+
     // receive rows from icurrow into dW
     MPI_Scatterv(NULL,
                  ipcounts,
@@ -455,7 +457,7 @@ void HPL_pdlaswp_exchange(HPL_T_panel* PANEL,
 
     // wait for dU to be ready
     // hipEventSynchronize(swapStartEvent[UPD]);
-    hipStreamSynchronize(computeStream);
+    // hipStreamSynchronize(computeStream);
 
     HPL_dlaswp04T(
         iplen[myrow + 1] - iplen[myrow], n, dA, lda, dW, LDW, dlindxA);
