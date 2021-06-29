@@ -82,7 +82,7 @@ supported_distro
 rochpl_bin=@CMAKE_INSTALL_PREFIX@/bin/rochpl
 mpi_bin=@MPIEXEC_EXECUTABLE@
 openmpi_ucx=@HPL_OPENMPI_UCX@
-rocblas_dir=@ROCBLAS_PATH@
+rocblas_dir=@ROCBLAS_LIB_PATH@
 blas_dir=@HPL_BLAS_DIR@
 verbose=false
 np=1
