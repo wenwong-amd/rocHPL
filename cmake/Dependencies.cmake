@@ -71,6 +71,8 @@ message("-- rocBLAS version:      ${rocblas_VERSION}")
 message("-- rocBLAS include dirs: ${rocblas_INCLUDE_DIRS}")
 message("-- rocBLAS libraries:    ${rocblas_LIBRARIES}")
 
+get_filename_component(ROCBLAS_LIB_PATH ${rocblas_LIBRARIES} DIRECTORY)
+
 # rocrand
 find_package(rocrand REQUIRED)
 
