@@ -263,7 +263,7 @@ install_blis( )
 {
   if [ ! -d "./tpl/blis" ]; then
     mkdir -p tpl && cd tpl
-    git clone https://github.com/amd/blis --branch AOCL-3.1-rc3
+    git clone https://github.com/amd/blis --branch 3.0.1
     cd blis; ./configure --prefix=${PWD} --enable-cblas auto;
     make -j$(nproc); make install -j$(nproc); cd ../..
   fi
