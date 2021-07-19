@@ -15,7 +15,7 @@ rocHPL is a benchmark based on the [HPL][] benchmark application, implemented on
 You can build rocHPL using the `install.sh` script
 ```
 # Clone rocHPL using git
-git clone https://github.com/ROCmSoftwarePlatform/rocHPL.git
+git clone https://github.com/AMD-HPC/rocHPL.git
 
 # Go to rocHPL directory
 cd rocHPL
@@ -27,7 +27,8 @@ cd rocHPL
 #    -d|--dependencies    - install dependencies
 #    -g|--debug           - Set build type to Debug (otherwise build Release)
 #    --with-rocm=<dir>    - Path to ROCm install (Default: /opt/rocm)
-#    --with-cpublas=<dir> - Path to external CPU BLAS library (Default: clone+build OpenBLAS)
+#    --with-rocblas=<dir> - Path to rocBLAS library (Default: /opt/rocm/rocblas)
+#    --with-cpublas=<dir> - Path to external CPU BLAS library (Default: clone+build AMD BLIS)
 #    --with-mpi=<dir>     - Path to external MPI install (Default: clone+build OpenMPI)
 #    --gpu-aware-mpi      - MPI library supports GPU-aware communication (Default: false)
 #    --verbose-print      - Verbose output during HPL setup (Default: true)
@@ -35,7 +36,7 @@ cd rocHPL
 #    --detailed-timing    - Record detailed timers during HPL run (Default: true)
 ./install.sh -d
 ```
-By default, [OpenBLAS] v0.3.14, [UCX] v1.10.0, and [OpenMPI] v4.1.0 will be cloned and build in rocHPL/tpl. After build and install, the `rochpl` executable is placed in build/rochpl-install.
+By default, [BLIS] v3.0.1, [UCX] v1.10.0, and [OpenMPI] v4.1.0 will be cloned and build in rocHPL/tpl. After build and install, the `rochpl` executable is placed in build/rochpl-install.
 
 ## Running rocHPL benchmark application
 You can run the rocHPL benchmark application by running the `rochpl` executable with MPI directly, or by using a provided `run_rochpl` script configured at build. There are two distinct run modes:
@@ -97,7 +98,7 @@ HPL.out      output file name (if any)
 ## Performance evaluation
 rocHPL is typically weak scaled so that the global matrix fills all available VRAM on all GPUs. The matrix size N is usually selected to be a multiple of the blocksize NB. Some sample runs on 32GB MI100 GPUs include:
 * 1 MI100: `run_rochpl -P 1 -Q 1 -N  64512 --NB 512 --ppn 1 -v`
-* 2 MI100: `run_rochpl -P 1 -Q 2 -N  90624 --NB 512 --ppn 2 -v`
+* 2 MI100: `run_rochpl -P 1 -Q 2 -N  90112 --NB 512 --ppn 2 -v`
 * 4 MI100: `run_rochpl -P 2 -Q 2 -N 126976 --NB 512 --ppn 2 -v`
 * 8 MI100: `run_rochpl -P 2 -Q 4 -N 180224 --NB 512 --ppn 2 -v`
 
@@ -128,7 +129,7 @@ The [license file][] can be found in the main repository.
 [HIP]: https://github.com/ROCm-Developer-Tools/HIP
 [rocBLAS]: https://github.com/ROCmSoftwarePlatform/rocBLAS
 [rocRAND]: https://github.com/ROCmSoftwarePlatform/rocRAND
-[OpenBLAS]: https://github.com/xianyi/OpenBLAS
+[BLIS]: https://github.com/amd/blis
 [OpenMPI]: https://github.com/open-mpi/ompi
 [UCX]: https://github.com/openucx/ucx
 [the issue tracker]: https://github.com/ROCmSoftwarePlatform/rocHPL/issues
