@@ -56,6 +56,17 @@ void HPL_InitGPU(const HPL_T_grid* GRID) {
   int deviceCount;
   hipGetDeviceCount(&deviceCount);
 
+  if (deviceCount<1) {
+    if(localRank == 0)
+      HPL_pwarn(stderr,
+                __LINE__,
+                "HPL_InitGPU",
+                "Node %s found no GPUs. Is the ROCm kernel module loaded?",
+                host_name);
+    MPI_Finalize();
+    exit(1);
+  }
+
   typedef struct {
     int p;
     int q;
