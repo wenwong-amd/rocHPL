@@ -131,8 +131,8 @@ void HPL_plindx(HPL_T_panel* PANEL,
         if((dstrow == icurrow) && (dst - ia < jb)) {
           // if I own the dst and it's in U
 
-          PERMU[ipU] = dst - ia;       // row index in U
-          iwork[ipU] = IPLEN[dstrow];  // Index in AllGathered U
+          PERMU[ipU]  = dst - ia;      // row index in U
+          iwork[ipU]  = IPLEN[dstrow]; // Index in AllGathered U
           LINDXAU[ip] = IPLEN[dstrow]; // Index in AllGathered U
           IPLEN[dstrow]++;
           ipU++;
@@ -148,9 +148,9 @@ void HPL_plindx(HPL_T_panel* PANEL,
           } while(!fndd && (j < K));
           // This pair must have dst being sent to a position in U
 
-          PERMU[ipU] = IPID[j - 1] - ia; // row index in U
-          iwork[ipU] = IPLEN[dstrow];    // Index in AllGathered U
-          LINDXAU[ip] = IPLEN[dstrow];   // Index in AllGathered U
+          PERMU[ipU]  = IPID[j - 1] - ia; // row index in U
+          iwork[ipU]  = IPLEN[dstrow];    // Index in AllGathered U
+          LINDXAU[ip] = IPLEN[dstrow];    // Index in AllGathered U
           IPLEN[dstrow]++;
           ipU++;
         } else if((dstrow == icurrow) && (dst - ia >= jb)) {

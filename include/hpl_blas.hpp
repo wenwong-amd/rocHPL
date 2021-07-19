@@ -53,6 +53,93 @@ enum HPL_SIDE { HplLeft = 141, HplRight = 142 };
 
 /*
  * ---------------------------------------------------------------------
+ * Blocked OpenMP routines
+ * ---------------------------------------------------------------------
+ */
+
+void HPL_idamax_omp(const int     N,
+                    const double* X,
+                    const int     INCX,
+                    const int     NB,
+                    const int     II,
+                    const int     thread_rank,
+                    const int     thread_size,
+                    int*          max_index,
+                    double*       max_value);
+
+void HPL_dscal_omp(const int    N,
+                   const double ALPHA,
+                   double*      X,
+                   const int    INCX,
+                   const int    NB,
+                   const int    II,
+                   const int    thread_rank,
+                   const int    thread_size);
+
+void HPL_daxpy_omp(const int     N,
+                   const double  ALPHA,
+                   const double* X,
+                   const int     INCX,
+                   double*       Y,
+                   const int     INCY,
+                   const int     NB,
+                   const int     II,
+                   const int     thread_rank,
+                   const int     thread_size);
+
+void HPL_dger_omp(const enum HPL_ORDER ORDER,
+                  const int            M,
+                  const int            N,
+                  const double         ALPHA,
+                  const double*        X,
+                  const int            INCX,
+                  double*              Y,
+                  const int            INCY,
+                  double*              A,
+                  const int            LDA,
+                  const int            NB,
+                  const int            II,
+                  const int            thread_rank,
+                  const int            thread_size);
+
+void HPL_dgemv_omp(const enum HPL_ORDER ORDER,
+                   const enum HPL_TRANS TRANS,
+                   const int            M,
+                   const int            N,
+                   const double         ALPHA,
+                   const double*        A,
+                   const int            LDA,
+                   const double*        X,
+                   const int            INCX,
+                   const double         BETA,
+                   double*              Y,
+                   const int            INCY,
+                   const int            NB,
+                   const int            II,
+                   const int            thread_rank,
+                   const int            thread_size);
+
+void HPL_dgemm_omp(const enum HPL_ORDER ORDER,
+                   const enum HPL_TRANS TRANSA,
+                   const enum HPL_TRANS TRANSB,
+                   const int            M,
+                   const int            N,
+                   const int            K,
+                   const double         ALPHA,
+                   const double*        A,
+                   const int            LDA,
+                   const double*        B,
+                   const int            LDB,
+                   const double         BETA,
+                   double*              C,
+                   const int            LDC,
+                   const int            NB,
+                   const int            II,
+                   const int            thread_rank,
+                   const int            thread_size);
+
+/*
+ * ---------------------------------------------------------------------
  * #define macro constants
  * ---------------------------------------------------------------------
  */

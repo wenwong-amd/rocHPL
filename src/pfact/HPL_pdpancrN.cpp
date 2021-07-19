@@ -20,7 +20,11 @@ void HPL_pdpancrN(HPL_T_panel* PANEL,
                   const int    M,
                   const int    N,
                   const int    ICOFF,
-                  double*      WORK) {
+                  double*      WORK,
+                  int          thread_rank,
+                  int          thread_size,
+                  double*      max_value,
+                  int*         max_index) {
   /*
    * Purpose
    * =======
@@ -111,35 +115,43 @@ void HPL_pdpancrN(HPL_T_panel* PANEL,
   /*
    * Find local absolute value max in first column - initialize WORK[0:3]
    */
-  HPL_dlocmax(PANEL, m, ii, jj, WORK);
+  HPL_dlocmax(
+      PANEL, m, ii, jj, WORK, thread_rank, thread_size, max_index, max_value);
 
   while(Nm1 > 0) {
     /*
      * Swap and broadcast the current row
      */
-    HPL_pdmxswp(PANEL, m, ii, jj, WORK);
-    HPL_dlocswpN(PANEL, ii, jj, WORK);
+    if(thread_rank == 0) {
+      HPL_pdmxswp(PANEL, m, ii, jj, WORK);
+      HPL_dlocswpN(PANEL, ii, jj, WORK);
+    }
     /*
      * Compute row (column) jj of L1
      */
     if(kk > 0) {
       L1ptr = Mptr(L1, jj, jj + 1, n0);
 
-      HPL_dgemv(HplColumnMajor,
-                HplTrans,
-                kk,
-                Nm1,
-                -HPL_rone,
-                Mptr(L1, ICOFF, jj + 1, n0),
-                n0,
-                Mptr(L1, jj, ICOFF, n0),
-                n0,
-                HPL_rone,
-                L1ptr,
-                n0);
+      if(thread_rank == 0) {
+        HPL_dgemv(HplColumnMajor,
+                  HplTrans,
+                  kk,
+                  Nm1,
+                  -HPL_rone,
+                  Mptr(L1, ICOFF, jj + 1, n0),
+                  n0,
+                  Mptr(L1, jj, ICOFF, n0),
+                  n0,
+                  HPL_rone,
+                  L1ptr,
+                  n0);
 
-      if(curr != 0) HPL_dcopy(Nm1, L1ptr, n0, Mptr(A, ii, jj + 1, lda), lda);
+        if(curr != 0) HPL_dcopy(Nm1, L1ptr, n0, Mptr(A, ii, jj + 1, lda), lda);
+      }
     }
+
+#pragma omp barrier
+
     /*
      * Scale current column by its absolute value max entry  -  Update  dia-
      * diagonal and subdiagonal elements in column  A(iip1:iip1+Mm1-1, jj+1)
@@ -148,22 +160,41 @@ void HPL_pdpancrN(HPL_T_panel* PANEL,
      * could benefit from a specialized blocked implementation.
      */
     if(WORK[0] != HPL_rzero)
-      HPL_dscal(Mm1, HPL_rone / WORK[0], Mptr(A, iip1, jj, lda), 1);
+      HPL_dscal_omp(Mm1,
+                    HPL_rone / WORK[0],
+                    Mptr(A, iip1, jj, lda),
+                    1,
+                    PANEL->nb,
+                    iip1,
+                    thread_rank,
+                    thread_size);
 
-    HPL_dgemv(HplColumnMajor,
-              HplNoTrans,
-              Mm1,
-              kk + 1,
-              -HPL_rone,
-              Mptr(A, iip1, ICOFF, lda),
-              lda,
-              Mptr(L1, ICOFF, jj + 1, n0),
-              1,
-              HPL_rone,
-              Mptr(A, iip1, jj + 1, lda),
-              1);
+    HPL_dgemv_omp(HplColumnMajor,
+                  HplNoTrans,
+                  Mm1,
+                  kk + 1,
+                  -HPL_rone,
+                  Mptr(A, iip1, ICOFF, lda),
+                  lda,
+                  Mptr(L1, ICOFF, jj + 1, n0),
+                  1,
+                  HPL_rone,
+                  Mptr(A, iip1, jj + 1, lda),
+                  1,
+                  PANEL->nb,
+                  iip1,
+                  thread_rank,
+                  thread_size);
 
-    HPL_dlocmax(PANEL, Mm1, iip1, jj + 1, WORK);
+    HPL_dlocmax(PANEL,
+                Mm1,
+                iip1,
+                jj + 1,
+                WORK,
+                thread_rank,
+                thread_size,
+                max_index,
+                max_value);
     if(curr != 0) {
       ii = iip1;
       iip1++;
@@ -179,10 +210,22 @@ void HPL_pdpancrN(HPL_T_panel* PANEL,
    * Swap and broadcast last row - Scale last column by its absolute value
    * max entry
    */
-  HPL_pdmxswp(PANEL, m, ii, jj, WORK);
-  HPL_dlocswpN(PANEL, ii, jj, WORK);
+  if(thread_rank == 0) {
+    HPL_pdmxswp(PANEL, m, ii, jj, WORK);
+    HPL_dlocswpN(PANEL, ii, jj, WORK);
+  }
+
+#pragma omp barrier
+
   if(WORK[0] != HPL_rzero)
-    HPL_dscal(Mm1, HPL_rone / WORK[0], Mptr(A, iip1, jj, lda), 1);
+    HPL_dscal_omp(Mm1,
+                  HPL_rone / WORK[0],
+                  Mptr(A, iip1, jj, lda),
+                  1,
+                  PANEL->nb,
+                  iip1,
+                  thread_rank,
+                  thread_size);
 
 #ifdef HPL_DETAILED_TIMING
   HPL_ptimer(HPL_TIMING_PFACT);

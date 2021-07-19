@@ -33,7 +33,7 @@ find_package(Git REQUIRED)
 # so let's add our own library if we find one in tpl
 # set(BLA_VENDOR OpenBLAS)
 get_filename_component(HPL_BLAS_DIR ${HPL_BLAS_DIR} ABSOLUTE)
-find_library(BLAS_LIBRARIES NAMES openblas
+find_library(BLAS_LIBRARIES NAMES blis
              PATHS ${HPL_BLAS_DIR}
              NO_DEFAULT_PATH)
 if (BLAS_LIBRARIES)
@@ -57,13 +57,19 @@ set(MPI_HOME ${HPL_MPI_DIR})
 find_package(MPI REQUIRED)
 
 # Add some paths
-list(APPEND CMAKE_PREFIX_PATH ${ROCM_PATH}/hip ${ROCM_PATH})
+list(APPEND CMAKE_PREFIX_PATH ${ROCBLAS_PATH} ${ROCM_PATH}/hip ${ROCM_PATH})
 
 # Find HIP package
 find_package(HIP REQUIRED)
 
 # rocblas
 find_package(rocblas REQUIRED)
+
+get_target_property(rocblas_LIBRARIES roc::rocblas IMPORTED_LOCATION_RELEASE)
+
+message("-- rocBLAS version:      ${rocblas_VERSION}")
+message("-- rocBLAS include dirs: ${rocblas_INCLUDE_DIRS}")
+message("-- rocBLAS libraries:    ${rocblas_LIBRARIES}")
 
 # rocrand
 find_package(rocrand REQUIRED)
@@ -99,3 +105,4 @@ include(ROCMCreatePackage)
 include(ROCMInstallTargets)
 include(ROCMPackageConfigHelpers)
 include(ROCMInstallSymlinks)
+include(ROCMCheckTargetIds OPTIONAL)
