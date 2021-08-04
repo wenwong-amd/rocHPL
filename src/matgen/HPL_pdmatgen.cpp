@@ -148,7 +148,7 @@ int HPL_pdmatgen(HPL_T_test* TEST,
   size_t dworkspace_size = 0;
   size_t workspace_size  = 0;
 
-#if HIP_VERSION >= 40100
+#if 0
   // determine how much workspace rocBLAS needs for DTRSM
   rocblas_start_device_memory_size_query(handle);
 
@@ -243,7 +243,7 @@ int HPL_pdmatgen(HPL_T_test* TEST,
   if((myrow == 0) && (mycol == 0)) printf("done.\n");
 #endif
 
-#if HIP_VERSION >= 40100
+#if 0
   // tell rocBLAS to use our device workspace
   rocblas_set_workspace(handle, mat->dW, dworkspace_size);
 #endif
@@ -261,7 +261,7 @@ void HPL_pdmatfree(HPL_T_pmat* mat) {
   if(mat->W) hipHostFree(mat->W);
     // if(mat->W) free(mat->W);
 
-#if HIP_VERSION >= 40100
+#if 0
   // tell rocblas we free'd the workspace
   rocblas_set_device_memory_size(handle, 0);
 #endif
