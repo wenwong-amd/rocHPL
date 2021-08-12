@@ -16,7 +16,8 @@
 
 #include "hpl.hpp"
 
-void HPL_pdupdateTT(HPL_T_panel* PANEL, const int NN) {
+void HPL_pdupdateTT(HPL_T_panel* PANEL,
+                    const HPL_T_UPD UPD) {
   /*
    * Purpose
    * =======
@@ -31,48 +32,60 @@ void HPL_pdupdateTT(HPL_T_panel* PANEL, const int NN) {
    *         On entry,  PANEL  points to the data structure containing the
    *         panel (to be updated) information.
    *
-   * NN      (local input)                 const int
-   *         On entry, NN specifies  the  local  number  of columns of the
-   *         trailing  submatrix  to be updated  starting  at the  current
-   *         position. NN must be at least zero.
-   *
    * ---------------------------------------------------------------------
    */
 
   double *Aptr, *L1ptr, *L2ptr, *Uptr, *dpiv;
   int*    dipiv;
 
-  int curr, i, iroff, jb, lda, ldl2, mp, n, nb;
-#define LDU n
+  int curr, i, iroff, jb, lda, ldl2, LDU, mp, n, nb;
+
 /* ..
  * .. Executable Statements ..
  */
-#ifdef HPL_DETAILED_TIMING
-  HPL_ptimer(HPL_TIMING_UPDATE);
-#endif
   nb  = PANEL->nb;
   jb  = PANEL->jb;
   n   = PANEL->nq;
   lda = PANEL->dlda;
-  if(NN >= 0) n = Mmin(NN, n);
+  Aptr  = PANEL->dA;
+
+  if (UPD == HPL_LOOK_AHEAD) {
+    Uptr    = PANEL->dU;
+    LDU     = PANEL->nu0;
+    n  = Mmin(PANEL->nu0, n);
+  } else if (UPD == HPL_UPD_1) {
+    Uptr    = PANEL->dU1;
+    LDU     = PANEL->nu1;
+    n  = Mmin(PANEL->nu1, n);
+    //we call the row swap start before the first section is updated
+    // so shift the pointers
+    Aptr = Mptr(Aptr, 0, PANEL->nu0, lda);
+  } else if (UPD == HPL_UPD_2) {
+    Uptr    = PANEL->dU2;
+    LDU     = PANEL->nu2;
+    n  = Mmin(PANEL->nu2, n);
+    //we call the row swap start before the first section is updated
+    // so shift the pointers
+    Aptr = Mptr(Aptr, 0, PANEL->nu0+PANEL->nu1, lda);
+  }
+
   /*
    * There is nothing to update, enforce the panel broadcast.
    */
   if((n <= 0) || (jb <= 0)) {
-#ifdef HPL_DETAILED_TIMING
-    HPL_ptimer(HPL_TIMING_UPDATE);
-#endif
     return;
   }
 
   hipStream_t stream;
   rocblas_get_stream(handle, &stream);
 
+  // wait for L1 to arrive
+  hipStreamWaitEvent(stream, L1Transfer, 0);
+
   /*
    * 1 x Q case
    */
   if(PANEL->grid->nprow == 1) {
-    Aptr  = PANEL->dA;
     L2ptr = PANEL->dL2;
     L1ptr = PANEL->dL1;
     ldl2  = PANEL->dldl2;
@@ -85,13 +98,6 @@ void HPL_pdupdateTT(HPL_T_panel* PANEL, const int NN) {
     /*
      * Update
      */
-#ifdef HPL_DETAILED_TIMING
-    HPL_ptimer(HPL_TIMING_LASWP);
-    HPL_dlaswp00N(jb, n, Aptr, lda, dipiv);
-    HPL_ptimer(HPL_TIMING_LASWP);
-#else
-    HPL_dlaswp00N(jb, n, Aptr, lda, dipiv);
-#endif
     const double one = 1.0;
     rocblas_dtrsm(handle,
                   rocblas_side_left,
@@ -106,9 +112,7 @@ void HPL_pdupdateTT(HPL_T_panel* PANEL, const int NN) {
                   Aptr,
                   lda);
 
-#ifdef HPL_DETAILED_TIMING
-    hipEventRecord(dgemmStart, stream);
-#endif
+    hipEventRecord(dgemmStart[UPD], stream);
     const double mone = -1.0;
     rocblas_dgemm(handle,
                   rocblas_operation_none,
@@ -124,25 +128,16 @@ void HPL_pdupdateTT(HPL_T_panel* PANEL, const int NN) {
                   &one,
                   Mptr(Aptr, jb, 0, lda),
                   lda);
-#ifdef HPL_DETAILED_TIMING
-    hipEventRecord(dgemmStop, stream);
-#endif
+    hipEventRecord(dgemmStop[UPD], stream);
 
   } else /* nprow > 1 ... */
   {
 
     curr  = (PANEL->grid->myrow == PANEL->prow ? 1 : 0);
-    Aptr  = PANEL->dA;
     L2ptr = PANEL->dL2;
     L1ptr = PANEL->dL1;
-    Uptr  = PANEL->dU;
     ldl2  = PANEL->dldl2;
     mp    = PANEL->mp - (curr != 0 ? jb : 0);
-
-    /*
-     * Swap:broadcast U.
-     */
-    HPL_pdlaswpT(PANEL, n);
 
     /*
      * Compute redundantly row block of U and update trailing submatrix
@@ -165,9 +160,7 @@ void HPL_pdupdateTT(HPL_T_panel* PANEL, const int NN) {
      * Queue finishing the update
      */
     if(curr != 0) {
-#ifdef HPL_DETAILED_TIMING
-      hipEventRecord(dgemmStart, stream);
-#endif
+      hipEventRecord(dgemmStart[UPD], stream);
       const double mone = -1.0;
       rocblas_dgemm(handle,
                     rocblas_operation_none,
@@ -183,14 +176,10 @@ void HPL_pdupdateTT(HPL_T_panel* PANEL, const int NN) {
                     &one,
                     Mptr(Aptr, jb, 0, lda),
                     lda);
-#ifdef HPL_DETAILED_TIMING
-      hipEventRecord(dgemmStop, stream);
-#endif
+      hipEventRecord(dgemmStop[UPD], stream);
       HPL_dlatcpy_gpu(jb, n, Uptr, LDU, Aptr, lda);
     } else {
-#ifdef HPL_DETAILED_TIMING
-      hipEventRecord(dgemmStart, stream);
-#endif
+      hipEventRecord(dgemmStart[UPD], stream);
       const double mone = -1.0;
       rocblas_dgemm(handle,
                     rocblas_operation_none,
@@ -206,18 +195,14 @@ void HPL_pdupdateTT(HPL_T_panel* PANEL, const int NN) {
                     &one,
                     Aptr,
                     lda);
-#ifdef HPL_DETAILED_TIMING
-      hipEventRecord(dgemmStop, stream);
-#endif
+      hipEventRecord(dgemmStop[UPD], stream);
     }
   }
 
+  hipEventRecord(update[UPD], stream);
+
   // PANEL->A = Mptr( PANEL->A, 0, n, lda );
-  PANEL->dA = Mptr(PANEL->dA, 0, n, lda);
+  // PANEL->dA = Mptr(PANEL->dA, 0, n, lda);
   PANEL->nq -= n;
   PANEL->jj += n;
-
-#ifdef HPL_DETAILED_TIMING
-  HPL_ptimer(HPL_TIMING_UPDATE);
-#endif
 }

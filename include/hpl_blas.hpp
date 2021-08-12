@@ -20,21 +20,13 @@
  * Include files
  * ---------------------------------------------------------------------
  */
+
 #include "hpl_misc.hpp"
 #include <rocblas.h>
 
 extern rocblas_handle handle;
 extern hipStream_t    computeStream;
 extern hipStream_t    dataStream;
-
-extern hipEvent_t swapStartEvent, swapUCopyEvent, swapWCopyEvent;
-
-extern hipEvent_t panelUpdate;
-extern hipEvent_t panelCopy;
-
-extern hipEvent_t dlaswpStart, dlaswpStop;
-extern hipEvent_t dtrsmStart, dtrsmStop;
-extern hipEvent_t dgemmStart, dgemmStop;
 
 #if __cplusplus
 extern "C" {

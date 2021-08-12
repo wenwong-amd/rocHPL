@@ -114,6 +114,37 @@ int HPL_pdmatgen(HPL_T_test* TEST,
   int Anp;
   Mnumroc(Anp, mat->n, mat->nb, mat->nb, myrow, 0, nprow);
 
+  /*Need space for a column of panels for pdfact on CPU*/
+  size_t A_hostsize = mat->ld * mat->nb * sizeof(double);
+
+#ifdef HPL_VERBOSE_PRINT
+  if((myrow == 0) && (mycol == 0)) {
+    printf("Allocating %g GBs of storage on CPU...",
+           ((double)A_hostsize) / (1024 * 1024 * 1024));
+    fflush(stdout);
+  }
+#endif
+  hipHostMalloc((void**)&(mat->A), A_hostsize);
+
+  /*Check workspace allocation is valid*/
+  info[0] = (mat->A == NULL);
+  info[1] = myrow;
+  info[2] = mycol;
+  (void)HPL_all_reduce((void*)(info), 3, HPL_INT, HPL_MAX, GRID->all_comm);
+  if(info[0] != 0) {
+    HPL_pwarn(TEST->outfp,
+              __LINE__,
+              "HPL_pdmatgen",
+              "[%d,%d] %s",
+              info[1],
+              info[2],
+              "Host memory allocation failed for host A. Skip.");
+    return HPL_FAILURE;
+  }
+#ifdef HPL_VERBOSE_PRINT
+  if((myrow == 0) && (mycol == 0)) printf("done.\n");
+#endif
+
   size_t dworkspace_size = 0;
   size_t workspace_size  = 0;
 
@@ -149,9 +180,6 @@ int HPL_pdmatgen(HPL_T_test* TEST,
   /*pdtrsv needs two vectors for B and W (and X on host) */
   dworkspace_size = Mmax(2 * Anp * sizeof(double), dworkspace_size);
   workspace_size  = Mmax((2 * Anp + nq) * sizeof(double), workspace_size);
-
-  /*Need space for a column of panels for pdfact on CPU*/
-  workspace_size = Mmax(mat->ld * mat->nb * sizeof(double), workspace_size);
 
   /*Scratch space for rows in pdlaswp */
   dworkspace_size = Mmax(nq * mat->nb * sizeof(double), dworkspace_size);
@@ -229,6 +257,7 @@ void HPL_pdmatfree(HPL_T_pmat* mat) {
   if(mat->dX) hipFree(mat->dX);
   if(mat->dW) hipFree(mat->dW);
 
+  if(mat->A) hipHostFree(mat->A);
   if(mat->W) hipHostFree(mat->W);
     // if(mat->W) free(mat->W);
 

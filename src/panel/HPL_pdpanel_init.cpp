@@ -110,21 +110,34 @@ void HPL_pdpanel_init(HPL_T_grid*  GRID,
               &icurcol);
   mp = HPL_numrocI(M, IA, nb, nb, myrow, 0, nprow);
   nq = HPL_numrocI(N, JA, nb, nb, mycol, 0, npcol);
-  /* ptr to trailing part of A */
 
-  PANEL->A  = A->W;
+  const int inxtcol = MModAdd1(icurcol, npcol);
+  const int inxtrow = MModAdd1(icurrow, nprow);
+
+  /* ptr to trailing part of A */
+  PANEL->A  = A->A;
   PANEL->dA = Mptr((double*)(A->dA), ii, jj, A->ld);
 
   /*
    * Workspace pointers are initialized to NULL.
    */
-  PANEL->L2    = NULL;
-  PANEL->dL2   = NULL;
-  PANEL->L1    = NULL;
-  PANEL->dL1   = NULL;
-  PANEL->DINFO = NULL;
-  PANEL->U     = NULL;
-  PANEL->dU    = NULL;
+  PANEL->L2    = nullptr;
+  PANEL->dL2   = nullptr;
+  PANEL->L1    = nullptr;
+  PANEL->dL1   = nullptr;
+  PANEL->DINFO = nullptr;
+  PANEL->U     = nullptr;
+  PANEL->dU    = nullptr;
+  PANEL->W     = nullptr;
+  PANEL->dW    = nullptr;
+  PANEL->U1     = nullptr;
+  PANEL->dU1    = nullptr;
+  PANEL->W1     = nullptr;
+  PANEL->dW1    = nullptr;
+  PANEL->U2     = nullptr;
+  PANEL->dU2    = nullptr;
+  PANEL->W2     = nullptr;
+  PANEL->dW2    = nullptr;
   // PANEL->WORK    = NULL;
   // PANEL->IWORK   = NULL;
   /*
@@ -152,6 +165,10 @@ void HPL_pdpanel_init(HPL_T_grid*  GRID,
   PANEL->ldl2  = 0;           /* local leading dim of array L2 */
   PANEL->dldl2 = 0;           /* local leading dim of array L2 */
   PANEL->len   = 0;           /* length of the buffer to broadcast */
+  PANEL->nu0   = 0;
+  PANEL->nu1   = 0;
+  PANEL->nu2   = 0;
+
 
   /*
    * Figure out the exact amount of workspace  needed by the factorization
@@ -181,17 +198,22 @@ void HPL_pdpanel_init(HPL_T_grid*  GRID,
    * the end.  We  also  choose  to put this amount of space right after
    * L2 (when it exist) so that one can receive a contiguous buffer.
    */
+
+  /*Split fraction*/
+  const double fraction = ALGO->frac;
+
   dalign      = ALGO->align * sizeof(double);
   size_t lpiv = (6 * JB * sizeof(int) + sizeof(double) - 1) / (sizeof(double));
+
 
   if(npcol == 1)                 /* P x 1 process grid */
   {                              /* space for L1, PIV, DINFO */
     PANEL->len = JB * JB + lpiv; // L1, integer arrays
     lwork      = ALGO->align + (PANEL->len + 1);
+    nu = Mmax(0, nq - JB);
     if(nprow > 1) /* space for U */
     {
-      nu = nq - JB;
-      lwork += JB * Mmax(0, nu);
+      lwork += JB * nu;
     }
 
     if(PANEL->max_work_size < (size_t)(lwork) * sizeof(double)) {
@@ -254,7 +276,14 @@ void HPL_pdpanel_init(HPL_T_grid*  GRID,
     PANEL->L1  = (double*)PANEL->WORK + (nprow > 1 ? JB * Mmax(0, nu) : 0);
     PANEL->dL1 = (double*)PANEL->dWORK + (nprow > 1 ? JB * Mmax(0, nu) : 0);
 
+    PANEL->W  = A->W;
+    PANEL->dW = A->dW;
+
     if(nprow == 1) {
+      PANEL->nu0 = Mmin(JB, nu);
+      PANEL->nu1 = 0;
+      PANEL->nu2 = nu-PANEL->nu0;
+
       PANEL->permU  = (int*)(PANEL->L1 + JB * JB);
       PANEL->dpermU = (int*)(PANEL->dL1 + JB * JB);
       PANEL->ipiv   = PANEL->permU + 2 * JB;
@@ -263,6 +292,21 @@ void HPL_pdpanel_init(HPL_T_grid*  GRID,
       PANEL->DINFO  = (double*)(PANEL->ipiv + 2 * JB);
       PANEL->dDINFO = (double*)(PANEL->dipiv + 2 * JB);
     } else {
+      const int NSplit = Mmax(0, ((((int)(A->nq*fraction))/nb)*nb));
+      PANEL->nu0 = Mmin(JB, nu);
+      PANEL->nu2 = Mmin(nu-PANEL->nu0, NSplit);
+      PANEL->nu1 = nu-PANEL->nu0-PANEL->nu2;
+
+      PANEL->U1  = PANEL->U   + PANEL->nu0*JB;
+      PANEL->dU1 = PANEL->dU  + PANEL->nu0*JB;
+      PANEL->U2  = PANEL->U1  + PANEL->nu1*JB;
+      PANEL->dU2 = PANEL->dU1 + PANEL->nu1*JB;
+
+      PANEL->W1  = PANEL->W   + PANEL->nu0*JB;
+      PANEL->dW1 = PANEL->dW  + PANEL->nu0*JB;
+      PANEL->W2  = PANEL->W1  + PANEL->nu1*JB;
+      PANEL->dW2 = PANEL->dW1 + PANEL->nu1*JB;
+
       PANEL->lindxA   = (int*)(PANEL->L1 + JB * JB);
       PANEL->dlindxA  = (int*)(PANEL->dL1 + JB * JB);
       PANEL->lindxAU  = PANEL->lindxA + 2 * JB;
@@ -280,9 +324,6 @@ void HPL_pdpanel_init(HPL_T_grid*  GRID,
 
     *(PANEL->DINFO) = 0.0;
 
-    PANEL->W  = A->W;
-    PANEL->dW = A->dW;
-
   } else { /* space for L2, L1, DPIV */
 
     ml2 = (myrow == icurrow ? mp - JB : mp);
@@ -293,10 +334,10 @@ void HPL_pdpanel_init(HPL_T_grid*  GRID,
 
     lwork = ALGO->align + PANEL->len + 1;
 
+    nu = Mmax(0,(mycol == icurcol ? nq - JB : nq));
     if(nprow > 1) /* space for U */
     {
-      nu = (mycol == icurcol ? nq - JB : nq);
-      lwork += JB * Mmax(0, nu);
+      lwork += JB * nu;
     }
 
     if(PANEL->max_work_size < (size_t)(lwork) * sizeof(double)) {
@@ -351,6 +392,9 @@ void HPL_pdpanel_init(HPL_T_grid*  GRID,
     PANEL->U  = (nprow > 1 ? (double*)PANEL->WORK : NULL);
     PANEL->dU = (nprow > 1 ? (double*)PANEL->dWORK : NULL);
 
+    PANEL->W  = A->W;
+    PANEL->dW = A->dW;
+
     PANEL->L2    = (double*)PANEL->WORK + (nprow > 1 ? JB * Mmax(0, nu) : 0);
     PANEL->dL2   = (double*)PANEL->dWORK + (nprow > 1 ? JB * Mmax(0, nu) : 0);
     PANEL->L1    = PANEL->L2 + ml2 * JB;
@@ -359,6 +403,10 @@ void HPL_pdpanel_init(HPL_T_grid*  GRID,
     PANEL->dldl2 = Mmax(1, ml2);
 
     if(nprow == 1) {
+      PANEL->nu0 = (mycol == inxtcol) ? Mmin(JB, nu) : 0;
+      PANEL->nu1 = 0;
+      PANEL->nu2 = nu-PANEL->nu0;
+
       PANEL->permU  = (int*)(PANEL->L1 + JB * JB);
       PANEL->dpermU = (int*)(PANEL->dL1 + JB * JB);
       PANEL->ipiv   = PANEL->permU + 2 * JB;
@@ -367,6 +415,21 @@ void HPL_pdpanel_init(HPL_T_grid*  GRID,
       PANEL->DINFO  = (double*)(PANEL->ipiv + 2 * JB);
       PANEL->dDINFO = (double*)(PANEL->dipiv + 2 * JB);
     } else {
+      const int NSplit = Mmax(0, ((((int)(A->nq*fraction))/nb)*nb));
+      PANEL->nu0 = (mycol == inxtcol) ? Mmin(JB, nu) : 0;
+      PANEL->nu2 = Mmin(nu-PANEL->nu0, NSplit);
+      PANEL->nu1 = nu-PANEL->nu0-PANEL->nu2;
+
+      PANEL->U1  = PANEL->U   + PANEL->nu0*JB;
+      PANEL->dU1 = PANEL->dU  + PANEL->nu0*JB;
+      PANEL->U2  = PANEL->U1  + PANEL->nu1*JB;
+      PANEL->dU2 = PANEL->dU1 + PANEL->nu1*JB;
+
+      PANEL->W1  = PANEL->W   + PANEL->nu0*JB;
+      PANEL->dW1 = PANEL->dW  + PANEL->nu0*JB;
+      PANEL->W2  = PANEL->W1  + PANEL->nu1*JB;
+      PANEL->dW2 = PANEL->dW1 + PANEL->nu1*JB;
+
       PANEL->lindxA   = (int*)(PANEL->L1 + JB * JB);
       PANEL->dlindxA  = (int*)(PANEL->dL1 + JB * JB);
       PANEL->lindxAU  = PANEL->lindxA + 2 * JB;
@@ -383,9 +446,6 @@ void HPL_pdpanel_init(HPL_T_grid*  GRID,
     }
 
     *(PANEL->DINFO) = 0.0;
-
-    PANEL->W  = A->W;
-    PANEL->dW = A->dW;
   }
   /*
    * If nprow is 1, we just allocate an array of JB integers to store the

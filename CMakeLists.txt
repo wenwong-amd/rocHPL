@@ -101,7 +101,7 @@ list(APPEND HIP_HIPCC_FLAGS "-O3 -march=native -Wno-unused-command-line-argument
 list(APPEND CMAKE_HOST_FLAGS "-O3;-march=native")
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-  list(APPEND HIP_HIPCC_FLAGS "-g")
+  list(APPEND HIP_HIPCC_FLAGS "-g -ggdb")
   list(APPEND CMAKE_HOST_FLAGS "-g")
 endif()
 
