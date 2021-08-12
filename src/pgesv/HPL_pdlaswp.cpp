@@ -375,11 +375,12 @@ void HPL_pdlaswp_exchange(HPL_T_panel* PANEL,
   if(myrow == icurrow) {
 
 #if defined(GPU_AWARE_MPI)
-    // hipEventSynchronize(swapStartEvent[UPD]);
-    hipStreamSynchronize(computeStream);
-
     // swap rows local to A on device
     HPL_dlaswp02T(*ipA, n, dA, lda, dlindxA, dlindxAU);
+
+    //wait for U to be ready
+    hipEventSynchronize(swapStartEvent[UPD]);
+    // hipStreamSynchronize(computeStream);
 
     // send rows to other ranks
     MPI_Scatterv(dU,
@@ -442,7 +443,6 @@ void HPL_pdlaswp_exchange(HPL_T_panel* PANEL,
 
   } else {
 #if defined(GPU_AWARE_MPI)
-    // hipEventSynchronize(swapStartEvent[UPD]);
 
     // receive rows from icurrow into dW
     MPI_Scatterv(NULL,
@@ -455,12 +455,13 @@ void HPL_pdlaswp_exchange(HPL_T_panel* PANEL,
                  icurrow,
                  comm);
 
-    // wait for dU to be ready
-    // hipEventSynchronize(swapStartEvent[UPD]);
-    hipStreamSynchronize(computeStream);
-
+    //place received rows into A
     HPL_dlaswp04T(
         iplen[myrow + 1] - iplen[myrow], n, dA, lda, dW, LDW, dlindxA);
+
+    // wait for dU to be ready
+    hipEventSynchronize(swapStartEvent[UPD]);
+    // hipStreamSynchronize(computeStream);
 
     // All gather dU
     MPI_Allgatherv(MPI_IN_PLACE,
@@ -483,10 +484,6 @@ void HPL_pdlaswp_exchange(HPL_T_panel* PANEL,
                  icurrow,
                  comm);
 
-    // wait for U to be ready
-    // hipEventSynchronize(swapUCopyEvent[UPD]);
-    hipStreamSynchronize(dataStream);
-
     // Copy recieved W piece to device
     hipMemcpy2DAsync(dW,
                      LDW * sizeof(double),
@@ -498,6 +495,10 @@ void HPL_pdlaswp_exchange(HPL_T_panel* PANEL,
                      dataStream);
     hipEventRecord(swapWCopyEvent[UPD], dataStream);
     hipStreamWaitEvent(computeStream, swapWCopyEvent[UPD], 0);
+
+    // wait for U to be ready
+    hipEventSynchronize(swapUCopyEvent[UPD]);
+    // hipStreamSynchronize(dataStream);
 
     // All gather U
     MPI_Allgatherv(MPI_IN_PLACE,
