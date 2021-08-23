@@ -128,6 +128,7 @@ int  HPL_pdpanel_disp(HPL_T_panel**);
 int  HPL_pdpanel_free(HPL_T_panel*);
 void HPL_pdpanel_SendToHost(HPL_T_panel*);
 void HPL_pdpanel_SendToDevice(HPL_T_panel*);
+int  HPL_pdpanel_bcast(HPL_T_panel*);
 
 #endif
 /*

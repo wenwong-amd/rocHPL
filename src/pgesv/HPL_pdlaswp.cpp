@@ -383,61 +383,38 @@ void HPL_pdlaswp_exchange(HPL_T_panel* PANEL,
 
     hipEventSynchronize(swapStartEvent[UPD]);
 
-    roctxRangePush("MPI_Scatterv");
-
     // send rows to other ranks
-    MPI_Scatterv(dU,
+    HPL_scatterv(dU,
                  ipcounts,
                  ipoffsets,
-                 MPI_DOUBLE,
-                 MPI_IN_PLACE,
                  ipcounts[myrow],
-                 MPI_DOUBLE,
                  icurrow,
                  comm);
-    roctxRangePop();
-    roctxRangePush("MPI_Allgatherv");
 
     // All gather dU
-    MPI_Allgatherv(MPI_IN_PLACE,
+    HPL_allgatherv(dU,
                    ipcounts[myrow],
-                   MPI_DOUBLE,
-                   dU,
                    ipcounts,
                    ipoffsets,
-                   MPI_DOUBLE,
                    comm);
-    roctxRangePop();
 #else
     //wait for U to arrive on host
     hipStreamSynchronize(dataStream);
 
-    roctxRangePush("MPI_Scatterv");
-
     // send rows to other ranks
-    MPI_Scatterv(U,
+    HPL_scatterv(U,
                  ipcounts,
                  ipoffsets,
-                 MPI_DOUBLE,
-                 MPI_IN_PLACE,
                  ipcounts[myrow],
-                 MPI_DOUBLE,
                  icurrow,
                  comm);
-    roctxRangePop();
 
-    roctxRangePush("MPI_Allgatherv");
     // All gather U
-    MPI_Allgatherv(MPI_IN_PLACE,
+    HPL_allgatherv(U,
                    ipcounts[myrow],
-                   MPI_DOUBLE,
-                   U,
                    ipcounts,
                    ipoffsets,
-                   MPI_DOUBLE,
                    comm);
-
-    roctxRangePop();
 
     // send U to device
     hipMemcpy2DAsync(dU,
@@ -454,50 +431,33 @@ void HPL_pdlaswp_exchange(HPL_T_panel* PANEL,
   } else {
 #if defined(GPU_AWARE_MPI)
 
-    roctxRangePush("MPI_Scatterv");
     // receive rows from icurrow into dW
-    MPI_Scatterv(NULL,
+    HPL_scatterv(dW,
                  ipcounts,
                  ipoffsets,
-                 MPI_DOUBLE,
-                 dW,
                  ipcounts[myrow],
-                 MPI_DOUBLE,
                  icurrow,
                  comm);
-    roctxRangePop();
-
-    // wait for dU to be ready
-    // hipEventSynchronize(swapStartEvent[UPD]);
-    // hipStreamSynchronize(computeStream);
 
     HPL_dlaswp04T(
         iplen[myrow + 1] - iplen[myrow], n, dA, lda, dW, LDW, dlindxA);
 
+    // wait for dU to be ready
+    // hipStreamSynchronize(computeStream);
     hipEventSynchronize(swapStartEvent[UPD]);
 
-    roctxRangePush("MPI_Allgatherv");
-
     // All gather dU
-    MPI_Allgatherv(MPI_IN_PLACE,
+    HPL_allgatherv(dU,
                    ipcounts[myrow],
-                   MPI_DOUBLE,
-                   dU,
                    ipcounts,
                    ipoffsets,
-                   MPI_DOUBLE,
                    comm);
-    roctxRangePop();
 #else
-    roctxRangePush("MPI_Scatterv");
     // receive rows from icurrow into W
-    MPI_Scatterv(NULL,
+    HPL_scatterv(W,
                  ipcounts,
                  ipoffsets,
-                 MPI_DOUBLE,
-                 W,
                  ipcounts[myrow],
-                 MPI_DOUBLE,
                  icurrow,
                  comm);
 
@@ -517,18 +477,12 @@ void HPL_pdlaswp_exchange(HPL_T_panel* PANEL,
     hipEventSynchronize(swapUCopyEvent[UPD]);
     // hipStreamSynchronize(dataStream);
 
-    roctxRangePush("MPI_Allgatherv");
-    
     // All gather U
-    MPI_Allgatherv(MPI_IN_PLACE,
+    HPL_allgatherv(U,
                    ipcounts[myrow],
-                   MPI_DOUBLE,
-                   U,
                    ipcounts,
                    ipoffsets,
-                   MPI_DOUBLE,
                    comm);
-    roctxRangePop();
 
     // send U to device
     hipMemcpy2DAsync(dU,

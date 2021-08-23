@@ -58,8 +58,13 @@ typedef MPI_Op HPL_T_OP;
 int  HPL_send(double*, int, int, int, MPI_Comm);
 int  HPL_recv(double*, int, int, int, MPI_Comm);
 int  HPL_sdrv(double*, int, int, double*, int, int, int, MPI_Comm);
-int  HPL_bcast(HPL_T_panel*, int*);
 void HPL_copyL(HPL_T_panel*);
+
+int  HPL_bcast(double* SBUF, int SCOUNT, int ROOT, MPI_Comm COMM);
+int  HPL_scatterv(double* BUF, const int* SCOUNT, const int* DISPL,
+                  const int RCOUNT, int ROOT, MPI_Comm COMM);
+int  HPL_allgatherv(double* BUF, const int SCOUNT, const int* RCOUNT,
+                    const int* DISPL, MPI_Comm COMM);
 
 int HPL_barrier(MPI_Comm);
 int HPL_broadcast(void*, const int, const HPL_T_TYPE, const int, MPI_Comm);

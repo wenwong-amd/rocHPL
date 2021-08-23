@@ -140,7 +140,7 @@ void HPL_pdgesv(HPL_T_grid* GRID, HPL_T_palg* ALGO, HPL_T_pmat* A) {
   hipStreamSynchronize(dataStream);
 #endif
 
-  HPL_bcast(panel[0], &test);
+  HPL_pdpanel_bcast(panel[0]);
 
 #if !defined(GPU_AWARE_MPI)
   HPL_pdpanel_SendToDevice(panel[0]);
@@ -238,7 +238,7 @@ void HPL_pdgesv(HPL_T_grid* GRID, HPL_T_palg* ALGO, HPL_T_pmat* A) {
     }
 
     /* broadcast current panel */
-    HPL_bcast(panel[1], &test);
+    HPL_pdpanel_bcast(panel[1]);
 
 #if !defined(GPU_AWARE_MPI)
     HPL_pdpanel_SendToDevice(panel[1]);
