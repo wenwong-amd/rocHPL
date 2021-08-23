@@ -62,6 +62,7 @@ int HPL_bcast(HPL_T_panel* PANEL, int* IFLAG) {
    */
   HPL_copyL(PANEL);
 
+  roctxRangePush("MPI_Bcast");
   /*
    * Single Bcast call
    */
@@ -71,6 +72,7 @@ int HPL_bcast(HPL_T_panel* PANEL, int* IFLAG) {
   ierr = MPI_Bcast(PANEL->L2, PANEL->len, MPI_DOUBLE, root, comm);
 #endif
 
+  roctxRangePop();
   /*
    * If an error occured in an MPI call, return HPL_FAILURE.
    */

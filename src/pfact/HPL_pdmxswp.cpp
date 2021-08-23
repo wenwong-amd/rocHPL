@@ -79,6 +79,8 @@ void HPL_pdmxswp(HPL_T_panel* PANEL,
   unsigned int hdim, ip2, ip2_, ipow, k, mask;
   int Np2, cnt_, cnt0, i, icurrow, lda, mydist, mydis_, myrow, n0, nprow,
       partner, rcnt, root, scnt, size_;
+
+  roctxRangePush("pdmxswp");
 /* ..
  * .. Executable Statements ..
  */
@@ -286,4 +288,5 @@ void HPL_pdmxswp(HPL_T_panel* PANEL,
 #ifdef HPL_DETAILED_TIMING
   HPL_ptimer(HPL_TIMING_MXSWP);
 #endif
+  roctxRangePop();
 }

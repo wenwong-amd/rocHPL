@@ -23,6 +23,8 @@
 
 #include "hpl_misc.hpp"
 #include <rocblas.h>
+#include <roctracer.h>
+#include <roctx.h>
 
 extern rocblas_handle handle;
 extern hipStream_t    computeStream;
