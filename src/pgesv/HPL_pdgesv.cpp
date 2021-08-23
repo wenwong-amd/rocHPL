@@ -171,8 +171,11 @@ void HPL_pdgesv(HPL_T_grid* GRID, HPL_T_palg* ALGO, HPL_T_pmat* A) {
    * Main loop over the remaining columns of A
    */
   float  smallDgemmTime, largeDgemm1Time, largeDgemm2Time;
-  double smallDgemmGflops, largeDgemm1Gflops, largeDgemm2Gflops;
+  double smallDgemmGflops, pdfactGflops, largeDgemm1Gflops, largeDgemm2Gflops;
+  double stepStart, stepEnd;
+  double pdfactStart, pdfactEnd;
   for(j = jstart; j < N; j += nb) {
+    stepStart = MPI_Wtime();
     n  = N - j;
     jb = Mmin(n, nb);
     /*
@@ -211,7 +214,14 @@ void HPL_pdgesv(HPL_T_grid* GRID, HPL_T_palg* ALGO, HPL_T_pmat* A) {
           (2.0 * mp * jb * jb) / (1000.0 * 1000.0 * smallDgemmTime);
 #endif
 
+      pdfactStart = MPI_Wtime();
       HPL_pdfact(panel[1]); /* factor current panel */
+      pdfactEnd = MPI_Wtime();
+
+#ifdef HPL_PROGRESS_REPORT
+      pdfactGflops =
+          (((double) mp)*jb*jb - (1.0/3.0)*jb*jb*jb - 0.5*jb*jb - (7.0/6.0)*jb) / ((1000.0 * 1000.0 * 1000.0)*(pdfactEnd - pdfactStart));
+#endif
 
 #if defined(GPU_AWARE_MPI)
       // send the panel back to device before bcast
@@ -274,6 +284,7 @@ void HPL_pdgesv(HPL_T_grid* GRID, HPL_T_palg* ALGO, HPL_T_pmat* A) {
     //wait here for the updates to compete
     hipDeviceSynchronize();
 
+    stepEnd = MPI_Wtime();
 
 #ifdef HPL_PROGRESS_REPORT
     const int curr  = (panel[0]->grid->myrow == panel[0]->prow ? 1 : 0);
@@ -302,11 +313,14 @@ void HPL_pdgesv(HPL_T_grid* GRID, HPL_T_palg* ALGO, HPL_T_pmat* A) {
       gflops = 2.0 * (N * (double)N * N - n * (double)n * n) / 3.0 /
                (time > 0.0 ? time : 1.e-6) / 1.e9;
       printf("Column=%09d (%4.1f%%) ", j, j * 100.0 / N);
+      printf("Step Time(s)=%9.7f ", stepEnd-stepStart);
 
       if (panel[0]->nu0) {
         printf("Small DGEMM Gflops=%9.3e ", smallDgemmGflops);
+        printf("pdfact Gflops=%9.3e ", pdfactGflops);
       } else {
         printf("Small DGEMM Gflops=--------- ");
+        printf("pdfact Gflops=--------- ");
       }
       if (panel[0]->nu2) {
         printf("First DGEMM Gflops=%9.3e ", largeDgemm2Gflops);
