@@ -59,6 +59,16 @@ find_package(MPI REQUIRED)
 # Add some paths
 list(APPEND CMAKE_PREFIX_PATH ${ROCBLAS_PATH} ${ROCM_PATH}/hip ${ROCM_PATH})
 
+find_library(ROCTRACER NAMES roctracer64
+             PATHS ${ROCM_PATH}/lib
+             NO_DEFAULT_PATH)
+find_library(ROCTX NAMES roctx64
+             PATHS ${ROCM_PATH}/lib
+             NO_DEFAULT_PATH)
+
+message("-- roctracer:  ${ROCTRACER}")
+message("-- roctx:      ${ROCTX}")
+
 # Find HIP package
 find_package(HIP REQUIRED)
 
