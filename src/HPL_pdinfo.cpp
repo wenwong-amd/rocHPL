@@ -228,7 +228,7 @@ void HPL_pdinfo(int          ARGC,
   int         p = 1, q = 1, n = 45312, nb = 384;
   bool        cmdlinerun    = false;
   bool        inputfile     = false;
-  double      frac = 0.6;
+  double      frac = 0.7;
   std::string inputFileName = "HPL.dat";
 
   for(int i = 1; i < ARGC; i++) {
@@ -365,6 +365,11 @@ void HPL_pdinfo(int          ARGC,
     exit(1);
   }
 
+  /*
+   * Split fraction
+   */
+  *FRAC = frac;
+
   if(inputfile == false && cmdlinerun == true) {
     // We were given run paramters via the cmd line so skip
     // trying to read from an input file and just fill a
@@ -441,11 +446,6 @@ void HPL_pdinfo(int          ARGC,
      * Memory alignment in bytes (> 0) (ALIGN)
      */
     *ALIGN = 8;
-    /*
-     * Split fraction
-     */
-    *FRAC = frac;
-
 
     /*
      * Compute and broadcast machine epsilon
