@@ -375,6 +375,7 @@ void HPL_pdlaswp_exchange(HPL_T_panel* PANEL,
   if(myrow == icurrow) {
 
 #if defined(GPU_AWARE_MPI)
+<<<<<<< HEAD
     // hipEventSynchronize(swapStartEvent[UPD]);
     // hipStreamSynchronize(computeStream);
 
@@ -384,6 +385,14 @@ void HPL_pdlaswp_exchange(HPL_T_panel* PANEL,
     hipEventSynchronize(swapStartEvent[UPD]);
 
     roctxRangePush("MPI_Scatterv");
+=======
+    // swap rows local to A on device
+    HPL_dlaswp02T(*ipA, n, dA, lda, dlindxA, dlindxAU);
+
+    //wait for U to be ready
+    hipEventSynchronize(swapStartEvent[UPD]);
+    // hipStreamSynchronize(computeStream);
+>>>>>>> 9b0e976c6252f7491ad8018febfe2f92c6e90647
 
     // send rows to other ranks
     MPI_Scatterv(dU,
@@ -453,7 +462,6 @@ void HPL_pdlaswp_exchange(HPL_T_panel* PANEL,
 
   } else {
 #if defined(GPU_AWARE_MPI)
-    // hipEventSynchronize(swapStartEvent[UPD]);
 
     roctxRangePush("MPI_Scatterv");
     // receive rows from icurrow into dW
@@ -468,6 +476,7 @@ void HPL_pdlaswp_exchange(HPL_T_panel* PANEL,
                  comm);
     roctxRangePop();
 
+<<<<<<< HEAD
     // wait for dU to be ready
     // hipEventSynchronize(swapStartEvent[UPD]);
     // hipStreamSynchronize(computeStream);
@@ -478,6 +487,16 @@ void HPL_pdlaswp_exchange(HPL_T_panel* PANEL,
     hipEventSynchronize(swapStartEvent[UPD]);
 
     roctxRangePush("MPI_Allgatherv");
+=======
+    //place received rows into A
+    HPL_dlaswp04T(
+        iplen[myrow + 1] - iplen[myrow], n, dA, lda, dW, LDW, dlindxA);
+
+    // wait for dU to be ready
+    hipEventSynchronize(swapStartEvent[UPD]);
+    // hipStreamSynchronize(computeStream);
+
+>>>>>>> 9b0e976c6252f7491ad8018febfe2f92c6e90647
     // All gather dU
     MPI_Allgatherv(MPI_IN_PLACE,
                    ipcounts[myrow],
@@ -501,10 +520,6 @@ void HPL_pdlaswp_exchange(HPL_T_panel* PANEL,
                  icurrow,
                  comm);
 
-    // wait for U to be ready
-    // hipEventSynchronize(swapUCopyEvent[UPD]);
-    hipStreamSynchronize(dataStream);
-
     // Copy recieved W piece to device
     hipMemcpy2DAsync(dW,
                      LDW * sizeof(double),
@@ -517,7 +532,14 @@ void HPL_pdlaswp_exchange(HPL_T_panel* PANEL,
     hipEventRecord(swapWCopyEvent[UPD], dataStream);
     hipStreamWaitEvent(computeStream, swapWCopyEvent[UPD], 0);
 
+<<<<<<< HEAD
     roctxRangePush("MPI_Allgatherv");
+=======
+    // wait for U to be ready
+    hipEventSynchronize(swapUCopyEvent[UPD]);
+    // hipStreamSynchronize(dataStream);
+
+>>>>>>> 9b0e976c6252f7491ad8018febfe2f92c6e90647
     // All gather U
     MPI_Allgatherv(MPI_IN_PLACE,
                    ipcounts[myrow],
