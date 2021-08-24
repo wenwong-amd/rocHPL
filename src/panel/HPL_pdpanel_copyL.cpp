@@ -16,7 +16,7 @@
 
 #include "hpl.hpp"
 
-void HPL_copyL(HPL_T_panel* PANEL) {
+void HPL_pdpanel_copyL(HPL_T_panel* PANEL) {
   /*
    * Purpose
    * =======

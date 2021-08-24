@@ -129,7 +129,7 @@ int  HPL_pdpanel_free(HPL_T_panel*);
 void HPL_pdpanel_SendToHost(HPL_T_panel*);
 void HPL_pdpanel_SendToDevice(HPL_T_panel*);
 int  HPL_pdpanel_bcast(HPL_T_panel*);
-
+void HPL_pdpanel_copyL(HPL_T_panel*);
 #endif
 /*
  * End of hpl_panel.hpp

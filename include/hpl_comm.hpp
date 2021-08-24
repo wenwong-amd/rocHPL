@@ -59,7 +59,6 @@ extern MPI_Op HPL_DMXSWP;
 int  HPL_send(double*, int, int, int, MPI_Comm);
 int  HPL_recv(double*, int, int, int, MPI_Comm);
 int  HPL_sdrv(double*, int, int, double*, int, int, int, MPI_Comm);
-void HPL_copyL(HPL_T_panel*);
 
 int  HPL_bcast(double*, int, int, MPI_Comm);
 int  HPL_scatterv(double*, const int*, const int*,

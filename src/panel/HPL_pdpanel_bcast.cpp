@@ -47,7 +47,7 @@ int HPL_pdpanel_bcast(HPL_T_panel* PANEL) {
   /*
    * Force the copy of the panel into a contiguous buffer
    */
-  HPL_copyL(PANEL);
+  HPL_pdpanel_copyL(PANEL);
 
   /*
    * Single Bcast call
