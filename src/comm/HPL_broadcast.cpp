@@ -52,9 +52,7 @@ int HPL_broadcast(void*            BUFFER,
    * ---------------------------------------------------------------------
    */
 
-  int ierr;
-
-  ierr = MPI_Bcast(BUFFER, COUNT, HPL_2_MPI_TYPE(DTYPE), ROOT, COMM);
+  int ierr = MPI_Bcast(BUFFER, COUNT, HPL_2_MPI_TYPE(DTYPE), ROOT, COMM);
 
   return ((ierr == MPI_SUCCESS ? HPL_SUCCESS : HPL_FAILURE));
 }
