@@ -81,7 +81,7 @@ void HPL_all_reduce_dmxswp(double*   BUFFER,
    * ---------------------------------------------------------------------
    */
 
-  roctxRangePush("pdmxswp");
+  roctxRangePush("HPL_all_reduce_dmxswp");
 
 #if 1
 
