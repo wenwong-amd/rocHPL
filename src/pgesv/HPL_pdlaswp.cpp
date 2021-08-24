@@ -375,59 +375,46 @@ void HPL_pdlaswp_exchange(HPL_T_panel* PANEL,
   if(myrow == icurrow) {
 
 #if defined(GPU_AWARE_MPI)
+    // hipEventSynchronize(swapStartEvent[UPD]);
+    // hipStreamSynchronize(computeStream);
+
     // swap rows local to A on device
     HPL_dlaswp02T(*ipA, n, dA, lda, dlindxA, dlindxAU);
 
-    //wait for U to be ready
     hipEventSynchronize(swapStartEvent[UPD]);
-    // hipStreamSynchronize(computeStream);
 
     // send rows to other ranks
-    MPI_Scatterv(dU,
+    HPL_scatterv(dU,
                  ipcounts,
                  ipoffsets,
-                 MPI_DOUBLE,
-                 MPI_IN_PLACE,
                  ipcounts[myrow],
-                 MPI_DOUBLE,
                  icurrow,
                  comm);
 
     // All gather dU
-    MPI_Allgatherv(MPI_IN_PLACE,
+    HPL_allgatherv(dU,
                    ipcounts[myrow],
-                   MPI_DOUBLE,
-                   dU,
                    ipcounts,
                    ipoffsets,
-                   MPI_DOUBLE,
                    comm);
 #else
     //wait for U to arrive on host
     hipStreamSynchronize(dataStream);
 
     // send rows to other ranks
-    MPI_Scatterv(U,
+    HPL_scatterv(U,
                  ipcounts,
                  ipoffsets,
-                 MPI_DOUBLE,
-                 MPI_IN_PLACE,
                  ipcounts[myrow],
-                 MPI_DOUBLE,
                  icurrow,
                  comm);
 
     // All gather U
-    MPI_Allgatherv(MPI_IN_PLACE,
+    HPL_allgatherv(U,
                    ipcounts[myrow],
-                   MPI_DOUBLE,
-                   U,
                    ipcounts,
                    ipoffsets,
-                   MPI_DOUBLE,
                    comm);
-
-
 
     // send U to device
     hipMemcpy2DAsync(dU,
@@ -445,42 +432,32 @@ void HPL_pdlaswp_exchange(HPL_T_panel* PANEL,
 #if defined(GPU_AWARE_MPI)
 
     // receive rows from icurrow into dW
-    MPI_Scatterv(NULL,
+    HPL_scatterv(dW,
                  ipcounts,
                  ipoffsets,
-                 MPI_DOUBLE,
-                 dW,
                  ipcounts[myrow],
-                 MPI_DOUBLE,
                  icurrow,
                  comm);
 
-    //place received rows into A
     HPL_dlaswp04T(
         iplen[myrow + 1] - iplen[myrow], n, dA, lda, dW, LDW, dlindxA);
 
     // wait for dU to be ready
-    hipEventSynchronize(swapStartEvent[UPD]);
     // hipStreamSynchronize(computeStream);
+    hipEventSynchronize(swapStartEvent[UPD]);
 
     // All gather dU
-    MPI_Allgatherv(MPI_IN_PLACE,
+    HPL_allgatherv(dU,
                    ipcounts[myrow],
-                   MPI_DOUBLE,
-                   dU,
                    ipcounts,
                    ipoffsets,
-                   MPI_DOUBLE,
                    comm);
 #else
     // receive rows from icurrow into W
-    MPI_Scatterv(NULL,
+    HPL_scatterv(W,
                  ipcounts,
                  ipoffsets,
-                 MPI_DOUBLE,
-                 W,
                  ipcounts[myrow],
-                 MPI_DOUBLE,
                  icurrow,
                  comm);
 
@@ -501,13 +478,10 @@ void HPL_pdlaswp_exchange(HPL_T_panel* PANEL,
     // hipStreamSynchronize(dataStream);
 
     // All gather U
-    MPI_Allgatherv(MPI_IN_PLACE,
+    HPL_allgatherv(U,
                    ipcounts[myrow],
-                   MPI_DOUBLE,
-                   U,
                    ipcounts,
                    ipoffsets,
-                   MPI_DOUBLE,
                    comm);
 
     // send U to device

@@ -34,9 +34,7 @@ int HPL_barrier(MPI_Comm COMM) {
    * ---------------------------------------------------------------------
    */
 
-  int ierr;
-
-  ierr = MPI_Barrier(COMM);
+  int ierr = MPI_Barrier(COMM);
 
   return ((ierr == MPI_SUCCESS ? HPL_SUCCESS : HPL_FAILURE));
 }

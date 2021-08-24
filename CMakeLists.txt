@@ -77,7 +77,7 @@ option(BUILD_TEST "Build rocHPL single-node test" OFF)
 include(cmake/Dependencies.cmake)
 
 # Setup version
-rocm_setup_version(VERSION 4.2.1)
+rocm_setup_version(VERSION 4.3.0)
 
 # This option only works for make/nmake and the ninja generators, but no reason it shouldn't be on all the time
 # This tells cmake to create a compile_commands.json file that can be used with clang tooling or vim
@@ -150,7 +150,8 @@ target_include_directories(rochpl
                            PRIVATE
                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
                            $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
-                           $<BUILD_INTERFACE:${HIP_INCLUDE_DIRS}>)
+                           $<BUILD_INTERFACE:${HIP_INCLUDE_DIRS}>
+                           $<BUILD_INTERFACE:${ROCM_PATH}/include/roctracer>)
 
 #HIP
 target_link_libraries(rochpl PRIVATE hip::host)
@@ -167,6 +168,8 @@ endif()
 target_link_libraries(rochpl PRIVATE BLAS::BLAS)
 target_link_libraries(rochpl PRIVATE roc::rocblas)
 target_link_libraries(rochpl PRIVATE roc::rocrand)
+target_link_libraries(rochpl PRIVATE ${ROCTRACER})
+target_link_libraries(rochpl PRIVATE ${ROCTX})
 
 # Target properties
 set_target_properties(rochpl PROPERTIES VERSION ${rochpl_VERSION})
@@ -184,6 +187,16 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/scripts/run_rochpl.in"
 
 #move input file
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/scripts/HPL.dat
+     DESTINATION ${CMAKE_BINARY_DIR})
+
+#move core mapping scripts
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/scripts/cpu_core_mapP2Q1.sh
+     DESTINATION ${CMAKE_BINARY_DIR})
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/scripts/cpu_core_mapP2Q2.sh
+     DESTINATION ${CMAKE_BINARY_DIR})
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/scripts/cpu_core_mapP2Q4.sh
+     DESTINATION ${CMAKE_BINARY_DIR})
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/scripts/cpu_core_mapP4Q2.sh
      DESTINATION ${CMAKE_BINARY_DIR})
 
 # Install targets
