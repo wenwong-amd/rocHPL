@@ -151,6 +151,7 @@ target_include_directories(rochpl
                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
                            $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
                            $<BUILD_INTERFACE:${HIP_INCLUDE_DIRS}>
+			   $<BUILD_INTERFACE:${HPL_MPI_DIR}/include>
                            $<BUILD_INTERFACE:${ROCM_PATH}/include/roctracer>)
 
 #HIP
@@ -160,9 +161,7 @@ target_link_libraries(rochpl PRIVATE hip::host)
 target_link_libraries(rochpl PRIVATE MPI::MPI_CXX)
 
 # OpenMP
-if(HPL_OPENMP)
-  target_link_libraries(rochpl PRIVATE OpenMP::OpenMP_CXX)
-endif()
+target_link_libraries(rochpl PRIVATE OpenMP::OpenMP_CXX)
 
 # Target link libraries
 target_link_libraries(rochpl PRIVATE BLAS::BLAS)
@@ -175,6 +174,9 @@ target_link_libraries(rochpl PRIVATE ${ROCTX})
 set_target_properties(rochpl PROPERTIES VERSION ${rochpl_VERSION})
 set_target_properties(rochpl PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 set_target_properties(rochpl PROPERTIES DEBUG_POSTFIX "-d")
+
+set_target_properties(rochpl PROPERTIES LINKER_LANGUAGE CXX)
+target_link_options(rochpl PRIVATE "-fopenmp")
 
 # Configure a header file to pass the rocHPL version
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/include/hpl_version.hpp.in"
