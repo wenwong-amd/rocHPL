@@ -446,6 +446,7 @@ pushd .
   if [[ "${with_mpi}" == tpl/openmpi ]]; then
 
     #gpu_aware_mpi=ON #turn on GPU-aware MPI when using internal MPI library
+    with_mpi=${PWD}/tpl/openmpi
     openmpi_ucx=true
     install_openmpi
 
