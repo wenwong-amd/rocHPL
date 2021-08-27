@@ -61,10 +61,13 @@ int HPL_scatterv(double* BUF, const int* SCOUNT, const int* DISPL,
    * ---------------------------------------------------------------------
    */
 
-  int rank, ierr;
+  int rank, ierr=MPI_SUCCESS;
   MPI_Comm_rank(COMM, &rank);
 
   roctxRangePush("HPL_Scatterv");
+
+#ifdef HPL_USE_COLLECTIVES
+
   if (rank==ROOT) {
     ierr = MPI_Scatterv(BUF,
                         SCOUNT,
@@ -86,7 +89,32 @@ int HPL_scatterv(double* BUF, const int* SCOUNT, const int* DISPL,
                         ROOT,
                         COMM);
   }
+
+#else
+
+  int size;
+  MPI_Comm_size(COMM, &size);
+
+  const int tag = ROOT;
+  if (rank==ROOT) {
+    /*Just send size-1 messages*/
+    for (int i = 0; i < size; ++i) {
+      if (i==ROOT) {requests[i]= MPI_REQUEST_NULL; continue;}
+      const int ibuf = DISPL[i];
+      const int lbuf = SCOUNT[i];
+
+      if (lbuf >0) {
+        (void) MPI_Send(BUF+ibuf, lbuf, MPI_DOUBLE, i, tag, COMM);
+      }
+    }
+  } else {
+    if (RCOUNT>0)
+      ierr = MPI_Recv(BUF, RCOUNT, MPI_DOUBLE, ROOT, tag, COMM, MPI_STATUS_IGNORE);
+  }
+
+#endif
   roctxRangePop();
+
 
   return ((ierr == MPI_SUCCESS ? HPL_SUCCESS : HPL_FAILURE));
 }

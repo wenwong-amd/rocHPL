@@ -83,7 +83,7 @@ void HPL_all_reduce_dmxswp(double*   BUFFER,
 
   roctxRangePush("HPL_all_reduce_dmxswp");
 
-#if 1
+#ifdef HPL_USE_COLLECTIVES
 
   /* Use a normal all_reduce */
   (void) HPL_all_reduce(BUFFER, COUNT,

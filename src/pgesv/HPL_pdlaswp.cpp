@@ -363,6 +363,7 @@ void HPL_pdlaswp_exchange(HPL_T_panel* PANEL,
     ipcounts[i]  = (iplen[i + 1] - iplen[i]) * n;
     ipoffsets[i] = ipcounts[i - 1] + ipoffsets[i - 1];
   }
+  ipoffsets[nprow] = ipcounts[nprow - 1] + ipoffsets[nprow - 1];
 
   /*
    * For i in [0..2*jb),  lindxA[i] is the offset in A of a row that ulti-

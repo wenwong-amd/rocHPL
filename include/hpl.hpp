@@ -27,6 +27,8 @@
 // Always need this now
 #define HPL_COPY_L
 
+#undef HPL_USE_COLLECTIVES
+
 /*
  * ---------------------------------------------------------------------
  * Include files
