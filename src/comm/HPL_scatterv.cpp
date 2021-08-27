@@ -66,7 +66,8 @@ int HPL_scatterv(double* BUF, const int* SCOUNT, const int* DISPL,
 
   roctxRangePush("HPL_Scatterv");
 
-#ifdef HPL_USE_COLLECTIVES
+//#ifdef HPL_USE_COLLECTIVES
+#if 1
 
   if (rank==ROOT) {
     ierr = MPI_Scatterv(BUF,
@@ -99,7 +100,7 @@ int HPL_scatterv(double* BUF, const int* SCOUNT, const int* DISPL,
   if (rank==ROOT) {
     /*Just send size-1 messages*/
     for (int i = 0; i < size; ++i) {
-      if (i==ROOT) {requests[i]= MPI_REQUEST_NULL; continue;}
+      if (i==ROOT) {continue;}
       const int ibuf = DISPL[i];
       const int lbuf = SCOUNT[i];
 

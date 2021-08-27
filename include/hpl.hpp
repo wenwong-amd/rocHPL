@@ -28,6 +28,7 @@
 #define HPL_COPY_L
 
 #undef HPL_USE_COLLECTIVES
+//#define HPL_USE_COLLECTIVES
 
 /*
  * ---------------------------------------------------------------------
