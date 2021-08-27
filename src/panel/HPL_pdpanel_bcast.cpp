@@ -53,8 +53,8 @@ int HPL_pdpanel_bcast(HPL_T_panel* PANEL) {
    * Single Bcast call
    */
 #if defined(GPU_AWARE_MPI)
-  return HPL_bcast(PANEL->dL2, PANEL->len, root, comm);
+  return HPL_bcast(PANEL->dL2, PANEL->len, root, comm, PANEL->algo->btopo);
 #else
-  return HPL_bcast(PANEL->L2, PANEL->len, root, comm);
+  return HPL_bcast(PANEL->L2, PANEL->len, root, comm, PANEL->algo->btopo);
 #endif
 }

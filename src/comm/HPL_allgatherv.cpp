@@ -91,15 +91,19 @@ int HPL_allgatherv(double* BUF, const int SCOUNT, const int* RCOUNT,
     int il, lengthS, lengthR, partner, ibufS, ibufR;
     if(((rank + k) & 1) != 0) {
       il      = MModAdd(rank, l, size);
-      lengthS = DISPL[il + 1] - (ibufS = DISPL[il]);
+      ibufS   = DISPL[il];
+      lengthS = RCOUNT[il];
       il      = MModSub(rank, l + 1, size);
-      lengthR = DISPL[il + 1] - (ibufR = DISPL[il]);
+      ibufR   = DISPL[il];
+      lengthR = RCOUNT[il];
       partner = prev;
     } else {
       il      = MModSub(rank, l, size);
-      lengthS = DISPL[il + 1] - (ibufS = DISPL[il]);
+      ibufS   = DISPL[il];
+      lengthS = RCOUNT[il];
       il      = MModAdd(rank, l + 1, size);
-      lengthR = DISPL[il + 1] - (ibufR = DISPL[il]);
+      ibufR   = DISPL[il];
+      lengthR = RCOUNT[il];
       partner = next;
     }
 

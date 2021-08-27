@@ -416,7 +416,7 @@ void HPL_pdinfo(int          ARGC,
      * Broadcast topology (TP) (0=rg, 1=2rg, 2=rgM, 3=2rgM, 4=L)
      */
     *NTPS = 1;
-    TP[i] = HPL_IBCST;
+    TP[i] = HPL_1RING_M;
     /*
      * Lookahead depth (>=0) (NDH)
      */
@@ -782,20 +782,8 @@ void HPL_pdinfo(int          ARGC,
           TP[i] = HPL_2RING_M;
         else if(j == 4)
           TP[i] = HPL_BLONG;
-        else if(j == 5)
+        else //if(j == 5)
           TP[i] = HPL_BLONG_M;
-        else
-          TP[i] = HPL_IBCST;
-
-        // NC: Only one broadcast implemented currently
-        if(TP[i] != HPL_IBCST) {
-          HPL_pwarn(stderr,
-                    __LINE__,
-                    "HPL_pdinfo",
-                    "Value of BCAST must be 6");
-          error = 1;
-          goto label_error;
-        }
       }
       /*
        * Lookahead depth (>=0) (NDH)
@@ -1048,8 +1036,6 @@ void HPL_pdinfo(int          ARGC,
           iwork[j] = 4;
         else if(TP[i] == HPL_BLONG_M)
           iwork[j] = 5;
-        else if(TP[i] == HPL_IBCST)
-          iwork[j] = 6;
         j++;
       }
       for(i = 0; i < *NDHS; i++) {
@@ -1124,8 +1110,6 @@ void HPL_pdinfo(int          ARGC,
           TP[i] = HPL_BLONG;
         else if(iwork[j] == 5)
           TP[i] = HPL_BLONG_M;
-        else if(iwork[j] == 6)
-          TP[i] = HPL_IBCST;
         j++;
       }
       for(i = 0; i < *NDHS; i++) {
@@ -1366,8 +1350,6 @@ void HPL_pdinfo(int          ARGC,
         HPL_fprintf(TEST->outfp, "   Blong ");
       else if(TP[i] == HPL_BLONG_M)
         HPL_fprintf(TEST->outfp, "  BlongM ");
-      else if(TP[i] == HPL_IBCST)
-        HPL_fprintf(TEST->outfp, "  IBcast ");
     }
     if(*NTPS > 8) {
       HPL_fprintf(TEST->outfp, "\n        ");
@@ -1384,8 +1366,6 @@ void HPL_pdinfo(int          ARGC,
           HPL_fprintf(TEST->outfp, "   Blong ");
         else if(TP[i] == HPL_BLONG_M)
           HPL_fprintf(TEST->outfp, "  BlongM ");
-        else if(TP[i] == HPL_IBCST)
-          HPL_fprintf(TEST->outfp, "  IBcast ");
       }
       if(*NTPS > 16) {
         HPL_fprintf(TEST->outfp, "\n        ");
@@ -1402,8 +1382,6 @@ void HPL_pdinfo(int          ARGC,
             HPL_fprintf(TEST->outfp, "   Blong ");
           else if(TP[i] == HPL_BLONG_M)
             HPL_fprintf(TEST->outfp, "  BlongM ");
-          else if(TP[i] == HPL_IBCST)
-            HPL_fprintf(TEST->outfp, "  IBcast ");
         }
       }
     }
