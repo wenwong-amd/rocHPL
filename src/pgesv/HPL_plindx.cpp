@@ -133,9 +133,11 @@ void HPL_plindx(HPL_T_panel* PANEL,
         if((dstrow == icurrow) && (dst - ia < jb)) {
           // if I own the dst and it's in U
 
-          PERMU[ipU]  = dst - ia;      // row index in U
-          iwork[ipU]  = IPLEN[dstrow]; // Index in AllGathered U
-          ipU++;
+          PERMU[IPLEN[dstrow]]  = dst - ia;      // row index in U
+
+          // PERMU[ipU]  = dst - ia;      // row index in U
+          // iwork[ipU]  = IPLEN[dstrow]; // Index in AllGathered U
+          // ipU++;
 
           LINDXU[IPLEN[dstrow]] = il - iroff; // Index in AllGathered U
           IPLEN[dstrow]++;
@@ -151,9 +153,11 @@ void HPL_plindx(HPL_T_panel* PANEL,
           } while(!fndd && (j < K));
           // This pair must have dst being sent to a position in U
 
-          PERMU[ipU]  = IPID[j - 1] - ia; // row index in U
-          iwork[ipU]  = IPLEN[dstrow];    // Index in AllGathered U
-          ipU++;
+          PERMU[IPLEN[dstrow]]  = IPID[j - 1] - ia; // row index in U
+
+          // PERMU[ipU]  = IPID[j - 1] - ia; // row index in U
+          // iwork[ipU]  = IPLEN[dstrow];    // Index in AllGathered U
+          // ipU++;
 
           LINDXU[IPLEN[dstrow]] = il - iroff;    // Index in AllGathered U
           IPLEN[dstrow]++;
@@ -199,8 +203,10 @@ void HPL_plindx(HPL_T_panel* PANEL,
 
         if((dstrow == icurrow) && (dst - ia < jb)) {
           // If the row is going into U
-          PERMU[ipU] = dst - ia;      // row index in U
-          iwork[ipU] = IPLEN[dstrow]; // Index in AllGathered U
+          PERMU[IPLEN[dstrow]] = dst - ia;      // row index in U
+
+          // PERMU[ipU] = dst - ia;      // row index in U
+          // iwork[ipU] = IPLEN[dstrow]; // Index in AllGathered U
           IPLEN[dstrow]++;
           ipU++;
         } else if(dstrow != icurrow) {
@@ -216,8 +222,10 @@ void HPL_plindx(HPL_T_panel* PANEL,
           } while(!fndd && (j < K));
           // This pair must have dst being sent to a position in U
 
-          PERMU[ipU] = IPID[j - 1] - ia; // row index in U
-          iwork[ipU] = IPLEN[dstrow];    // Index in AllGathered U
+          PERMU[IPLEN[dstrow]] = IPID[j - 1] - ia; // row index in U
+
+          // PERMU[ipU] = IPID[j - 1] - ia; // row index in U
+          // iwork[ipU] = IPLEN[dstrow];    // Index in AllGathered U
           IPLEN[dstrow]++;
           ipU++;
         }
@@ -229,7 +237,7 @@ void HPL_plindx(HPL_T_panel* PANEL,
    * Simplify iwork and PERMU, return in PERMU the sequence of permutation
    * that need to be apply to U after it has been broadcast.
    */
-  HPL_perm(jb, iwork, PERMU, IWORK);
+  // HPL_perm(jb, iwork, PERMU, IWORK);
   /*
    * Reset IPLEN to its correct value
    */
