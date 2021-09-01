@@ -20,8 +20,9 @@ void HPL_plindx(HPL_T_panel* PANEL,
                 const int    K,
                 const int*   IPID,
                 int*         IPA,
-                int*         LINDXA,
+                int*         LINDXU,
                 int*         LINDXAU,
+                int*         LINDXA,
                 int*         IPLEN,
                 int*         PERMU,
                 int*         IWORK) {
@@ -29,7 +30,7 @@ void HPL_plindx(HPL_T_panel* PANEL,
    * Purpose
    * =======
    *
-   * HPL_plindx computes two local arrays  LINDXA and  LINDXAU  containing
+   * HPL_plindx computes three local arrays LINDXU, LINDXA, and  LINDXAU  containing
    * the  local  source and final destination position  resulting from the
    * application of row interchanges.  In addition, this function computes
    * the array IPLEN that contains the mapping information for the
@@ -53,20 +54,22 @@ void HPL_plindx(HPL_T_panel* PANEL,
    *
    * IPA     (global output)               int *
    *         On exit,  IPA  specifies  the number of rows that the current
-   *         process row has that either belong to U  or should be swapped
-   *         with remote rows of A.
+   *         process row has that should be swapped with local rows of A.
    *
-   * LINDXA  (global output)               int *
-   *         On entry, LINDXA  is an array of dimension 2*N. On exit, this
+   * LINDXU  (global output)               int *
+   *         On entry, LINDXU  is an array of dimension N. On exit, this
    *         array contains the local indexes of the rows of A I have that
    *         should be copied into U.
    *
    * LINDXAU (global output)               int *
-   *         On exit, LINDXAU  is an array of dimension 2*N. On exit, this
-   *         array contains  the local destination  information encoded as
-   *         follows.  If LINDXAU(k) >= 0, row  LINDXA(k)  of A  is  to be
-   *         copied in U at position LINDXAU(k).  Otherwise, row LINDXA(k)
-   *         of A should be locally copied into A(-LINDXAU(k),:).
+   *         On entry, LINDXAU is an array of dimension N. On exit, this
+   *         array contains the local source indexes of the rows of A I
+   *         have that should be swapped locally.
+   *
+   * LINDXA  (global output)               int *
+   *         On entry, LINDXA  is an array of dimension N. On exit, this
+   *         array contains  the local destination indexes of the rows
+   *         of A I have that should be swapped locally.
    *
    * IPLEN   (global output)               int *
    *         On entry, IPLEN is an array of dimension NPROW + 1. On  exit,
@@ -126,16 +129,16 @@ void HPL_plindx(HPL_T_panel* PANEL,
 
         int il;
         Mindxg2l(il, src, nb, nb, myrow, 0, nprow);
-        LINDXA[ip] = il - iroff;
 
         if((dstrow == icurrow) && (dst - ia < jb)) {
           // if I own the dst and it's in U
 
           PERMU[ipU]  = dst - ia;      // row index in U
           iwork[ipU]  = IPLEN[dstrow]; // Index in AllGathered U
-          LINDXAU[ip] = IPLEN[dstrow]; // Index in AllGathered U
-          IPLEN[dstrow]++;
           ipU++;
+
+          LINDXU[IPLEN[dstrow]] = il - iroff; // Index in AllGathered U
+          IPLEN[dstrow]++;
         } else if(dstrow != icurrow) {
           // else if I don't own the dst
 
@@ -150,16 +153,20 @@ void HPL_plindx(HPL_T_panel* PANEL,
 
           PERMU[ipU]  = IPID[j - 1] - ia; // row index in U
           iwork[ipU]  = IPLEN[dstrow];    // Index in AllGathered U
-          LINDXAU[ip] = IPLEN[dstrow];    // Index in AllGathered U
-          IPLEN[dstrow]++;
           ipU++;
+
+          LINDXU[IPLEN[dstrow]] = il - iroff;    // Index in AllGathered U
+          IPLEN[dstrow]++;
         } else if((dstrow == icurrow) && (dst - ia >= jb)) {
-          // if I own the dst but it's not in U
+          //else I own the dst, but it's not in U
+
+          LINDXAU[ip] = il - iroff; //the src row must be in the first jb rows
+
           int il;
           Mindxg2l(il, dst, nb, nb, myrow, 0, nprow);
-          LINDXAU[ip] = iroff - il; // Save negative local A index
+          LINDXA[ip] = il - iroff; //the dst is somewhere below
+          ip++;
         }
-        ip++;
       }
     }
     *IPA = ip;
@@ -174,12 +181,12 @@ void HPL_plindx(HPL_T_panel* PANEL,
       int       dstrow;
       Mindxg2p(dst, nb, nb, dstrow, 0, nprow);
       /*
-       * LINDXA[i] is the local index of the row of A that belongs into U
+       * LINDXU[i] is the local index of the row of A that belongs into U
        */
       if(myrow == dstrow) { // if I own the dst row
         int il;
         Mindxg2l(il, dst, nb, nb, myrow, 0, nprow);
-        LINDXA[ip] = il - iroff; // Local A index of incoming row
+        LINDXU[ip] = il - iroff; // Local A index of incoming row
         ip++;
       }
       /*
