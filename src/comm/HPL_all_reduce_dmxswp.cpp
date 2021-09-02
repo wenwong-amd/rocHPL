@@ -19,17 +19,22 @@
 
 /* MPI_Op_create is called in main to bind HPL_dmxswp to this MPI_Op */
 MPI_Op HPL_DMXSWP;
+MPI_Datatype PDFACT_ROW;
 
 /* Swap-broadcast comparison function usable in MPI_Allreduce */
 void HPL_dmxswp(void* invec, void* inoutvec, int* len,
                 MPI_Datatype* datatype) {
 
-  assert(*datatype == MPI_DOUBLE);
+  assert(*datatype == PDFACT_ROW);
+  assert(*len == 1);
+
+  int N;
+  MPI_Type_size(PDFACT_ROW, &N);
 
   double* Wwork = static_cast<double*>(invec);
   double* WORK  = static_cast<double*>(inoutvec);
 
-  const int jb = (*len-4)/2;
+  const int jb = ((N/sizeof(double))-4)/2;
 
   //check max column value and overwirte row if new max is found
   const double gmax = Mabs(WORK[0]);
@@ -86,8 +91,9 @@ void HPL_all_reduce_dmxswp(double*   BUFFER,
 #if 1
 
   /* Use a normal all_reduce */
-  (void) HPL_all_reduce(BUFFER, COUNT,
-                        HPL_DOUBLE, HPL_DMXSWP, COMM);
+  (void) MPI_Allreduce(MPI_IN_PLACE, BUFFER, 1,
+                       PDFACT_ROW, HPL_DMXSWP, COMM);
+
 
 #else
   double       gmax, tmp1;
