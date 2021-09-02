@@ -17,7 +17,8 @@
 #include "hpl.hpp"
 #include <hip/hip_runtime.h>
 
-#define BLOCK_SIZE 256
+#define TILE_DIM 32
+#define BLOCK_ROWS 8
 
 /* Build W matrix from rows of A */
 __global__ void dlaswp03T(const int M,
@@ -28,14 +29,41 @@ __global__ void dlaswp03T(const int M,
                           const int LDW,
                           const int* __restrict__ LINDXU) {
 
-  const int m = blockIdx.x;
-  const int n = threadIdx.x + BLOCK_SIZE * blockIdx.y;
+  __shared__ double s_W[TILE_DIM][TILE_DIM + 1];
 
-  if (n<N) {
+  const int m = threadIdx.x + TILE_DIM * blockIdx.x;
+  const int n = threadIdx.y + TILE_DIM * blockIdx.y;
+
+  if(m < M) {
     const int ipa = LINDXU[m];
 
-    //sparse access of A, but coalesced write to W
-    W[n + m * ((size_t)LDW)] = A[ipa + n * ((size_t)LDA)];
+    // save in LDS for the moment
+    // possible cache-hits if ipas are close
+    s_W[threadIdx.x][threadIdx.y + 0] =
+        (n + 0 < N) ? A[ipa + (n + 0) * ((size_t)LDA)] : 0.0;
+    s_W[threadIdx.x][threadIdx.y + 8] =
+        (n + 8 < N) ? A[ipa + (n + 8) * ((size_t)LDA)] : 0.0;
+    s_W[threadIdx.x][threadIdx.y + 16] =
+        (n + 16 < N) ? A[ipa + (n + 16) * ((size_t)LDA)] : 0.0;
+    s_W[threadIdx.x][threadIdx.y + 24] =
+        (n + 24 < N) ? A[ipa + (n + 24) * ((size_t)LDA)] : 0.0;
+  }
+
+  __syncthreads();
+
+  const int wm = threadIdx.y + TILE_DIM * blockIdx.x;
+  const int wn = threadIdx.x + TILE_DIM * blockIdx.y;
+
+  if(wn < N) {
+    // write out chunks of W
+    if((wm + 0) < M)
+      W[wn + (wm + 0) * ((size_t)LDW)] = s_W[threadIdx.y + 0][threadIdx.x];
+    if((wm + 8) < M)
+      W[wn + (wm + 8) * ((size_t)LDW)] = s_W[threadIdx.y + 8][threadIdx.x];
+    if((wm + 16) < M)
+      W[wn + (wm + 16) * ((size_t)LDW)] = s_W[threadIdx.y + 16][threadIdx.x];
+    if((wm + 24) < M)
+      W[wn + (wm + 24) * ((size_t)LDW)] = s_W[threadIdx.y + 24][threadIdx.x];
   }
 }
 
@@ -94,8 +122,8 @@ void HPL_dlaswp03T(const int  M,
 
   if((M <= 0) || (N <= 0)) return;
 
-  dim3 grid_size(M, (N + BLOCK_SIZE - 1) / BLOCK_SIZE);
-  dim3 block_size(BLOCK_SIZE);
+  dim3 grid_size((M + TILE_DIM - 1) / TILE_DIM, (N + TILE_DIM - 1) / TILE_DIM);
+  dim3 block_size(TILE_DIM, BLOCK_ROWS);
   hipLaunchKernelGGL((dlaswp03T),
                      grid_size,
                      block_size,
