@@ -185,13 +185,14 @@ void HPL_pdpanel_init(HPL_T_grid*  GRID,
    * ly. The exact size of this array depends on the swapping routine that
    * will be used, so we allocate the maximum:
    *
-   *       lindxA   is of size at most 2 * JB +
-   *       lindxAU  is of size at most 2 * JB +
+   *       lindxU   is of size         JB +
+   *       lindxA   is of size at most JB +
+   *       lindxAU  is of size at most JB +
    *       permU    is of size at most JB
    *
    *       ipiv     is of size at most JB
    *
-   * that is  6*JB.
+   * that is  5*JB.
    *
    * We make sure that those three arrays are contiguous in memory for the
    * later panel broadcast (using type punning to put the integer array at
@@ -203,7 +204,7 @@ void HPL_pdpanel_init(HPL_T_grid*  GRID,
   const double fraction = ALGO->frac;
 
   dalign      = ALGO->align * sizeof(double);
-  size_t lpiv = (6 * JB * sizeof(int) + sizeof(double) - 1) / (sizeof(double));
+  size_t lpiv = (5 * JB * sizeof(int) + sizeof(double) - 1) / (sizeof(double));
 
 
   if(npcol == 1)                 /* P x 1 process grid */
@@ -286,8 +287,8 @@ void HPL_pdpanel_init(HPL_T_grid*  GRID,
 
       PANEL->permU  = (int*)(PANEL->L1 + JB * JB);
       PANEL->dpermU = (int*)(PANEL->dL1 + JB * JB);
-      PANEL->ipiv   = PANEL->permU + 2 * JB;
-      PANEL->dipiv  = PANEL->dpermU + 2 * JB;
+      PANEL->ipiv   = PANEL->permU + JB;
+      PANEL->dipiv  = PANEL->dpermU + JB;
 
       PANEL->DINFO  = (double*)(PANEL->ipiv + 2 * JB);
       PANEL->dDINFO = (double*)(PANEL->dipiv + 2 * JB);
@@ -309,10 +310,12 @@ void HPL_pdpanel_init(HPL_T_grid*  GRID,
 
       PANEL->lindxA   = (int*)(PANEL->L1 + JB * JB);
       PANEL->dlindxA  = (int*)(PANEL->dL1 + JB * JB);
-      PANEL->lindxAU  = PANEL->lindxA + 2 * JB;
-      PANEL->dlindxAU = PANEL->dlindxA + 2 * JB;
-      PANEL->permU    = PANEL->lindxAU + 2 * JB;
-      PANEL->dpermU   = PANEL->dlindxAU + 2 * JB;
+      PANEL->lindxAU  = PANEL->lindxA + JB;
+      PANEL->dlindxAU = PANEL->dlindxA + JB;
+      PANEL->lindxU   = PANEL->lindxAU + JB;
+      PANEL->dlindxU  = PANEL->dlindxAU + JB;
+      PANEL->permU    = PANEL->lindxU + JB;
+      PANEL->dpermU   = PANEL->dlindxU + JB;
 
       // Put ipiv array at the end
       PANEL->ipiv  = PANEL->permU + JB;
@@ -409,8 +412,8 @@ void HPL_pdpanel_init(HPL_T_grid*  GRID,
 
       PANEL->permU  = (int*)(PANEL->L1 + JB * JB);
       PANEL->dpermU = (int*)(PANEL->dL1 + JB * JB);
-      PANEL->ipiv   = PANEL->permU + 2 * JB;
-      PANEL->dipiv  = PANEL->dpermU + 2 * JB;
+      PANEL->ipiv   = PANEL->permU + JB;
+      PANEL->dipiv  = PANEL->dpermU + JB;
 
       PANEL->DINFO  = (double*)(PANEL->ipiv + 2 * JB);
       PANEL->dDINFO = (double*)(PANEL->dipiv + 2 * JB);
@@ -432,10 +435,12 @@ void HPL_pdpanel_init(HPL_T_grid*  GRID,
 
       PANEL->lindxA   = (int*)(PANEL->L1 + JB * JB);
       PANEL->dlindxA  = (int*)(PANEL->dL1 + JB * JB);
-      PANEL->lindxAU  = PANEL->lindxA + 2 * JB;
-      PANEL->dlindxAU = PANEL->dlindxA + 2 * JB;
-      PANEL->permU    = PANEL->lindxAU + 2 * JB;
-      PANEL->dpermU   = PANEL->dlindxAU + 2 * JB;
+      PANEL->lindxAU  = PANEL->lindxA + JB;
+      PANEL->dlindxAU = PANEL->dlindxA + JB;
+      PANEL->lindxU   = PANEL->lindxAU + JB;
+      PANEL->dlindxU  = PANEL->dlindxAU + JB;
+      PANEL->permU    = PANEL->lindxU + JB;
+      PANEL->dpermU   = PANEL->dlindxU + JB;
 
       // Put ipiv array at the end
       PANEL->ipiv  = PANEL->permU + JB;

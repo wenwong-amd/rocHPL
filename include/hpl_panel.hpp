@@ -49,6 +49,8 @@ typedef struct HPL_S_panel {
   int*               dlindxA;
   int*               lindxAU;
   int*               dlindxAU;
+  int*               lindxU;
+  int*               dlindxU;
   int*               permU;
   int*               dpermU;
   double*            U;          /* ptr to U */

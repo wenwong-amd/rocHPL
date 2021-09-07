@@ -104,6 +104,10 @@ void HPL_pdtest(HPL_T_test* TEST,
     return;
   }
 
+  /* Create row-swapping data type */
+  MPI_Type_contiguous(2*NB+4, MPI_DOUBLE, &PDFACT_ROW);
+  MPI_Type_commit(&PDFACT_ROW);
+
   /*
    * generate matrix and right-hand-side, [ A | b ] which is N by N+1.
    */
@@ -262,6 +266,10 @@ void HPL_pdtest(HPL_T_test* TEST,
                   "========================================");
   }
 #endif
+
+  /* Release row swapping datatype */
+  MPI_Type_free(&PDFACT_ROW);
+
   /*
    * Quick return, if I am not interested in checking the computations
    */

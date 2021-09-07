@@ -40,9 +40,9 @@ void HPL_pdlaswp_start(HPL_T_panel* PANEL,
    */
   double *U, *W;
   double *dA, *dU, *dW;
-  int *   ipID, *iplen, *ipcounts, *ipoffsets, *iwork, *lindxA = NULL, *lindxAU,
-                                                    *permU;
-  int *dlindxA = NULL, *dlindxAU, *dpermU, *dpermU_ex;
+  int *   ipID, *iplen, *ipcounts, *ipoffsets, *iwork, *lindxU = NULL,
+      *lindxA = NULL, *lindxAU, *permU;
+  int *dlindxU = NULL, *dlindxA = NULL, *dlindxAU, *dpermU, *dpermU_ex;
   int  icurrow, *iflag, *ipA, *ipl, jb, k, lda, myrow, n, nprow, LDU, LDW;
 
   /* ..
@@ -125,10 +125,12 @@ void HPL_pdlaswp_start(HPL_T_panel* PANEL,
   ipoffsets = ipcounts + nprow;
   iwork     = ipoffsets + nprow;
 
+  lindxU  = PANEL->lindxU;
   lindxA  = PANEL->lindxA;
   lindxAU = PANEL->lindxAU;
   permU   = PANEL->permU;
 
+  dlindxU   = PANEL->dlindxU;
   dlindxA   = PANEL->dlindxA;
   dlindxAU  = PANEL->dlindxAU;
   dpermU    = PANEL->dpermU;
@@ -153,7 +155,7 @@ void HPL_pdlaswp_start(HPL_T_panel* PANEL,
 
     // compute spreading info
     HPL_pipid(PANEL, ipl, ipID);
-    HPL_plindx(PANEL, *ipl, ipID, ipA, lindxA, lindxAU, iplen, permU, iwork);
+    HPL_plindx(PANEL, *ipl, ipID, ipA, lindxU, lindxAU, lindxA, iplen, permU, iwork);
     *iflag = 1;
   }
 
@@ -171,14 +173,14 @@ void HPL_pdlaswp_start(HPL_T_panel* PANEL,
 
   if(myrow == icurrow) {
     // copy needed rows of A into U
-    HPL_dlaswp01T(*ipA, n, dA, lda, dU, LDU, dlindxA, dlindxAU);
+    HPL_dlaswp01T(jb, n, dA, lda, dU, LDU, dlindxU);
 
     // record when packing completes
     hipEventRecord(swapStartEvent[UPD], computeStream);
 
 #if !defined(GPU_AWARE_MPI)
     // swap rows local to A on device
-    HPL_dlaswp02T(*ipA, n, dA, lda, dlindxA, dlindxAU);
+    HPL_dlaswp02T(*ipA, n, dA, lda, dlindxAU, dlindxA);
 
     // Copy U to host
     hipStreamWaitEvent(dataStream, swapStartEvent[UPD], 0);
@@ -199,7 +201,7 @@ void HPL_pdlaswp_start(HPL_T_panel* PANEL,
                   lda,
                   Mptr(dU, 0, iplen[myrow], LDU),
                   LDU,
-                  dlindxA);
+                  dlindxU);
 
     // record when packing completes
     hipEventRecord(swapStartEvent[UPD], computeStream);
@@ -262,9 +264,9 @@ void HPL_pdlaswp_exchange(HPL_T_panel* PANEL,
    */
   double *U, *W;
   double *dA, *dU, *dW;
-  int *   ipID, *iplen, *ipcounts, *ipoffsets, *iwork, *lindxA = NULL, *lindxAU,
+  int *   ipID, *iplen, *ipcounts, *ipoffsets, *iwork, *lindxU = NULL, *lindxA = NULL, *lindxAU,
                                                     *permU;
-  int *dlindxA = NULL, *dlindxAU, *dpermU, *dpermU_ex;
+  int *dlindxU = NULL, *dlindxA = NULL, *dlindxAU, *dpermU, *dpermU_ex;
   int  icurrow, *iflag, *ipA, *ipl, jb, k, lda, myrow, n, nprow, LDU, LDW;
 
   /* ..
@@ -348,10 +350,12 @@ void HPL_pdlaswp_exchange(HPL_T_panel* PANEL,
 
   lindxA  = PANEL->lindxA;
   lindxAU = PANEL->lindxAU;
+  lindxU  = PANEL->lindxU;
   permU   = PANEL->permU;
 
   dlindxA   = PANEL->dlindxA;
   dlindxAU  = PANEL->dlindxAU;
+  dlindxU   = PANEL->dlindxU;
   dpermU    = PANEL->dpermU;
   dpermU_ex = dpermU + jb;
 
@@ -379,7 +383,7 @@ void HPL_pdlaswp_exchange(HPL_T_panel* PANEL,
     // hipStreamSynchronize(computeStream);
 
     // swap rows local to A on device
-    HPL_dlaswp02T(*ipA, n, dA, lda, dlindxA, dlindxAU);
+    HPL_dlaswp02T(*ipA, n, dA, lda, dlindxAU, dlindxA);
 
     hipEventSynchronize(swapStartEvent[UPD]);
 
@@ -440,7 +444,7 @@ void HPL_pdlaswp_exchange(HPL_T_panel* PANEL,
                  comm);
 
     HPL_dlaswp04T(
-        iplen[myrow + 1] - iplen[myrow], n, dA, lda, dW, LDW, dlindxA);
+        iplen[myrow + 1] - iplen[myrow], n, dA, lda, dW, LDW, dlindxU);
 
     // wait for dU to be ready
     // hipStreamSynchronize(computeStream);
@@ -635,7 +639,7 @@ void HPL_pdlaswp_end(HPL_T_panel* PANEL,
   if(myrow != icurrow) {
     // Queue inserting recieved rows in W into A on device
     HPL_dlaswp04T(
-        iplen[myrow + 1] - iplen[myrow], n, dA, lda, dW, LDW, dlindxA);
+        iplen[myrow + 1] - iplen[myrow], n, dA, lda, dW, LDW, dlindxU);
   }
 #endif
 

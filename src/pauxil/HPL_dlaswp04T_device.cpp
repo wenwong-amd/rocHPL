@@ -26,7 +26,7 @@ static __global__ void dlaswp04T(const int M,
                                  const int LDA,
                                  double* __restrict__ W,
                                  const int LDW,
-                                 const int* __restrict__ LINDXA) {
+                                 const int* __restrict__ LINDXU) {
 
   __shared__ double s_W[TILE_DIM][TILE_DIM + 1];
 
@@ -50,7 +50,7 @@ static __global__ void dlaswp04T(const int M,
   __syncthreads();
 
   if(am < M) {
-    const int aip = LINDXA[am];
+    const int aip = LINDXU[am];
     if((an + 0) < N)
       A[aip + (an + 0) * ((size_t)LDA)] = s_W[threadIdx.x][threadIdx.y + 0];
     if((an + 8) < N)
@@ -68,13 +68,13 @@ void HPL_dlaswp04T(const int  M,
                    const int  LDA,
                    double*    W,
                    const int  LDW,
-                   const int* LINDXA) {
+                   const int* LINDXU) {
   /*
    * Purpose
    * =======
    *
    * HPL_dlaswp04T writes columns  of  W  into  rows  of  A  at  positions
-   * indicated by LINDXA.
+   * indicated by LINDXU.
    *
    * Arguments
    * =========
@@ -89,7 +89,7 @@ void HPL_dlaswp04T(const int  M,
    *
    * A       (local output)                double *
    *         On entry, A points to an array of dimension (LDA,N). On exit,
-   *         the  rows of this array specified by  LINDXA  are replaced by
+   *         the  rows of this array specified by  LINDXU  are replaced by
    *         columns of W.
    *
    * LDA     (local input)                 const int
@@ -105,8 +105,8 @@ void HPL_dlaswp04T(const int  M,
    *         On entry, LDW specifies the leading dimension of the array W.
    *         LDW must be at least MAX(1,N).
    *
-   * LINDXA  (local input)                 const int *
-   *         On entry, LINDXA is an array of dimension M that contains the
+   * LINDXU  (local input)                 const int *
+   *         On entry, LINDXU is an array of dimension M that contains the
    *         local row indexes of A that should be replaced with W.
    *
    * ---------------------------------------------------------------------
@@ -130,7 +130,7 @@ void HPL_dlaswp04T(const int  M,
                      LDA,
                      W,
                      LDW,
-                     LINDXA);
+                     LINDXU);
 
   /*
    * End of HPL_dlaswp04T

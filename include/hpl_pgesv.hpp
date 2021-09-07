@@ -138,6 +138,7 @@ void HPL_plindx(HPL_T_panel*,
                 int*,
                 int*,
                 int*,
+                int*,
                 int*);
 
 void HPL_pdlaswp_start(HPL_T_panel* PANEL,

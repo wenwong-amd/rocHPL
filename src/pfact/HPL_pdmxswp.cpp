@@ -86,6 +86,7 @@ void HPL_pdmxswp(HPL_T_panel* PANEL,
   comm    = grid->col_comm;
   myrow = grid->myrow;
   n0      = PANEL->jb;
+  int NB  = PANEL->nb;
   icurrow = PANEL->prow;
   /*
    * Set up pointers in workspace:  WORK and Wwork  point to the beginning
@@ -93,9 +94,9 @@ void HPL_pdmxswp(HPL_T_panel* PANEL,
    * owning the local (before combine) and global (after combine) absolute
    * value max. A0 points to the copy of the current row of the matrix.
    */
-  cnt0 = (cnt_ = n0 + 4) + n0;
+  cnt0 = 4 + 2*NB;
 
-  A0    = (Wmx = WORK + 4) + n0;
+  A0    = (Wmx = WORK + 4) + NB;
   Wwork = WORK + cnt0;
 
   /*
