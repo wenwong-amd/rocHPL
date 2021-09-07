@@ -43,6 +43,7 @@ typedef MPI_Op HPL_T_OP;
 #define HPL_MIN MPI_MIN
 
 extern MPI_Op HPL_DMXSWP;
+extern MPI_Datatype PDFACT_ROW;
 /*
  * ---------------------------------------------------------------------
  * #define macro constants
