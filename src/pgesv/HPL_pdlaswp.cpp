@@ -380,12 +380,7 @@ void HPL_pdlaswp_exchange(HPL_T_panel* PANEL,
   if(myrow == icurrow) {
 
 #if defined(GPU_AWARE_MPI)
-    // hipEventSynchronize(swapStartEvent[UPD]);
     // hipStreamSynchronize(computeStream);
-
-    // swap rows local to A on device
-    HPL_dlaswp02T(*ipA, n, dA, lda, dlindxAU, dlindxA);
-
     hipEventSynchronize(swapStartEvent[UPD]);
 
     // send rows to other ranks
@@ -436,6 +431,10 @@ void HPL_pdlaswp_exchange(HPL_T_panel* PANEL,
   } else {
 #if defined(GPU_AWARE_MPI)
 
+    // wait for dU to be ready
+    // hipStreamSynchronize(computeStream);
+    hipEventSynchronize(swapStartEvent[UPD]);
+
     // receive rows from icurrow into dW
     HPL_scatterv(dW,
                  ipcounts,
@@ -444,13 +443,6 @@ void HPL_pdlaswp_exchange(HPL_T_panel* PANEL,
                  icurrow,
                  comm);
 
-    HPL_dlaswp04T(
-        iplen[myrow + 1] - iplen[myrow], n, dA, lda, dW, LDW, dlindxU);
-
-    // wait for dU to be ready
-    // hipStreamSynchronize(computeStream);
-    hipEventSynchronize(swapStartEvent[UPD]);
-
     // All gather dU
     HPL_allgatherv(dU,
                    ipcounts[myrow],
@@ -458,6 +450,10 @@ void HPL_pdlaswp_exchange(HPL_T_panel* PANEL,
                    ipoffsets,
                    comm);
 #else
+    // wait for U to be ready
+    hipEventSynchronize(swapUCopyEvent[UPD]);
+    // hipStreamSynchronize(dataStream);
+
     // receive rows from icurrow into W
     HPL_scatterv(W,
                  ipcounts,
@@ -477,10 +473,6 @@ void HPL_pdlaswp_exchange(HPL_T_panel* PANEL,
                      dataStream);
     hipEventRecord(swapWCopyEvent[UPD], dataStream);
     hipStreamWaitEvent(computeStream, swapWCopyEvent[UPD], 0);
-
-    // wait for U to be ready
-    hipEventSynchronize(swapUCopyEvent[UPD]);
-    // hipStreamSynchronize(dataStream);
 
     // All gather U
     HPL_allgatherv(U,
@@ -534,7 +526,7 @@ void HPL_pdlaswp_end(HPL_T_panel* PANEL,
   double *dA, *dU, *dW;
   int *   ipID, *iplen, *ipcounts, *ipoffsets, *iwork, *lindxA = NULL, *lindxAU,
                                                     *permU;
-  int *dlindxA = NULL, *dlindxAU, *dpermU, *dpermU_ex;
+  int *dlindxA = NULL, *dlindxAU, *dlindxU, *dpermU, *dpermU_ex;
   int  icurrow, *iflag, *ipA, *ipl, jb, k, lda, myrow, n, nprow, LDU, LDW;
 
   /* ..
@@ -625,6 +617,7 @@ void HPL_pdlaswp_end(HPL_T_panel* PANEL,
 
   dlindxA   = PANEL->dlindxA;
   dlindxAU  = PANEL->dlindxAU;
+  dlindxU   = PANEL->dlindxU;
   dpermU    = PANEL->dpermU;
   dpermU_ex = dpermU + jb;
 
@@ -636,13 +629,14 @@ void HPL_pdlaswp_end(HPL_T_panel* PANEL,
    * offset in U where it should go to.
    */
 
-#if !defined(GPU_AWARE_MPI)
-  if(myrow != icurrow) {
+  if(myrow == icurrow) {
+    // swap rows local to A on device
+    HPL_dlaswp02T(*ipA, n, dA, lda, dlindxAU, dlindxA);
+  } else {
     // Queue inserting recieved rows in W into A on device
     HPL_dlaswp04T(
         iplen[myrow + 1] - iplen[myrow], n, dA, lda, dW, LDW, dlindxU);
   }
-#endif
 
   /*
    * Permute U in every process row
