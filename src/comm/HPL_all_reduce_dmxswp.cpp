@@ -88,7 +88,7 @@ void HPL_all_reduce_dmxswp(double*   BUFFER,
 
   roctxRangePush("HPL_all_reduce_dmxswp");
 
-#if 1
+#if 0
 
   /* Use a normal all_reduce */
   (void) MPI_Allreduce(MPI_IN_PLACE, BUFFER, 1,
