@@ -32,10 +32,8 @@
  * #define macro constants
  * ---------------------------------------------------------------------
  */
-#define HPL_MULT0 1284865837
-#define HPL_MULT1 1481765933
-#define HPL_IADD0 1
-#define HPL_IADD1 0
+#define HPL_MULT 6364136223846793005UL
+#define HPL_IADD 1UL
 #define HPL_DIVFAC 2147483648.0
 #define HPL_POW16 65536.0
 #define HPL_HALF 0.5
@@ -44,12 +42,14 @@
  * Function prototypes
  * ---------------------------------------------------------------------
  */
-void   HPL_lmul(int*, int*, int*);
-void   HPL_ladd(int*, int*, int*);
-void   HPL_xjumpm(const int, int*, int*, int*, int*, int*, int*);
-void   HPL_setran(const int, int*);
-void   HPL_jumpit(int*, int*, int*, int*);
-double HPL_rand(void);
+void HPL_xjumpm(const int       JUMPM,
+                const uint64_t  MULT,
+                const uint64_t  IADD,
+                const uint64_t  IRANN,
+                      uint64_t& IRANM,
+                      uint64_t& IAM,
+                      uint64_t& ICM);
+
 void   HPL_pdrandmat(const HPL_T_grid*,
                      const int,
                      const int,
