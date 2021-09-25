@@ -83,9 +83,6 @@ message("-- rocBLAS libraries:    ${rocblas_LIBRARIES}")
 
 get_filename_component(ROCBLAS_LIB_PATH ${rocblas_LIBRARIES} DIRECTORY)
 
-# rocrand
-find_package(rocrand REQUIRED)
-
 # ROCm cmake package
 find_package(ROCM QUIET CONFIG PATHS ${CMAKE_PREFIX_PATH})
 if(NOT ROCM_FOUND)

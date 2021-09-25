@@ -167,7 +167,6 @@ endif()
 # Target link libraries
 target_link_libraries(rochpl PRIVATE BLAS::BLAS)
 target_link_libraries(rochpl PRIVATE roc::rocblas)
-target_link_libraries(rochpl PRIVATE roc::rocrand)
 target_link_libraries(rochpl PRIVATE ${ROCTRACER})
 target_link_libraries(rochpl PRIVATE ${ROCTX})
 
