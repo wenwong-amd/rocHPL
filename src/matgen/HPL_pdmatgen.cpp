@@ -80,6 +80,18 @@ int HPL_pdmatgen(HPL_T_test* TEST,
   hipMalloc(&(mat->dA), numbytes);
 
   /*Check matrix allocation is valid*/
+#ifdef HPL_VERBOSE_PRINT
+  if (mat->dA==NULL) {
+    char host_name[MPI_MAX_PROCESSOR_NAME];
+    int rank, namelen;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Get_processor_name(host_name, &namelen);
+
+    printf("Matrix allocation on node %s, rank %d, failed. \n",
+           host_name,
+           rank);
+  }
+#endif
   info[0] = (mat->dA == NULL);
   info[1] = myrow;
   info[2] = mycol;
