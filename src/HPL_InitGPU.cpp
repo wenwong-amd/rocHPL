@@ -158,6 +158,40 @@ void HPL_InitGPU(const HPL_T_grid* GRID) {
 void Free_gpu() {
   rocblas_destroy_handle(handle);
 
-  hipStreamDestroy(computeStream);
+  hipEventDestroy(panelCopy);
+  hipEventDestroy(swapDataTransfer);
+  hipEventDestroy(L1Transfer);
+  hipEventDestroy(L2Transfer);
+
+  hipEventDestroy(pdlaswpStart_1);
+  hipEventDestroy(pdlaswpStart_2);
+  hipEventDestroy(pdlaswpFinish_1);
+  hipEventDestroy(pdlaswpFinish_2);
+
+  hipEventDestroy(swapStartEvent[HPL_LOOK_AHEAD]);
+  hipEventDestroy(swapStartEvent[HPL_UPD_1]);
+  hipEventDestroy(swapStartEvent[HPL_UPD_2]);
+
+  hipEventDestroy(swapUCopyEvent[HPL_LOOK_AHEAD]);
+  hipEventDestroy(swapUCopyEvent[HPL_UPD_1]);
+  hipEventDestroy(swapUCopyEvent[HPL_UPD_2]);
+
+  hipEventDestroy(swapWCopyEvent[HPL_LOOK_AHEAD]);
+  hipEventDestroy(swapWCopyEvent[HPL_UPD_1]);
+  hipEventDestroy(swapWCopyEvent[HPL_UPD_2]);
+
+  hipEventDestroy(update[HPL_LOOK_AHEAD]);
+  hipEventDestroy(update[HPL_UPD_1]);
+  hipEventDestroy(update[HPL_UPD_2]);
+
+  hipEventDestroy(dgemmStart[HPL_LOOK_AHEAD]);
+  hipEventDestroy(dgemmStart[HPL_UPD_1]);
+  hipEventDestroy(dgemmStart[HPL_UPD_2]);
+
+  hipEventDestroy(dgemmStop[HPL_LOOK_AHEAD]);
+  hipEventDestroy(dgemmStop[HPL_UPD_1]);
+  hipEventDestroy(dgemmStop[HPL_UPD_2]);
+
   hipStreamDestroy(dataStream);
+  hipStreamDestroy(computeStream);
 }
