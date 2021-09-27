@@ -113,13 +113,6 @@ void HPL_InitGPU(const HPL_T_grid* GRID) {
   hipStreamCreate(&computeStream);
   hipStreamCreate(&dataStream);
 
-  rocblas_create_handle(&handle);
-  rocblas_set_pointer_mode(handle, rocblas_pointer_mode_host);
-
-  rocblas_initialize();
-
-  rocblas_set_stream(handle, computeStream);
-
   hipEventCreate(&panelCopy);
   hipEventCreate(&swapDataTransfer);
   hipEventCreate(&L1Transfer);
@@ -156,8 +149,6 @@ void HPL_InitGPU(const HPL_T_grid* GRID) {
 }
 
 void Free_gpu() {
-  rocblas_destroy_handle(handle);
-
   hipEventDestroy(panelCopy);
   hipEventDestroy(swapDataTransfer);
   hipEventDestroy(L1Transfer);
