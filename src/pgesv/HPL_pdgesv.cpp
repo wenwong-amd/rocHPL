@@ -220,7 +220,7 @@ void HPL_pdgesv(HPL_T_grid* GRID, HPL_T_palg* ALGO, HPL_T_pmat* A) {
 
 #ifdef HPL_PROGRESS_REPORT
       pdfactGflops =
-          (((double) mp)*jb*jb - (1.0/3.0)*jb*jb*jb - 0.5*jb*jb - (7.0/6.0)*jb) / ((1000.0 * 1000.0 * 1000.0)*(pdfactEnd - pdfactStart));
+          (((double) panel[0]-mp)*jb*jb - (1.0/3.0)*jb*jb*jb - 0.5*jb*jb) / ((1000.0 * 1000.0 * 1000.0)*(pdfactEnd - pdfactStart));
 #endif
 
 #if defined(GPU_AWARE_MPI)
