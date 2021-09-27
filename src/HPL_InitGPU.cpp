@@ -95,7 +95,8 @@ void HPL_InitGPU(const HPL_T_grid* GRID) {
 
   MPI_Comm_free(&nodeComm);
 
-#ifdef HPL_VERBOSE_PRINT
+//#ifdef HPL_VERBOSE_PRINT
+#if 0
   hipDeviceProp_t props;
   hipGetDeviceProperties(&props, dev);
 
