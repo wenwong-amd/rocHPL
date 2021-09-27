@@ -56,6 +56,12 @@ int HPL_pdmatgen(HPL_T_test* TEST,
   mat->dW = nullptr;
   mat->W  = nullptr;
 
+  /* Create a rocBLAS handle */
+  rocblas_create_handle(&handle);
+  rocblas_set_pointer_mode(handle, rocblas_pointer_mode_host);
+  rocblas_initialize();
+  rocblas_set_stream(handle, computeStream);
+
   /*
    * Allocate dynamic memory
    */
@@ -253,16 +259,18 @@ int HPL_pdmatgen(HPL_T_test* TEST,
 
 void HPL_pdmatfree(HPL_T_pmat* mat) {
 
-  if(mat->dA) hipFree(mat->dA);
-  if(mat->dX) hipFree(mat->dX);
-  if(mat->dW) hipFree(mat->dW);
+  if(mat->dA) {hipFree(mat->dA); mat->dA=nullptr;}
+  if(mat->dX) {hipFree(mat->dX); mat->dX=nullptr;}
+  if(mat->dW) {hipFree(mat->dW); mat->dW=nullptr;}
 
-  if(mat->A) hipHostFree(mat->A);
-  if(mat->W) hipHostFree(mat->W);
+  if(mat->A) {hipHostFree(mat->A); mat->A=nullptr;}
+  if(mat->W) {hipHostFree(mat->W); mat->W=nullptr;}
     // if(mat->W) free(mat->W);
 
 #if 0
   // tell rocblas we free'd the workspace
   rocblas_set_device_memory_size(handle, 0);
 #endif
+
+  rocblas_destroy_handle(handle);
 }
