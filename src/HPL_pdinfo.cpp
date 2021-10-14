@@ -388,7 +388,7 @@ void HPL_pdinfo(int          ARGC,
     /*
      * Process grids, mapping, (>=1) (P, Q)
      */
-    *PMAPPIN = HPL_COLUMN_MAJOR; // HPL_ROW_MAJOR
+    *PMAPPIN = HPL_ROW_MAJOR;
     *NPQS    = 1;
     P[0]     = p;
     Q[0]     = q;
@@ -589,6 +589,11 @@ void HPL_pdinfo(int          ARGC,
         lineptr += strlen(num) + 1;
         if((P[i] = atoi(num)) < 1) {
           HPL_pwarn(stderr, __LINE__, "HPL_pdinfo", "Value of P less than 1");
+          error = 1;
+          goto label_error;
+        }
+        if(P[i] != p) {
+          HPL_pwarn(stderr, __LINE__, "HPL_pdinfo", "Values of (P,Q) grid in input file must match commandline parameters");
           error = 1;
           goto label_error;
         }
