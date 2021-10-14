@@ -208,32 +208,113 @@ col_stride=$((row_stride/columns_per_node))
 myP=$((rank/columns_per_node))
 myQ=$((rank%columns_per_node))
 
-root_core=$((myP*row_stride + myQ*col_stride))
+# Try to detect special Bard-peak core mapping
+if [[ -n ${HPL_PLATFORM+x} ]]; then
+  platform=$HPL_PLATFORM
+else
+  platform=$(cat /sys/class/dmi/id/product_name)
+fi
 
-omp_num_threads=${col_stride}
-# First omp place is the root core
-omp_places="{$root_core}"
+if [[ "$platform" == "BardPeak" || "$platform" == "HPE_CRAY_EX235A" ]]; then
+  # Special core mapping for BardPeak
 
-# Make contiuguous chunk of cores (to maximize L1/L2 locality)
-for i in $(seq $((root_core+1)) $((root_core+col_stride-1)))
-do
-  omp_places+=",{$i}"
-done
+  # Debug
+  # if [[ $rank == 0 ]]; then
+  #   echo "BardPeak platform detected"
+  # fi
 
-if [[ "${oversubscribe}" == true ]]; then
-  # Add cores from different columns, without their root cores
-  for q in $(seq 0 $((columns_per_node-1)))
+  # Sanity check
+  if [[ $size -gt 8 ]]; then
+    echo "Unsupported number of ranks on BardPeak platform; aborting";
+    exit 1
+  fi
+
+  # GCD0 cores="48-55"
+  # GCD1 cores="56-63"
+  # GCD2 cores="16-23"
+  # GCD3 cores="24-31"
+  # GCD4 cores="0-7"
+  # GCD5 cores="8-15"
+  # GCD6 cores="32-39"
+  # GCD7 cores="40-47"
+
+  root_cores=(48 56 16 24 0 8 32 40)
+  root_core=${root_cores[rank]}
+
+  ccd_per_rank=$((8/size))
+
+  # First omp place is the root core
+  omp_places="{$root_core}"
+
+  # First assign the CCD
+  for i in $(seq $((root_core+1)) $((root_core+8-1)))
   do
-    if [[ "$q" == "$myQ" ]]; then
-      continue
-    fi
-    q_core=$((myP*row_stride + q*col_stride))
-    for i in $(seq $((q_core+1)) $((q_core+col_stride-1)))
+    omp_places+=",{$i}"
+  done
+  omp_num_threads=8
+
+  # Loop through unassigned CCDs
+  for c in $(seq $((rank+size)) $size 7)
+  do
+    iroot_core=${root_cores[c]}
+    for i in $(seq $((iroot_core)) $((iroot_core+8-1)))
     do
       omp_places+=",{$i}"
     done
-    omp_num_threads=$((omp_num_threads+col_stride-1))
+    omp_num_threads=$((omp_num_threads+8))
   done
+
+  if [[ "${oversubscribe}" == true ]]; then
+    # Add cores from different columns, without their root cores
+    for q in $(seq 0  $((columns_per_node-1)))
+    do
+      if [[ "$q" == "$myQ" ]]; then
+        continue
+      fi
+      for c in $(seq 0 $size 7)
+      do
+        q_rank=$((myP*columns_per_node + q + c))
+        q_core=$((root_cores[q_rank]))
+        offset=$(( (q_rank>=size) ? 0 : 1))
+        for i in $(seq $((q_core+offset)) $((q_core+8-1)))
+        do
+          omp_places+=",{$i}"
+        done
+        omp_num_threads=$((omp_num_threads+8-offset))
+      done
+    done
+  fi
+
+else
+  # Default core mapping
+
+  root_core=$((myP*row_stride + myQ*col_stride))
+
+  omp_num_threads=${col_stride}
+  # First omp place is the root core
+  omp_places="{$root_core}"
+
+  # Make contiuguous chunk of cores (to maximize L1/L2 locality)
+  for i in $(seq $((root_core+1)) $((root_core+col_stride-1)))
+  do
+    omp_places+=",{$i}"
+  done
+
+  if [[ "${oversubscribe}" == true ]]; then
+    # Add cores from different columns, without their root cores
+    for q in $(seq 0 $((columns_per_node-1)))
+    do
+      if [[ "$q" == "$myQ" ]]; then
+        continue
+      fi
+      q_core=$((myP*row_stride + q*col_stride))
+      for i in $(seq $((q_core+1)) $((q_core+col_stride-1)))
+      do
+        omp_places+=",{$i}"
+      done
+      omp_num_threads=$((omp_num_threads+col_stride-1))
+    done
+  fi
 fi
 
 # Export OpenMP config
