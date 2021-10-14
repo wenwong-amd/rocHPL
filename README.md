@@ -7,7 +7,6 @@ rocHPL is a benchmark based on the [HPL][] benchmark application, implemented on
 * MPI (Optional)
 * AMD [ROCm] platform (3.5 or later)
 * [rocBLAS][]
-* [rocRAND][]
 
 ## Quickstart rocHPL build and install
 
@@ -36,28 +35,31 @@ cd rocHPL
 #    --detailed-timing    - Record detailed timers during HPL run (Default: true)
 ./install.sh -d
 ```
-By default, [BLIS] v3.0.1, [UCX] v1.10.0, and [OpenMPI] v4.1.0 will be cloned and build in rocHPL/tpl. After build and install, the `rochpl` executable is placed in build/rochpl-install.
+By default, [BLIS] v3.0.1, [UCX] v1.11.2, and [OpenMPI] v4.1.1 will be cloned and build in rocHPL/tpl. After build and install, the `rochpl` executable is placed in build/rochpl-install.
 
 ## Running rocHPL benchmark application
-You can run the rocHPL benchmark application by running the `rochpl` executable with MPI directly, or by using a provided `run_rochpl` script configured at build. There are two distinct run modes:
+rocHPL provides some helpful wrapper scripts. A wrapper script for launching via `mpirun` is provided in `mpirun_rochpl`. This script has two distinct run modes:
 ```
-run_rochpl -P <p> -Q <q> --ppn <ppn> -N <N> --NB <NB>
+mpirun_rochpl -P <p> -Q <q> -N <N> --NB <NB> -f <frac>
 # where
 # P       - is the number of rows in the MPI grid
 # Q       - is the number of columns in the MPI grid
-# ppn     - is the number of ranks per node you are running (important for CPU partitioning)
 # N       - is the total number of rows/columns of the global matrix
 # NB      - is the panel size in the blocking algorithm
+# frac    - is the split-update fraction (imporant for hiding some MPI
+            communication)
 ```
-This runmode will launch a total of np=PxQ MPI processes.
+This run script will launch a total of np=PxQ MPI processes.
 
 The second runmode takes an input file together with a number of MPI processes:
 ```
-run_rochpl --np <np> --ppn <ppn> -i <input>
+mpirun_rochpl -P <p> -Q <q> -i <input> -f <frac>
 # where
-# np      - is the number of MPI ranks to run with
-# ppn     - is the number of ranks per node you are running (important for CPU partitioning)
-# input   - is the input filename (default ./HPL.dat)
+# P       - is the number of rows in the MPI grid
+# Q       - is the number of columns in the MPI grid
+# input   - is the input filename (default HPL.dat)
+# frac    - is the split-update fraction (imporant for hiding some MPI
+            communication)
 ```
 
 The input file accpted by the `rochpl` executable follows the format below:
@@ -95,12 +97,17 @@ HPL.out      output file name (if any)
 8            memory alignment in double (> 0)
 ```
 
+The `mpirun_rochpl` wraps a second script, `run_rochpl`, wherein some CPU core bindings are determined autmoticall based on the node-local MPI grid. Users wishing to launch rocHPL via a workload manager such as slurm may directly use this run script. For example,
+```
+srun -N 2 -n 16 run_rochpl -P 4 -Q 4 -N 128000 --NB 512
+```
+
 ## Performance evaluation
 rocHPL is typically weak scaled so that the global matrix fills all available VRAM on all GPUs. The matrix size N is usually selected to be a multiple of the blocksize NB. Some sample runs on 32GB MI100 GPUs include:
-* 1 MI100: `run_rochpl -P 1 -Q 1 -N  64512 --NB 512 --ppn 1 -v`
-* 2 MI100: `run_rochpl -P 1 -Q 2 -N  90112 --NB 512 --ppn 2 -v`
-* 4 MI100: `run_rochpl -P 2 -Q 2 -N 126976 --NB 512 --ppn 2 -v`
-* 8 MI100: `run_rochpl -P 2 -Q 4 -N 180224 --NB 512 --ppn 2 -v`
+* 1 MI100: `mpirun_rochpl -P 1 -Q 1 -N  64512 --NB 512`
+* 2 MI100: `mpirun_rochpl -P 1 -Q 2 -N  90112 --NB 512`
+* 4 MI100: `mpirun_rochpl -P 2 -Q 2 -N 126976 --NB 512`
+* 8 MI100: `mpirun_rochpl -P 2 -Q 4 -N 180224 --NB 512`
 
 Overall performance of the benchmark is measured in 64-bit floating point operations (FLOPs) per second. Performance is reported at the end of the run to the user's specified output (by default the performance is printed to stdout and a results file HPL.out).
 
@@ -109,10 +116,10 @@ At the end of each benchmark run, residual error checking is computed, and PASS 
 
 The simplest suite of tests should run configurations from 1 to 4 GPUs to exercise different communcation code paths. For example the tests:
 ```
-run_rochpl -P 1 -Q 1
-run_rochpl -P 1 -Q 2
-run_rochpl -P 2 -Q 1
-run_rochpl -P 2 -Q 2
+mpirun_rochpl -P 1 -Q 1 -N 45312
+mpirun_rochpl -P 1 -Q 2 -N 45312
+mpirun_rochpl -P 2 -Q 1 -N 45312
+mpirun_rochpl -P 2 -Q 2 -N 45312
 ```
 should all report PASSED.
 
@@ -128,7 +135,6 @@ The [license file][] can be found in the main repository.
 [ROCm]: https://github.com/RadeonOpenCompute/ROCm
 [HIP]: https://github.com/ROCm-Developer-Tools/HIP
 [rocBLAS]: https://github.com/ROCmSoftwarePlatform/rocBLAS
-[rocRAND]: https://github.com/ROCmSoftwarePlatform/rocRAND
 [BLIS]: https://github.com/amd/blis
 [OpenMPI]: https://github.com/open-mpi/ompi
 [UCX]: https://github.com/openucx/ucx
