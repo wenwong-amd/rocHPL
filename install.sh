@@ -131,10 +131,10 @@ install_packages( )
   local library_dependencies_sles=(   "make" "cmake" "gcc-c++" "libcxxtools9" "rpm-build" "libnuma-devel" "autoconf" "libtool" "automake" "m4" "flex" )
 
   if [[ "${with_rocm}" == /opt/rocm ]]; then
-    library_dependencies_ubuntu+=("rocm-dev" "rocblas" "rocrand")
-    library_dependencies_centos+=("rocm-dev" "rocblas" "rocrand")
-    library_dependencies_fedora+=("rocm-dev" "rocblas" "rocrand")
-    library_dependencies_sles+=("rocm-dev" "rocblas" "rocrand")
+    library_dependencies_ubuntu+=("rocblas" "rocblas-dev")
+    library_dependencies_centos+=("rocblas" "rocblas-dev")
+    library_dependencies_fedora+=("rocblas" "rocblas-dev")
+    library_dependencies_sles+=("rocblas" "rocblas-dev")
   fi
 
   case "${ID}" in
@@ -274,7 +274,7 @@ install_openmpi( )
 {
   if [ ! -d "./tpl/ucx" ]; then
     mkdir -p tpl && cd tpl
-    git clone --branch master https://github.com/openucx/ucx.git ucx
+    git clone --branch v1.11.2 https://github.com/openucx/ucx.git ucx
     cd ucx; ./autogen.sh; ./autogen.sh #why do we have to run this twice?
     mkdir build; cd build
     ../contrib/configure-opt --prefix=${PWD}/../ --with-rocm=${with_rocm} --without-knem --without-cuda --without-java
