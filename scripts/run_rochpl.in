@@ -176,6 +176,8 @@ if [[ -n ${OMPI_COMM_WORLD_LOCAL_RANK+x} ]]; then
 elif [[ -n ${SLURM_LOCALID+x} ]]; then
   rank=$SLURM_LOCALID
   size=$SLURM_TASKS_PER_NODE
+  #Slurm can return a string like "2(x2),1". Get the first number
+  size=$(echo $size | sed -r 's/^([^.]+).*$/\1/; s/^[^0-9]*([0-9]+).*$/\1/')
 fi
 set -u
 
