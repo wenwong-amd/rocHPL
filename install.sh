@@ -266,6 +266,15 @@ install_blis( )
     git clone https://github.com/amd/blis --branch 3.0.1
     cd blis; ./configure --prefix=${PWD} --enable-cblas auto;
     make -j$(nproc); make install -j$(nproc); cd ../..
+  elif [ ! -f "./tpl/blis/lib/libblis.so" ]; then
+    cd tpl/blis; ./configure --prefix=${PWD} --enable-cblas auto;
+    make -j$(nproc); make install -j$(nproc); cd ../..
+  fi
+
+  # Check for successful build
+  if [ ! -f "./tpl/blis/lib/libblis.so" ]; then
+    echo "Error: BLIS install unsuccessful."
+    exit 3
   fi
 }
 
@@ -279,6 +288,19 @@ install_openmpi( )
     mkdir build; cd build
     ../contrib/configure-opt --prefix=${PWD}/../ --with-rocm=${with_rocm} --without-knem --without-cuda --without-java
     make -j$(nproc); make install; cd ../../..
+  elif [ ! -f "./tpl/ucx/lib/libucm.so" ] || [ ! -f "./tpl/ucx/lib/libucp.so" ] || \
+       [ ! -f "./tpl/ucx/lib/libucs.so" ] || [ ! -f "./tpl/ucx/lib/libuct.so" ]; then
+    cd tpl/ucx; ./autogen.sh; ./autogen.sh
+    mkdir build; cd build
+    ../contrib/configure-opt --prefix=${PWD}/../ --with-rocm=${with_rocm} --without-knem --without-cuda --without-java
+    make -j$(nproc); make install; cd ../../..
+  fi
+
+  # Check for successful build
+  if [ ! -f "./tpl/ucx/lib/libucm.so" ] || [ ! -f "./tpl/ucx/lib/libucp.so" ] || \
+     [ ! -f "./tpl/ucx/lib/libucs.so" ] || [ ! -f "./tpl/ucx/lib/libuct.so" ]; then
+    echo "Error: UCX install unsuccessful."
+    exit 3
   fi
 
   if [ ! -d "./tpl/openmpi" ]; then
@@ -287,6 +309,16 @@ install_openmpi( )
     cd openmpi; ./autogen.pl; mkdir build; cd build
     ../configure --prefix=${PWD}/../ --with-ucx=${PWD}/../../ucx --without-verbs
     make -j$(nproc); make install; cd ../../..
+  elif [ ! -f "./tpl/openmpi/lib/libmpi.so" ]; then
+    cd tpl/openmpi; ./autogen.pl; mkdir build; cd build
+    ../configure --prefix=${PWD}/../ --with-ucx=${PWD}/../../ucx --without-verbs
+    make -j$(nproc); make install; cd ../../..
+  fi
+
+  # Check for successful build
+  if [ ! -f "./tpl/openmpi/lib/libmpi.so" ]; then
+    echo "Error: OpenMPI install unsuccessful."
+    exit 3
   fi
 }
 
