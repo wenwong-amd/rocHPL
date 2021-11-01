@@ -50,6 +50,16 @@ typedef enum {
   HPL_NO_SWP = 499
 } HPL_T_SWAP;
 
+typedef enum {
+  HPL_LOOK_AHEAD = 0, /* look-ahead update */
+  HPL_UPD_1 = 1,      /* first update */
+  HPL_UPD_2 = 2,      /* second update */
+
+  HPL_N_UPD = 3
+} HPL_T_UPD;
+
+typedef void (*HPL_T_UPD_FUN)(HPL_T_panel*, const HPL_T_UPD);
+
 typedef struct HPL_S_palg {
   HPL_T_TOP     btopo; /* row broadcast topology */
   int           depth; /* look-ahead depth */
@@ -64,6 +74,7 @@ typedef struct HPL_S_palg {
   int           fsthr; /* Swapping threshold */
   int           equil; /* Equilibration */
   int           align; /* data alignment constant */
+  double        frac;  /* update split percentage */
 } HPL_T_palg;
 
 typedef struct HPL_S_pmat {
@@ -75,9 +86,20 @@ typedef struct HPL_S_pmat {
   int     mp;   /* local number of rows */
   int     nq;   /* local number of columns */
   int     info; /* computational flag */
+  double* A;
   double* W;
   double* dW;
 } HPL_T_pmat;
+
+
+extern hipEvent_t panelCopy, swapDataTransfer, L1Transfer, L2Transfer;
+extern hipEvent_t pdlaswpStart_1, pdlaswpStart_2;
+extern hipEvent_t pdlaswpFinish_1, pdlaswpFinish_2;
+extern hipEvent_t swapStartEvent[HPL_N_UPD], update[HPL_N_UPD];
+extern hipEvent_t swapUCopyEvent[HPL_N_UPD], swapWCopyEvent[HPL_N_UPD];
+extern hipEvent_t dgemmStart[HPL_N_UPD], dgemmStop[HPL_N_UPD];
+
+
 /*
  * ---------------------------------------------------------------------
  * #define macro constants
@@ -116,16 +138,20 @@ void HPL_plindx(HPL_T_panel*,
                 int*,
                 int*,
                 int*,
+                int*,
                 int*);
 
-void HPL_pdlaswpT(HPL_T_panel*, const int);
+void HPL_pdlaswp_start(HPL_T_panel* PANEL,
+                       const HPL_T_UPD UPD);
+void HPL_pdlaswp_exchange(HPL_T_panel* PANEL,
+                       const HPL_T_UPD UPD);
+void HPL_pdlaswp_end(HPL_T_panel* PANEL,
+                       const HPL_T_UPD UPD);
 
-void HPL_pdupdateNT(HPL_T_panel*, const int);
-void HPL_pdupdateTT(HPL_T_panel*, const int);
+void HPL_pdupdateNT(HPL_T_panel*, const HPL_T_UPD);
+void HPL_pdupdateTT(HPL_T_panel*, const HPL_T_UPD);
 
-void HPL_pdgesvK2(HPL_T_grid*, HPL_T_palg*, HPL_T_pmat*);
 void HPL_pdgesv(HPL_T_grid*, HPL_T_palg*, HPL_T_pmat*);
-
 void HPL_pdtrsv(HPL_T_grid*, HPL_T_pmat*);
 
 #endif

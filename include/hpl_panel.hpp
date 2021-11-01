@@ -49,12 +49,25 @@ typedef struct HPL_S_panel {
   int*               dlindxA;
   int*               lindxAU;
   int*               dlindxAU;
+  int*               lindxU;
+  int*               dlindxU;
   int*               permU;
   int*               dpermU;
   double*            U;          /* ptr to U */
   double*            dU;         /* ptr to U */
   double*            W;          /* ptr to W */
   double*            dW;         /* ptr to W */
+  double*            U1;          /* ptr to U1 */
+  double*            dU1;         /* ptr to U1 */
+  double*            W1;          /* ptr to W1 */
+  double*            dW1;         /* ptr to W1 */
+  double*            U2;          /* ptr to U2 */
+  double*            dU2;         /* ptr to U2 */
+  double*            W2;          /* ptr to W2 */
+  double*            dW2;         /* ptr to W2 */
+  int                nu0;
+  int                nu1;
+  int                nu2;
   int*               IWORK;      /* integer workspace for swapping */
   void*              buffers[2]; /* buffers for panel bcast */
   int                counts[2];  /* counts for panel bcast */
@@ -117,7 +130,8 @@ int  HPL_pdpanel_disp(HPL_T_panel**);
 int  HPL_pdpanel_free(HPL_T_panel*);
 void HPL_pdpanel_SendToHost(HPL_T_panel*);
 void HPL_pdpanel_SendToDevice(HPL_T_panel*);
-
+int  HPL_pdpanel_bcast(HPL_T_panel*);
+void HPL_pdpanel_copyL(HPL_T_panel*);
 #endif
 /*
  * End of hpl_panel.hpp

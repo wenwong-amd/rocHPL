@@ -77,7 +77,7 @@ option(BUILD_TEST "Build rocHPL single-node test" OFF)
 include(cmake/Dependencies.cmake)
 
 # Setup version
-rocm_setup_version(VERSION 4.2.1)
+rocm_setup_version(VERSION 5.0.1)
 
 # This option only works for make/nmake and the ninja generators, but no reason it shouldn't be on all the time
 # This tells cmake to create a compile_commands.json file that can be used with clang tooling or vim
@@ -101,7 +101,7 @@ list(APPEND HIP_HIPCC_FLAGS "-O3 -march=native -Wno-unused-command-line-argument
 list(APPEND CMAKE_HOST_FLAGS "-O3;-march=native")
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-  list(APPEND HIP_HIPCC_FLAGS "-g")
+  list(APPEND HIP_HIPCC_FLAGS "-g -ggdb")
   list(APPEND CMAKE_HOST_FLAGS "-g")
 endif()
 
@@ -150,7 +150,8 @@ target_include_directories(rochpl
                            PRIVATE
                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
                            $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
-                           $<BUILD_INTERFACE:${HIP_INCLUDE_DIRS}>)
+                           $<BUILD_INTERFACE:${HIP_INCLUDE_DIRS}>
+                           $<BUILD_INTERFACE:${ROCM_PATH}/include/roctracer>)
 
 #HIP
 target_link_libraries(rochpl PRIVATE hip::host)
@@ -166,7 +167,8 @@ endif()
 # Target link libraries
 target_link_libraries(rochpl PRIVATE BLAS::BLAS)
 target_link_libraries(rochpl PRIVATE roc::rocblas)
-target_link_libraries(rochpl PRIVATE roc::rocrand)
+target_link_libraries(rochpl PRIVATE ${ROCTRACER})
+target_link_libraries(rochpl PRIVATE ${ROCTX})
 
 # Target properties
 set_target_properties(rochpl PROPERTIES VERSION ${rochpl_VERSION})
@@ -177,9 +179,12 @@ set_target_properties(rochpl PROPERTIES DEBUG_POSTFIX "-d")
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/include/hpl_version.hpp.in"
                "${PROJECT_BINARY_DIR}/include/hpl_version.hpp")
 
-# Configure run script
+# Configure run scripts
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/scripts/run_rochpl.in"
                "${CMAKE_BINARY_DIR}/run_rochpl"
+               @ONLY)
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/scripts/mpirun_rochpl.in"
+               "${CMAKE_BINARY_DIR}/mpirun_rochpl"
                @ONLY)
 
 #move input file

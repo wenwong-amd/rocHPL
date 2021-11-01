@@ -16,13 +16,6 @@
 
 #include "hpl.hpp"
 #include <hip/hip_runtime.h>
-/*
- * Define default value for unrolling factor
- */
-#ifndef HPL_LASWP00N_DEPTH
-#define HPL_LASWP00N_DEPTH 32
-#define HPL_LASWP00N_LOG2_DEPTH 5
-#endif
 
 #define BLOCK_SIZE 512
 
@@ -108,12 +101,6 @@ void HPL_dlaswp00N(const int  M,
    * ---------------------------------------------------------------------
    */
 
-  double    r;
-  double *  a0, *a1;
-  const int incA = (int)((unsigned int)(LDA) << HPL_LASWP00N_LOG2_DEPTH);
-  int       ip, nr, nu;
-  int       i, j;
-
   if((M <= 0) || (N <= 0)) return;
 
   hipStream_t stream;
@@ -130,77 +117,4 @@ void HPL_dlaswp00N(const int  M,
                      A,
                      LDA,
                      IPIV);
-
-// original
-#if 0
-   nr = N - ( nu = (int)( ( (unsigned int)(N) >> HPL_LASWP00N_LOG2_DEPTH )
-                          << HPL_LASWP00N_LOG2_DEPTH ) );
-
-   for( j = 0; j < nu; j += HPL_LASWP00N_DEPTH, A += incA )
-   {
-      for( i = 0; i < M; i++ )
-      {
-         if( i != ( ip = IPIV[i] ) )
-         {
-            a0 = A + i; a1 = A + ip;
-
-            r = *a0; *a0 = *a1; *a1 = r; a0 += LDA; a1 += LDA;
-#if(HPL_LASWP00N_DEPTH > 1)
-            r = *a0; *a0 = *a1; *a1 = r; a0 += LDA; a1 += LDA;
-#endif
-#if(HPL_LASWP00N_DEPTH > 2)
-            r = *a0; *a0 = *a1; *a1 = r; a0 += LDA; a1 += LDA;
-            r = *a0; *a0 = *a1; *a1 = r; a0 += LDA; a1 += LDA;
-#endif
-#if(HPL_LASWP00N_DEPTH > 4)
-            r = *a0; *a0 = *a1; *a1 = r; a0 += LDA; a1 += LDA;
-            r = *a0; *a0 = *a1; *a1 = r; a0 += LDA; a1 += LDA;
-            r = *a0; *a0 = *a1; *a1 = r; a0 += LDA; a1 += LDA;
-            r = *a0; *a0 = *a1; *a1 = r; a0 += LDA; a1 += LDA;
-#endif
-#if(HPL_LASWP00N_DEPTH > 8)
-            r = *a0; *a0 = *a1; *a1 = r; a0 += LDA; a1 += LDA;
-            r = *a0; *a0 = *a1; *a1 = r; a0 += LDA; a1 += LDA;
-            r = *a0; *a0 = *a1; *a1 = r; a0 += LDA; a1 += LDA;
-            r = *a0; *a0 = *a1; *a1 = r; a0 += LDA; a1 += LDA;
-            r = *a0; *a0 = *a1; *a1 = r; a0 += LDA; a1 += LDA;
-            r = *a0; *a0 = *a1; *a1 = r; a0 += LDA; a1 += LDA;
-            r = *a0; *a0 = *a1; *a1 = r; a0 += LDA; a1 += LDA;
-            r = *a0; *a0 = *a1; *a1 = r; a0 += LDA; a1 += LDA;
-#endif
-#if(HPL_LASWP00N_DEPTH > 16)
-            r = *a0; *a0 = *a1; *a1 = r; a0 += LDA; a1 += LDA;
-            r = *a0; *a0 = *a1; *a1 = r; a0 += LDA; a1 += LDA;
-            r = *a0; *a0 = *a1; *a1 = r; a0 += LDA; a1 += LDA;
-            r = *a0; *a0 = *a1; *a1 = r; a0 += LDA; a1 += LDA;
-            r = *a0; *a0 = *a1; *a1 = r; a0 += LDA; a1 += LDA;
-            r = *a0; *a0 = *a1; *a1 = r; a0 += LDA; a1 += LDA;
-            r = *a0; *a0 = *a1; *a1 = r; a0 += LDA; a1 += LDA;
-            r = *a0; *a0 = *a1; *a1 = r; a0 += LDA; a1 += LDA;
-            r = *a0; *a0 = *a1; *a1 = r; a0 += LDA; a1 += LDA;
-            r = *a0; *a0 = *a1; *a1 = r; a0 += LDA; a1 += LDA;
-            r = *a0; *a0 = *a1; *a1 = r; a0 += LDA; a1 += LDA;
-            r = *a0; *a0 = *a1; *a1 = r; a0 += LDA; a1 += LDA;
-            r = *a0; *a0 = *a1; *a1 = r; a0 += LDA; a1 += LDA;
-            r = *a0; *a0 = *a1; *a1 = r; a0 += LDA; a1 += LDA;
-            r = *a0; *a0 = *a1; *a1 = r; a0 += LDA; a1 += LDA;
-            r = *a0; *a0 = *a1; *a1 = r; a0 += LDA; a1 += LDA;
-#endif
-         }
-      }
-   }
-
-   if( nr > 0 )
-   {
-      for( i = 0; i < M; i++ )
-      {
-         if( i != ( ip = IPIV[i] ) )
-         {
-            a0 = A + i; a1 = A + ip;
-            for( j = 0; j < nr; j++, a0 += LDA, a1 += LDA )
-            { r = *a0; *a0 = *a1; *a1 = r; }
-         }
-      }
-   }
-#endif
 }

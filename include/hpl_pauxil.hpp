@@ -226,7 +226,6 @@ void HPL_dlaswp01T(const int,
                    const int,
                    double*,
                    const int,
-                   const int*,
                    const int*);
 
 void HPL_dlaswp02T(const int,

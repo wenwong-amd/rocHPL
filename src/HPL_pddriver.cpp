@@ -44,10 +44,14 @@ int main(int ARGC, char** ARGV) {
   HPL_T_ORDER pmapping;
   HPL_T_FACT  rpfa;
   HPL_T_SWAP  fswap;
+  double frac;
 
   MPI_Init(&ARGC, &ARGV);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+  MPI_Op_create(HPL_dmxswp, true, &HPL_DMXSWP);
+
   /*
    * Read and check validity of test parameters from input file
    *
@@ -111,7 +115,8 @@ int main(int ARGC, char** ARGV) {
              &L1notran,
              &Unotran,
              &equil,
-             &align);
+             &align,
+             &frac);
 
   /*
    * Loop over different process grids - Define process grid. Go to bottom
@@ -192,6 +197,8 @@ int main(int ARGC, char** ARGV) {
                     algo.fsthr = tswap;
                     algo.equil = equil;
                     algo.align = align;
+
+                    algo.frac  = frac;
 
                     HPL_pdtest(&test, &grid, &algo, nval[in], nbval[inb]);
                   }

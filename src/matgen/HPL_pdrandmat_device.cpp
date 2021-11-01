@@ -15,15 +15,82 @@
  */
 
 #include "hpl.hpp"
-#include "rocrand.h"
 
 #define BLOCK_SIZE 512
 
-__global__ void hpl_init_shift(double* __restrict__ A, const size_t n) {
+__global__ void hpl_randmat(const int mp,
+                            const int nq,
+                            const int NB,
+                            const int LDA,
+                            const uint64_t cblkjumpA,
+                            const uint64_t cblkjumpC,
+                            const uint64_t rblkjumpA,
+                            const uint64_t rblkjumpC,
+                            const uint64_t cjumpA,
+                            const uint64_t cjumpC,
+                            const uint64_t rjumpA,
+                            const uint64_t rjumpC,
+                            const uint64_t startrand,
+                            double* __restrict__ A) {
 
-  const size_t id = threadIdx.x + ((size_t)blockIdx.x) * BLOCK_SIZE;
+  const int jblk = blockIdx.y;
+  const int iblk = blockIdx.x;
 
-  if(id < n) A[id] -= 0.5;
+  /* Get panel size */
+  const int jb = (jblk == gridDim.y - 1)
+                  ? nq - ((nq - 1) / NB) * NB
+                  : NB;
+  const int ib = (iblk == gridDim.x - 1)
+                  ? mp - ((mp - 1) / NB) * NB
+                  : NB;
+
+  double* Ab = A + iblk*NB + static_cast<size_t>(jblk*NB)*LDA;
+
+  /* Start at first uint64_t */
+  uint64_t irand = startrand;
+
+  /* Jump rand M*NB*npcol for each jblk */
+  for (int j=0;j<jblk;++j) {
+    irand = cblkjumpA * irand + cblkjumpC;
+  }
+
+  /* Jump rand NB*nprow for each iblk */
+  for (int i=0;i<iblk;++i) {
+    irand = rblkjumpA * irand + rblkjumpC;
+  }
+
+  /* Shift per-column irand */
+  const int n = threadIdx.x;
+  for (int j=0;j<threadIdx.x;++j) {
+    irand = cjumpA * irand + cjumpC;
+  }
+
+  for (int n=threadIdx.x;n<jb;n+=blockDim.x) {
+    /*Grab rand at top of block*/
+    uint64_t r = irand;
+
+    /* Each thread traverses a column */
+    for (int m=0;m<ib;++m) {
+      /*Generate a random double from the current r */
+      const double p1 = ((r & (65535LU<<0 )) >> 0 );
+      const double p2 = ((r & (65535LU<<16)) >> 16);
+      const double p3 = ((r & (65535LU<<32)) >> 32);
+      const double p4 = ((r & (65535LU<<48)) >> 48);
+
+      Ab[m+n*LDA] = (HPL_HALF - (((p1) + (p2) * HPL_POW16) /
+                             HPL_DIVFAC * HPL_HALF +
+                                  (p3) + (p4) * HPL_POW16) /
+                             HPL_DIVFAC * HPL_HALF);
+
+      /*Increment rand*/
+      r = rjumpA * r + rjumpC;
+    }
+
+    /* Block-shift per-column irand */
+    for (int j=0;j<blockDim.x;++j) {
+      irand = cjumpA * irand + cjumpC;
+    }
+  }
 }
 
 void HPL_pdrandmat(const HPL_T_grid* GRID,
@@ -77,21 +144,13 @@ void HPL_pdrandmat(const HPL_T_grid* GRID,
    *
    * ---------------------------------------------------------------------
    */
-
-  int iadd[2], ia1[2], ia2[2], ia3[2], ia4[2], ia5[2], ib1[2], ib2[2], ib3[2],
-      ic1[2], ic2[2], ic3[2], ic4[2], ic5[2], iran1[2], iran2[2], iran3[2],
-      iran4[2], itmp1[2], itmp2[2], itmp3[2], jseed[2], mult[2];
-  int ib, iblk, ik, jb, jblk, jk, jump1, jump2, jump3, jump4, jump5, jump6,
-      jump7, lmb, lnb, mblks, mp, mycol, myrow, nblks, npcol, nprow, nq;
-
+  int mp, mycol, myrow, npcol, nprow, nq;
   (void)HPL_grid_info(GRID, &nprow, &npcol, &myrow, &mycol);
 
-  mult[0]  = HPL_MULT0;
-  mult[1]  = HPL_MULT1;
-  iadd[0]  = HPL_IADD0;
-  iadd[1]  = HPL_IADD1;
-  jseed[0] = ISEED;
-  jseed[1] = 0;
+  uint64_t mult64 = HPL_MULT;
+  uint64_t iadd64 = HPL_IADD;
+  uint64_t jseed64 = static_cast<uint64_t>(ISEED);
+
   /*
    * Generate an M by N matrix starting in process (0,0)
    */
@@ -99,98 +158,54 @@ void HPL_pdrandmat(const HPL_T_grid* GRID,
   Mnumroc(nq, N, NB, NB, mycol, 0, npcol);
 
   if((mp <= 0) || (nq <= 0)) return;
-  /*
-   * Local number of blocks and size of the last one
-   */
-  mblks = (mp + NB - 1) / NB;
-  lmb   = mp - ((mp - 1) / NB) * NB;
-  nblks = (nq + NB - 1) / NB;
-  lnb   = nq - ((nq - 1) / NB) * NB;
+
   /*
    * Compute multiplier/adder for various jumps in random sequence
    */
-  jump1 = 1;
-  jump2 = nprow * NB;
-  jump3 = M;
-  jump4 = npcol * NB;
-  jump5 = NB;
-  jump6 = mycol;
-  jump7 = myrow * NB;
+  const int jump1 = 1;
+  const int jump2 = nprow * NB;
+  const int jump3 = M;
+  const int jump4 = npcol * NB;
+  const int jump5 = NB;
+  const int jump6 = mycol;
+  const int jump7 = myrow * NB;
 
-  HPL_xjumpm(jump1, mult, iadd, jseed, iran1, ia1, ic1);
-  HPL_xjumpm(jump2, mult, iadd, iran1, itmp1, ia2, ic2);
-  HPL_xjumpm(jump3, mult, iadd, iran1, itmp1, ia3, ic3);
-  HPL_xjumpm(jump4, ia3, ic3, iran1, itmp1, ia4, ic4);
-  HPL_xjumpm(jump5, ia3, ic3, iran1, itmp1, ia5, ic5);
-  HPL_xjumpm(jump6, ia5, ic5, iran1, itmp3, itmp1, itmp2);
-  HPL_xjumpm(jump7, mult, iadd, itmp3, iran1, itmp1, itmp2);
-  HPL_setran(0, iran1);
-  HPL_setran(1, ia1);
-  HPL_setran(2, ic1);
+  uint64_t startrand;
+  uint64_t rjumpA, rblkjumpA, cjumpA, cblkjumpA, ia564;
+  uint64_t rjumpC, rblkjumpC, cjumpC, cblkjumpC, ic564;
+  uint64_t itmp164, itmp264, itmp364;
+
+  /* Compute different jump coefficients */
+  HPL_xjumpm(jump1, mult64, iadd64, jseed64, startrand, rjumpA, rjumpC);
+  HPL_xjumpm(jump2, mult64, iadd64, startrand, itmp164, rblkjumpA, rblkjumpC);
+  HPL_xjumpm(jump3, mult64, iadd64, startrand, itmp164, cjumpA, cjumpC);
+  HPL_xjumpm(jump4, cjumpA, cjumpC, startrand, itmp164, cblkjumpA, cblkjumpC);
+
+  /* Shift the starting random value for this rank */
+  HPL_xjumpm(jump5, cjumpA, cjumpC, startrand, itmp164, ia564, ic564);
+  HPL_xjumpm(jump6, ia564, ic564, startrand, itmp364, itmp164, itmp264);
+  HPL_xjumpm(jump7, mult64, iadd64, itmp364, startrand, itmp164, itmp264);
+
   /*
-   * Save value of first number in sequence
+   * Local number of blocks
    */
-  ib1[0] = iran1[0];
-  ib1[1] = iran1[1];
-  ib2[0] = iran1[0];
-  ib2[1] = iran1[1];
-  ib3[0] = iran1[0];
-  ib3[1] = iran1[1];
+  const int mblks = (mp + NB - 1) / NB;
+  const int nblks = (nq + NB - 1) / NB;
 
-#if 1
   /* Initialize on GPU */
-  mp                      = (mp < LDA) ? LDA : mp;
-  unsigned long long pos1 = myrow * nq + mycol * mp * M;
-
-  rocrand_generator generator;
-  rocrand_create_generator(&generator, ROCRAND_RNG_PSEUDO_DEFAULT);
-  rocrand_set_seed(generator, ISEED);
-  rocrand_set_offset(generator, pos1);
-
-  // generate values between [0,1]
-  rocrand_generate_uniform_double(generator, A, ((size_t)mp) * nq);
-  hipDeviceSynchronize();
-
-  // shift values to [-0.5,0.5]
-  size_t grid_size = (((size_t)mp) * nq + BLOCK_SIZE - 1) / BLOCK_SIZE;
-  hipLaunchKernelGGL((hpl_init_shift),
-                     dim3(grid_size),
-                     dim3(BLOCK_SIZE),
+  dim3 grid = dim3(mblks, nblks);
+  hipLaunchKernelGGL((hpl_randmat),
+                     grid,
+                     BLOCK_SIZE,
                      0,
                      0,
-                     A,
-                     ((size_t)mp) * nq);
+                     mp, nq, NB, LDA,
+                     cblkjumpA, cblkjumpC,
+                     rblkjumpA, rblkjumpC,
+                     cjumpA, cjumpC,
+                     rjumpA, rjumpC,
+                     startrand,
+                     A);
 
   hipDeviceSynchronize();
-
-  rocrand_destroy_generator(generator);
-
-#else // original initialization
-
-  for(jblk = 0; jblk < nblks; jblk++) {
-    jb = (jblk == nblks - 1 ? lnb : NB);
-    for(jk = 0; jk < jb; jk++) {
-      for(iblk = 0; iblk < mblks; iblk++) {
-        ib = (iblk == mblks - 1 ? lmb : NB);
-        for(ik = 0; ik < ib; A++, ik++) *A = HPL_rand();
-        HPL_jumpit(ia2, ic2, ib1, iran2);
-        ib1[0] = iran2[0];
-        ib1[1] = iran2[1];
-      }
-      A += LDA - mp;
-      HPL_jumpit(ia3, ic3, ib2, iran3);
-      ib1[0] = iran3[0];
-      ib1[1] = iran3[1];
-      ib2[0] = iran3[0];
-      ib2[1] = iran3[1];
-    }
-    HPL_jumpit(ia4, ic4, ib3, iran4);
-    ib1[0] = iran4[0];
-    ib1[1] = iran4[1];
-    ib2[0] = iran4[0];
-    ib2[1] = iran4[1];
-    ib3[0] = iran4[0];
-    ib3[1] = iran4[1];
-  }
-#endif
 }

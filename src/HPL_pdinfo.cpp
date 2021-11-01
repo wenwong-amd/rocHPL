@@ -47,7 +47,8 @@ void HPL_pdinfo(int          ARGC,
                 int*         L1NOTRAN,
                 int*         UNOTRAN,
                 int*         EQUIL,
-                int*         ALIGN) {
+                int*         ALIGN,
+                double*      FRAC) {
   /*
    * Purpose
    * =======
@@ -199,6 +200,10 @@ void HPL_pdinfo(int          ARGC,
    *         allocated buffers in double precision words. ALIGN is greater
    *         than zero.
    *
+   * FRAC    (global output)               double *
+   *         On exit,  FRAC  specifies the percentage in which to split the
+   *         the trailing update.
+   *
    * ---------------------------------------------------------------------
    */
 
@@ -223,6 +228,7 @@ void HPL_pdinfo(int          ARGC,
   int         p = 1, q = 1, n = 45312, nb = 384;
   bool        cmdlinerun    = false;
   bool        inputfile     = false;
+  double      frac = 0.7;
   std::string inputFileName = "HPL.dat";
 
   for(int i = 1; i < ARGC; i++) {
@@ -246,6 +252,10 @@ void HPL_pdinfo(int          ARGC,
                      "the number of rows    \n"
                      "                                   /columns in panels.   "
                      "                     \n"
+                     "-f  [ --frac ] arg (=0.6)          Specific update split: "
+                     "the percentage to    \n"
+                     "                                   split the trailing "
+                     "submatrix.           \n"
                      "-i  [ --input ]  arg (=HPL.dat)    Input file. When set, "
                      "all other commnand   \n"
                      "                                   line parameters are "
@@ -329,6 +339,10 @@ void HPL_pdinfo(int          ARGC,
         exit(1);
       }
     }
+    if(strcmp(ARGV[i], "-f") == 0 || strcmp(ARGV[i], "--frac") == 0) {
+      frac = atof(ARGV[i + 1]);
+      i++;
+    }
     if(strcmp(ARGV[i], "-i") == 0 || strcmp(ARGV[i], "--input") == 0) {
       inputFileName = ARGV[i + 1];
       inputfile     = true;
@@ -351,6 +365,11 @@ void HPL_pdinfo(int          ARGC,
     exit(1);
   }
 
+  /*
+   * Split fraction
+   */
+  *FRAC = frac;
+
   if(inputfile == false && cmdlinerun == true) {
     // We were given run paramters via the cmd line so skip
     // trying to read from an input file and just fill a
@@ -369,7 +388,7 @@ void HPL_pdinfo(int          ARGC,
     /*
      * Process grids, mapping, (>=1) (P, Q)
      */
-    *PMAPPIN = HPL_COLUMN_MAJOR; // HPL_ROW_MAJOR
+    *PMAPPIN = HPL_ROW_MAJOR;
     *NPQS    = 1;
     P[0]     = p;
     Q[0]     = q;
@@ -573,6 +592,11 @@ void HPL_pdinfo(int          ARGC,
           error = 1;
           goto label_error;
         }
+        if(P[i] != p) {
+          HPL_pwarn(stderr, __LINE__, "HPL_pdinfo", "Values of (P,Q) grid in input file must match commandline parameters");
+          error = 1;
+          goto label_error;
+        }
       }
       status  = fgets(line, HPL_LINE_MAX - 2, infp);
       lineptr = line;
@@ -767,6 +791,16 @@ void HPL_pdinfo(int          ARGC,
           TP[i] = HPL_BLONG_M;
         else
           TP[i] = HPL_IBCST;
+
+        // NC: Only one broadcast implemented currently
+        if(TP[i] != HPL_IBCST) {
+          HPL_pwarn(stderr,
+                    __LINE__,
+                    "HPL_pdinfo",
+                    "Value of BCAST must be 6");
+          error = 1;
+          goto label_error;
+        }
       }
       /*
        * Lookahead depth (>=0) (NDH)
@@ -796,6 +830,15 @@ void HPL_pdinfo(int          ARGC,
           error = 1;
           goto label_error;
         }
+        // NC: We require lookahead depth of 1
+        if(DH[i] != 1) {
+          HPL_pwarn(stderr,
+                    __LINE__,
+                    "HPL_pdinfo",
+                    "Value of DEPTH must be 1");
+          error = 1;
+          goto label_error;
+        }
       }
       /*
        * Swapping algorithm (0,1 or 2) (FSWAP)
@@ -811,6 +854,15 @@ void HPL_pdinfo(int          ARGC,
         *FSWAP = HPL_SW_MIX;
       else
         *FSWAP = HPL_SWAP01;
+      // NC: Only one rowswapping algorithm implemented
+      if(*FSWAP != HPL_SWAP01) {
+        HPL_pwarn(stderr,
+                  __LINE__,
+                  "HPL_pdinfo",
+                  "Value of SWAP must be 1");
+        error = 1;
+        goto label_error;
+      }
       /*
        * Swapping threshold (>=0) (TSWAP)
        */

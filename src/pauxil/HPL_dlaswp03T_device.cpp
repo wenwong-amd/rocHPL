@@ -27,7 +27,7 @@ __global__ void dlaswp03T(const int M,
                           const int LDA,
                           double* __restrict__ W,
                           const int LDW,
-                          const int* __restrict__ LINDXA) {
+                          const int* __restrict__ LINDXU) {
 
   __shared__ double s_W[TILE_DIM][TILE_DIM + 1];
 
@@ -35,7 +35,7 @@ __global__ void dlaswp03T(const int M,
   const int n = threadIdx.y + TILE_DIM * blockIdx.y;
 
   if(m < M) {
-    const int ipa = LINDXA[m];
+    const int ipa = LINDXU[m];
 
     // save in LDS for the moment
     // possible cache-hits if ipas are close
@@ -73,13 +73,13 @@ void HPL_dlaswp03T(const int  M,
                    const int  LDA,
                    double*    W,
                    const int  LDW,
-                   const int* LINDXA) {
+                   const int* LINDXU) {
   /*
    * Purpose
    * =======
    *
    * HPL_dlaswp03T packs scattered rows of an array  A  into workspace  W.
-   * The row offsets in A are specified by LINDXA.
+   * The row offsets in A are specified by LINDXU.
    *
    * Arguments
    * =========
@@ -94,7 +94,7 @@ void HPL_dlaswp03T(const int  M,
    *
    * A       (local output)                double *
    *         On entry, A points to an array of dimension (LDA,N). On exit,
-   *         the  rows of this array specified by  LINDXA  are replaced by
+   *         the  rows of this array specified by  LINDXU  are replaced by
    *         columns of W.
    *
    * LDA     (local input)                 const int
@@ -110,9 +110,9 @@ void HPL_dlaswp03T(const int  M,
    *         On entry, LDW specifies the leading dimension of the array W.
    *         LDW must be at least MAX(1,N).
    *
-   * LINDXA  (local input)                 const int *
-   *         On entry, LINDXA is an array of dimension M that contains the
-   *         local row indexes of A that should be swapped with W.
+   * LINDXU  (local input)                 const int *
+   *         On entry, LINDXU is an array of dimension M that contains the
+   *         local row indexes of A that should be copied into W.
    *
    * ---------------------------------------------------------------------
    */
@@ -135,7 +135,7 @@ void HPL_dlaswp03T(const int  M,
                      LDA,
                      W,
                      LDW,
-                     LINDXA);
+                     LINDXU);
 
   /*
    * End of HPL_dlaswp03T

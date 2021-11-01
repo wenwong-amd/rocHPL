@@ -15,14 +15,12 @@ rocblas_handle handle;
 
 hipStream_t computeStream, dataStream;
 
-hipEvent_t panelUpdate;
-hipEvent_t panelCopy;
-
-hipEvent_t swapStartEvent, swapUCopyEvent, swapWCopyEvent;
-
-hipEvent_t dlaswpStart, dlaswpStop;
-hipEvent_t dtrsmStart, dtrsmStop;
-hipEvent_t dgemmStart, dgemmStop;
+hipEvent_t panelCopy, swapDataTransfer, L1Transfer, L2Transfer;
+hipEvent_t pdlaswpStart_1, pdlaswpStart_2;
+hipEvent_t pdlaswpFinish_1, pdlaswpFinish_2;
+hipEvent_t swapStartEvent[HPL_N_UPD], update[HPL_N_UPD];
+hipEvent_t swapUCopyEvent[HPL_N_UPD], swapWCopyEvent[HPL_N_UPD];
+hipEvent_t dgemmStart[HPL_N_UPD], dgemmStop[HPL_N_UPD];
 
 static char host_name[MPI_MAX_PROCESSOR_NAME];
 
@@ -97,7 +95,8 @@ void HPL_InitGPU(const HPL_T_grid* GRID) {
 
   MPI_Comm_free(&nodeComm);
 
-#ifdef HPL_VERBOSE_PRINT
+//#ifdef HPL_VERBOSE_PRINT
+#if 0
   hipDeviceProp_t props;
   hipGetDeviceProperties(&props, dev);
 
@@ -115,30 +114,76 @@ void HPL_InitGPU(const HPL_T_grid* GRID) {
   hipStreamCreate(&computeStream);
   hipStreamCreate(&dataStream);
 
-  rocblas_create_handle(&handle);
-  rocblas_set_pointer_mode(handle, rocblas_pointer_mode_host);
-
-  rocblas_initialize();
-
-  rocblas_set_stream(handle, computeStream);
-
-  hipEventCreate(&swapStartEvent);
-  hipEventCreate(&swapUCopyEvent);
-  hipEventCreate(&swapWCopyEvent);
-
-  hipEventCreate(&panelUpdate);
   hipEventCreate(&panelCopy);
-  hipEventCreate(&dlaswpStart);
-  hipEventCreate(&dlaswpStop);
-  hipEventCreate(&dtrsmStart);
-  hipEventCreate(&dtrsmStop);
-  hipEventCreate(&dgemmStart);
-  hipEventCreate(&dgemmStop);
+  hipEventCreate(&swapDataTransfer);
+  hipEventCreate(&L1Transfer);
+  hipEventCreate(&L2Transfer);
+
+  hipEventCreate(&pdlaswpStart_1);
+  hipEventCreate(&pdlaswpStart_2);
+  hipEventCreate(&pdlaswpFinish_1);
+  hipEventCreate(&pdlaswpFinish_2);
+
+  hipEventCreate(swapStartEvent + HPL_LOOK_AHEAD);
+  hipEventCreate(swapStartEvent + HPL_UPD_1);
+  hipEventCreate(swapStartEvent + HPL_UPD_2);
+
+  hipEventCreate(swapUCopyEvent + HPL_LOOK_AHEAD);
+  hipEventCreate(swapUCopyEvent + HPL_UPD_1);
+  hipEventCreate(swapUCopyEvent + HPL_UPD_2);
+
+  hipEventCreate(swapWCopyEvent + HPL_LOOK_AHEAD);
+  hipEventCreate(swapWCopyEvent + HPL_UPD_1);
+  hipEventCreate(swapWCopyEvent + HPL_UPD_2);
+
+  hipEventCreate(update + HPL_LOOK_AHEAD);
+  hipEventCreate(update + HPL_UPD_1);
+  hipEventCreate(update + HPL_UPD_2);
+
+  hipEventCreate(dgemmStart + HPL_LOOK_AHEAD);
+  hipEventCreate(dgemmStart + HPL_UPD_1);
+  hipEventCreate(dgemmStart + HPL_UPD_2);
+
+  hipEventCreate(dgemmStop + HPL_LOOK_AHEAD);
+  hipEventCreate(dgemmStop + HPL_UPD_1);
+  hipEventCreate(dgemmStop + HPL_UPD_2);
 }
 
 void Free_gpu() {
-  rocblas_destroy_handle(handle);
+  hipEventDestroy(panelCopy);
+  hipEventDestroy(swapDataTransfer);
+  hipEventDestroy(L1Transfer);
+  hipEventDestroy(L2Transfer);
 
-  hipStreamDestroy(computeStream);
+  hipEventDestroy(pdlaswpStart_1);
+  hipEventDestroy(pdlaswpStart_2);
+  hipEventDestroy(pdlaswpFinish_1);
+  hipEventDestroy(pdlaswpFinish_2);
+
+  hipEventDestroy(swapStartEvent[HPL_LOOK_AHEAD]);
+  hipEventDestroy(swapStartEvent[HPL_UPD_1]);
+  hipEventDestroy(swapStartEvent[HPL_UPD_2]);
+
+  hipEventDestroy(swapUCopyEvent[HPL_LOOK_AHEAD]);
+  hipEventDestroy(swapUCopyEvent[HPL_UPD_1]);
+  hipEventDestroy(swapUCopyEvent[HPL_UPD_2]);
+
+  hipEventDestroy(swapWCopyEvent[HPL_LOOK_AHEAD]);
+  hipEventDestroy(swapWCopyEvent[HPL_UPD_1]);
+  hipEventDestroy(swapWCopyEvent[HPL_UPD_2]);
+
+  hipEventDestroy(update[HPL_LOOK_AHEAD]);
+  hipEventDestroy(update[HPL_UPD_1]);
+  hipEventDestroy(update[HPL_UPD_2]);
+
+  hipEventDestroy(dgemmStart[HPL_LOOK_AHEAD]);
+  hipEventDestroy(dgemmStart[HPL_UPD_1]);
+  hipEventDestroy(dgemmStart[HPL_UPD_2]);
+
+  hipEventDestroy(dgemmStop[HPL_LOOK_AHEAD]);
+  hipEventDestroy(dgemmStop[HPL_UPD_1]);
+  hipEventDestroy(dgemmStop[HPL_UPD_2]);
+
   hipStreamDestroy(dataStream);
+  hipStreamDestroy(computeStream);
 }

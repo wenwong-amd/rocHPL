@@ -43,6 +43,8 @@ typedef MPI_Op HPL_T_OP;
 #define HPL_MAX MPI_MAX
 #define HPL_MIN MPI_MIN
 
+extern MPI_Op HPL_DMXSWP;
+extern MPI_Datatype PDFACT_ROW;
 /*
  * ---------------------------------------------------------------------
  * #define macro constants
@@ -58,8 +60,12 @@ typedef MPI_Op HPL_T_OP;
 int  HPL_send(double*, int, int, int, MPI_Comm);
 int  HPL_recv(double*, int, int, int, MPI_Comm);
 int  HPL_sdrv(double*, int, int, double*, int, int, int, MPI_Comm);
-int  HPL_bcast(HPL_T_panel*, int*);
-void HPL_copyL(HPL_T_panel*);
+
+int  HPL_bcast(double*, int, int, MPI_Comm);
+int  HPL_scatterv(double*, const int*, const int*,
+                  const int, int, MPI_Comm);
+int  HPL_allgatherv(double*, const int, const int*,
+                    const int*, MPI_Comm);
 
 int HPL_barrier(MPI_Comm);
 int HPL_broadcast(void*, const int, const HPL_T_TYPE, const int, MPI_Comm);
@@ -74,6 +80,10 @@ int HPL_all_reduce(void*,
                    const HPL_T_TYPE,
                    const HPL_T_OP,
                    MPI_Comm);
+
+void HPL_dmxswp(void*, void*, int*, MPI_Datatype*);
+
+void HPL_all_reduce_dmxswp(double*, const int, const int, MPI_Comm, double*);
 
 #endif
 /*

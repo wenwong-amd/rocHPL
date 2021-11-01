@@ -38,88 +38,6 @@ void HPL_pdpanel_SendToDevice(HPL_T_panel* PANEL) {
 
   if(jb <= 0) return;
 
-  // copy A and/or L2
-  if(PANEL->grid->mycol == PANEL->pcol) {
-    if(PANEL->grid->npcol > 1) { // L2 is its own array
-      if(PANEL->grid->myrow == PANEL->prow) {
-        hipMemcpy2DAsync(Mptr(PANEL->dA, 0, -jb, PANEL->dlda),
-                         PANEL->dlda * sizeof(double),
-                         Mptr(PANEL->A, 0, 0, PANEL->lda),
-                         PANEL->lda * sizeof(double),
-                         jb * sizeof(double),
-                         jb,
-                         hipMemcpyHostToDevice,
-                         dataStream);
-
-        if((PANEL->mp - jb) > 0)
-          hipMemcpy2DAsync(PANEL->dL2,
-                           PANEL->dldl2 * sizeof(double),
-                           Mptr(PANEL->A, jb, 0, PANEL->lda),
-                           PANEL->lda * sizeof(double),
-                           (PANEL->mp - jb) * sizeof(double),
-                           jb,
-                           hipMemcpyHostToDevice,
-                           dataStream);
-      } else {
-        if((PANEL->mp) > 0)
-          hipMemcpy2DAsync(PANEL->dL2,
-                           PANEL->dldl2 * sizeof(double),
-                           Mptr(PANEL->A, 0, 0, PANEL->lda),
-                           PANEL->lda * sizeof(double),
-                           PANEL->mp * sizeof(double),
-                           jb,
-                           hipMemcpyHostToDevice,
-                           dataStream);
-      }
-    } else {
-      if(PANEL->mp > 0)
-        hipMemcpy2DAsync(Mptr(PANEL->dA, 0, -jb, PANEL->dlda),
-                         PANEL->dlda * sizeof(double),
-                         Mptr(PANEL->A, 0, 0, PANEL->lda),
-                         PANEL->lda * sizeof(double),
-                         PANEL->mp * sizeof(double),
-                         jb,
-                         hipMemcpyHostToDevice,
-                         dataStream);
-    }
-
-    // copy L1
-    hipMemcpy2DAsync(PANEL->dL1,
-                     jb * sizeof(double),
-                     PANEL->L1,
-                     jb * sizeof(double),
-                     jb * sizeof(double),
-                     jb,
-                     hipMemcpyHostToDevice,
-                     dataStream);
-
-  } else {
-
-#if !defined(GPU_AWARE_MPI)
-    // L2+L1 were recieved via MPI, send them to device
-    ml2 = (PANEL->grid->myrow == PANEL->prow ? PANEL->mp - jb : PANEL->mp);
-    if(ml2 > 0)
-      hipMemcpy2DAsync(PANEL->dL2,
-                       PANEL->dldl2 * sizeof(double),
-                       PANEL->L2,
-                       PANEL->ldl2 * sizeof(double),
-                       ml2 * sizeof(double),
-                       jb,
-                       hipMemcpyHostToDevice,
-                       dataStream);
-
-    // copy L1
-    hipMemcpy2DAsync(PANEL->dL1,
-                     jb * sizeof(double),
-                     PANEL->L1,
-                     jb * sizeof(double),
-                     jb * sizeof(double),
-                     jb,
-                     hipMemcpyHostToDevice,
-                     dataStream);
-#endif
-  }
-
 #ifdef GPU_AWARE_MPI
   // only the root column copies to device
   if(PANEL->grid->mycol == PANEL->pcol) {
@@ -168,12 +86,14 @@ void HPL_pdpanel_SendToDevice(HPL_T_panel* PANEL) {
       int* upiv    = ipmapm1 + PANEL->grid->nprow;
       int* iwork   = upiv + PANEL->mp;
 
+      int* lindxU   = PANEL->lindxU;
       int* lindxA   = PANEL->lindxA;
       int* lindxAU  = PANEL->lindxAU;
       int* permU    = PANEL->permU;
       int* permU_ex = permU + jb;
       int* ipiv     = PANEL->ipiv;
 
+      int* dlindxU   = PANEL->dlindxU;
       int* dlindxA   = PANEL->dlindxA;
       int* dlindxAU  = PANEL->dlindxAU;
       int* dpermU    = PANEL->dpermU;
@@ -183,8 +103,8 @@ void HPL_pdpanel_SendToDevice(HPL_T_panel* PANEL) {
       if(*iflag == -1) /* no index arrays have been computed so far */
       {
         HPL_pipid(PANEL, ipl, ipID);
-        HPL_plindx(
-            PANEL, *ipl, ipID, ipA, lindxA, lindxAU, iplen, permU, iwork);
+        HPL_plindx(PANEL, *ipl, ipID, ipA, lindxU,
+                   lindxAU, lindxA, iplen, permU, iwork);
         *iflag = 1;
       }
 
@@ -207,6 +127,12 @@ void HPL_pdpanel_SendToDevice(HPL_T_panel* PANEL) {
                          hipMemcpyHostToDevice,
                          dataStream);
       }
+
+      hipMemcpyAsync(dlindxU,
+                     lindxU,
+                     jb * sizeof(int),
+                     hipMemcpyHostToDevice,
+                     dataStream);
 
       hipMemcpy2DAsync(dpermU,
                        jb * sizeof(int),
@@ -232,4 +158,104 @@ void HPL_pdpanel_SendToDevice(HPL_T_panel* PANEL) {
 #ifdef GPU_AWARE_MPI
   }
 #endif
+
+  //record when the swap data will arrive
+  hipEventRecord(swapDataTransfer, dataStream);
+
+  // copy A and/or L2
+  if(PANEL->grid->mycol == PANEL->pcol) {
+    // copy L1
+    hipMemcpy2DAsync(PANEL->dL1,
+                     jb * sizeof(double),
+                     PANEL->L1,
+                     jb * sizeof(double),
+                     jb * sizeof(double),
+                     jb,
+                     hipMemcpyHostToDevice,
+                     dataStream);
+
+    //record when L1 will arrive
+    hipEventRecord(L1Transfer, dataStream);
+
+    if(PANEL->grid->npcol > 1) { // L2 is its own array
+      if(PANEL->grid->myrow == PANEL->prow) {
+        hipMemcpy2DAsync(Mptr(PANEL->dA, 0, -jb, PANEL->dlda),
+                         PANEL->dlda * sizeof(double),
+                         Mptr(PANEL->A, 0, 0, PANEL->lda),
+                         PANEL->lda * sizeof(double),
+                         jb * sizeof(double),
+                         jb,
+                         hipMemcpyHostToDevice,
+                         dataStream);
+
+        if((PANEL->mp - jb) > 0)
+          hipMemcpy2DAsync(PANEL->dL2,
+                           PANEL->dldl2 * sizeof(double),
+                           Mptr(PANEL->A, jb, 0, PANEL->lda),
+                           PANEL->lda * sizeof(double),
+                           (PANEL->mp - jb) * sizeof(double),
+                           jb,
+                           hipMemcpyHostToDevice,
+                           dataStream);
+      } else {
+        if((PANEL->mp) > 0)
+          hipMemcpy2DAsync(PANEL->dL2,
+                           PANEL->dldl2 * sizeof(double),
+                           Mptr(PANEL->A, 0, 0, PANEL->lda),
+                           PANEL->lda * sizeof(double),
+                           PANEL->mp * sizeof(double),
+                           jb,
+                           hipMemcpyHostToDevice,
+                           dataStream);
+      }
+    } else {
+      if(PANEL->mp > 0)
+        hipMemcpy2DAsync(Mptr(PANEL->dA, 0, -jb, PANEL->dlda),
+                         PANEL->dlda * sizeof(double),
+                         Mptr(PANEL->A, 0, 0, PANEL->lda),
+                         PANEL->lda * sizeof(double),
+                         PANEL->mp * sizeof(double),
+                         jb,
+                         hipMemcpyHostToDevice,
+                         dataStream);
+    }
+
+    //record when L2 will arrive
+    hipEventRecord(L2Transfer, dataStream);
+
+  } else {
+
+#if !defined(GPU_AWARE_MPI)
+    // copy L1
+    hipMemcpy2DAsync(PANEL->dL1,
+                     jb * sizeof(double),
+                     PANEL->L1,
+                     jb * sizeof(double),
+                     jb * sizeof(double),
+                     jb,
+                     hipMemcpyHostToDevice,
+                     dataStream);
+
+    //record when L1 will arrive
+    hipEventRecord(L1Transfer, dataStream);
+
+    // L2+L1 were recieved via MPI, send them to device
+    ml2 = (PANEL->grid->myrow == PANEL->prow ? PANEL->mp - jb : PANEL->mp);
+    if(ml2 > 0)
+      hipMemcpy2DAsync(PANEL->dL2,
+                       PANEL->dldl2 * sizeof(double),
+                       PANEL->L2,
+                       PANEL->ldl2 * sizeof(double),
+                       ml2 * sizeof(double),
+                       jb,
+                       hipMemcpyHostToDevice,
+                       dataStream);
+
+    //record when L2 will arrive
+    hipEventRecord(L2Transfer, dataStream);
+
+#endif
+  }
+
+
 }

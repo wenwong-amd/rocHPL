@@ -56,6 +56,12 @@ int HPL_pdmatgen(HPL_T_test* TEST,
   mat->dW = nullptr;
   mat->W  = nullptr;
 
+  /* Create a rocBLAS handle */
+  rocblas_create_handle(&handle);
+  rocblas_set_pointer_mode(handle, rocblas_pointer_mode_host);
+  rocblas_initialize();
+  rocblas_set_stream(handle, computeStream);
+
   /*
    * Allocate dynamic memory
    */
@@ -74,6 +80,18 @@ int HPL_pdmatgen(HPL_T_test* TEST,
   hipMalloc(&(mat->dA), numbytes);
 
   /*Check matrix allocation is valid*/
+#ifdef HPL_VERBOSE_PRINT
+  if (mat->dA==NULL) {
+    char host_name[MPI_MAX_PROCESSOR_NAME];
+    int rank, namelen;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Get_processor_name(host_name, &namelen);
+
+    printf("Matrix allocation on node %s, rank %d, failed. \n",
+           host_name,
+           rank);
+  }
+#endif
   info[0] = (mat->dA == NULL);
   info[1] = myrow;
   info[2] = mycol;
@@ -114,6 +132,37 @@ int HPL_pdmatgen(HPL_T_test* TEST,
   int Anp;
   Mnumroc(Anp, mat->n, mat->nb, mat->nb, myrow, 0, nprow);
 
+  /*Need space for a column of panels for pdfact on CPU*/
+  size_t A_hostsize = mat->ld * mat->nb * sizeof(double);
+
+#ifdef HPL_VERBOSE_PRINT
+  if((myrow == 0) && (mycol == 0)) {
+    printf("Allocating %g GBs of storage on CPU...",
+           ((double)A_hostsize) / (1024 * 1024 * 1024));
+    fflush(stdout);
+  }
+#endif
+  hipHostMalloc((void**)&(mat->A), A_hostsize);
+
+  /*Check workspace allocation is valid*/
+  info[0] = (mat->A == NULL);
+  info[1] = myrow;
+  info[2] = mycol;
+  (void)HPL_all_reduce((void*)(info), 3, HPL_INT, HPL_MAX, GRID->all_comm);
+  if(info[0] != 0) {
+    HPL_pwarn(TEST->outfp,
+              __LINE__,
+              "HPL_pdmatgen",
+              "[%d,%d] %s",
+              info[1],
+              info[2],
+              "Host memory allocation failed for host A. Skip.");
+    return HPL_FAILURE;
+  }
+#ifdef HPL_VERBOSE_PRINT
+  if((myrow == 0) && (mycol == 0)) printf("done.\n");
+#endif
+
   size_t dworkspace_size = 0;
   size_t workspace_size  = 0;
 
@@ -149,9 +198,6 @@ int HPL_pdmatgen(HPL_T_test* TEST,
   /*pdtrsv needs two vectors for B and W (and X on host) */
   dworkspace_size = Mmax(2 * Anp * sizeof(double), dworkspace_size);
   workspace_size  = Mmax((2 * Anp + nq) * sizeof(double), workspace_size);
-
-  /*Need space for a column of panels for pdfact on CPU*/
-  workspace_size = Mmax(mat->ld * mat->nb * sizeof(double), workspace_size);
 
   /*Scratch space for rows in pdlaswp */
   dworkspace_size = Mmax(nq * mat->nb * sizeof(double), dworkspace_size);
@@ -225,15 +271,18 @@ int HPL_pdmatgen(HPL_T_test* TEST,
 
 void HPL_pdmatfree(HPL_T_pmat* mat) {
 
-  if(mat->dA) hipFree(mat->dA);
-  if(mat->dX) hipFree(mat->dX);
-  if(mat->dW) hipFree(mat->dW);
+  if(mat->dA) {hipFree(mat->dA); mat->dA=nullptr;}
+  if(mat->dX) {hipFree(mat->dX); mat->dX=nullptr;}
+  if(mat->dW) {hipFree(mat->dW); mat->dW=nullptr;}
 
-  if(mat->W) hipHostFree(mat->W);
+  if(mat->A) {hipHostFree(mat->A); mat->A=nullptr;}
+  if(mat->W) {hipHostFree(mat->W); mat->W=nullptr;}
     // if(mat->W) free(mat->W);
 
 #if 0
   // tell rocblas we free'd the workspace
   rocblas_set_device_memory_size(handle, 0);
 #endif
+
+  rocblas_destroy_handle(handle);
 }

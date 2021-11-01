@@ -16,65 +16,43 @@
 
 #include "hpl.hpp"
 
-int HPL_bcast(HPL_T_panel* PANEL, int* IFLAG) {
+int HPL_bcast(double* SBUF, int SCOUNT, int ROOT, MPI_Comm COMM) {
   /*
    * Purpose
    * =======
    *
-   * HPL_bcast broadcasts  the  current  panel.  Successful  completion is
-   * indicated by IFLAG set to HPL_SUCCESS on return. IFLAG will be set to
-   * HPL_FAILURE on failure and to HPL_KEEP_TESTING when the operation was
-   * not completed, in which case this function should be called again.
+   * HPL_bcast is a simple wrapper around  MPI_Bcast.  Its  main  purpose is
+   * to  allow for some  experimentation / tuning  of this simple routine.
+   * Successful  completion  is  indicated  by  the  returned  error  code
+   * HPL_SUCCESS.  In the case of messages of length less than or equal to
+   * zero, this function returns immediately.
    *
    * Arguments
    * =========
    *
-   * PANEL   (input/output)                HPL_T_panel *
-   *         On entry,  PANEL  points to the  current panel data structure
-   *         being broadcast.
+   * SBUF    (local input)                 double *
+   *         On entry, SBUF specifies the starting address of buffer to be
+   *         broadcast.
    *
-   * IFLAG   (output)                      int *
-   *         On exit,  IFLAG  indicates  whether  or not the broadcast has
-   *         occured.
+   * SCOUNT  (local input)                 int
+   *         On entry,  SCOUNT  specifies  the number of  double precision
+   *         entries in SBUF. SCOUNT must be at least zero.
+   *
+   * ROOT    (local input)                 int
+   *         On entry, ROOT specifies the rank of the origin process in
+   *         the communication space defined by COMM.
+   *
+   * COMM    (local input)                 MPI_Comm
+   *         The MPI communicator identifying the communication space.
    *
    * ---------------------------------------------------------------------
    */
 
-  MPI_Comm comm;
-  int      ierr, ierr2, go, next, msgid, prev, rank, root, size;
+  if(SCOUNT <= 0) return (HPL_SUCCESS);
 
-  if(PANEL == NULL) {
-    *IFLAG = HPL_SUCCESS;
-    return (HPL_SUCCESS);
-  }
-  if((size = PANEL->grid->npcol) <= 1) {
-    *IFLAG = HPL_SUCCESS;
-    return (HPL_SUCCESS);
-  }
+  roctxRangePush("HPL_Bcast");
+  int ierr = MPI_Bcast(SBUF, SCOUNT, MPI_DOUBLE, ROOT, COMM);
+  roctxRangePop();
 
-  rank  = PANEL->grid->mycol;
-  comm  = PANEL->grid->row_comm;
-  root  = PANEL->pcol;
-  msgid = PANEL->msgid;
-
-  /*
-   * Force the copy of the panel into a contiguous buffer
-   */
-  HPL_copyL(PANEL);
-
-  /*
-   * Single Bcast call
-   */
-#if defined(GPU_AWARE_MPI)
-  ierr = MPI_Bcast(PANEL->dL2, PANEL->len, MPI_DOUBLE, root, comm);
-#else
-  ierr = MPI_Bcast(PANEL->L2, PANEL->len, MPI_DOUBLE, root, comm);
-#endif
-
-  /*
-   * If an error occured in an MPI call, return HPL_FAILURE.
-   */
-  *IFLAG = (ierr == MPI_SUCCESS ? HPL_SUCCESS : HPL_FAILURE);
-
-  return (*IFLAG);
+  return ((ierr == MPI_SUCCESS ? HPL_SUCCESS : HPL_FAILURE));
 }
