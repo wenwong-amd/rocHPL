@@ -134,7 +134,7 @@ install_packages( )
     library_dependencies_ubuntu+=("rocblas" "rocblas-dev")
     library_dependencies_centos+=("rocblas" "rocblas-devel")
     library_dependencies_fedora+=("rocblas" "rocblas-dev")
-    library_dependencies_sles+=("rocblas" "rocblas-dev")
+    library_dependencies_sles+=("rocblas" "rocblas-devel")
   fi
 
   case "${ID}" in
