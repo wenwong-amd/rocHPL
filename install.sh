@@ -281,6 +281,15 @@ install_blis( )
 # Clone and build OpenMPI+UCX in rochpl/tpl
 install_openmpi( )
 {
+  ucx_lib_folder=./tpl/ucx/lib
+  ompi_lib_folder=./tpl/openmpi/lib
+  case "${ID}" in
+    sles)
+      ucx_lib_folder=./tpl/ucx/lib64
+      ompi_lib_folder=./tpl/openmpi/lib64
+      ;;
+  esac
+
   if [ ! -d "./tpl/ucx" ]; then
     mkdir -p tpl && cd tpl
     git clone --branch v1.11.2 https://github.com/openucx/ucx.git ucx
@@ -288,8 +297,8 @@ install_openmpi( )
     mkdir build; cd build
     ../contrib/configure-opt --prefix=${PWD}/../ --with-rocm=${with_rocm} --without-knem --without-cuda --without-java
     make -j$(nproc); make install; cd ../../..
-  elif [ ! -f "./tpl/ucx/lib/libucm.so" ] || [ ! -f "./tpl/ucx/lib/libucp.so" ] || \
-       [ ! -f "./tpl/ucx/lib/libucs.so" ] || [ ! -f "./tpl/ucx/lib/libuct.so" ]; then
+  elif [ ! -f "${ucx_lib_folder}/libucm.so" ] || [ ! -f "${ucx_lib_folder}/libucp.so" ] || \
+       [ ! -f "${ucx_lib_folder}/libucs.so" ] || [ ! -f "${ucx_lib_folder}/libuct.so" ]; then
     cd tpl/ucx; ./autogen.sh; ./autogen.sh
     mkdir build; cd build
     ../contrib/configure-opt --prefix=${PWD}/../ --with-rocm=${with_rocm} --without-knem --without-cuda --without-java
@@ -297,8 +306,8 @@ install_openmpi( )
   fi
 
   # Check for successful build
-  if [ ! -f "./tpl/ucx/lib/libucm.so" ] || [ ! -f "./tpl/ucx/lib/libucp.so" ] || \
-     [ ! -f "./tpl/ucx/lib/libucs.so" ] || [ ! -f "./tpl/ucx/lib/libuct.so" ]; then
+  if [ ! -f "${ucx_lib_folder}/libucm.so" ] || [ ! -f "${ucx_lib_folder}/libucp.so" ] || \
+     [ ! -f "${ucx_lib_folder}/libucs.so" ] || [ ! -f "${ucx_lib_folder}/libuct.so" ]; then
     echo "Error: UCX install unsuccessful."
     exit 3
   fi
@@ -309,14 +318,14 @@ install_openmpi( )
     cd openmpi; ./autogen.pl; mkdir build; cd build
     ../configure --prefix=${PWD}/../ --with-ucx=${PWD}/../../ucx --without-verbs
     make -j$(nproc); make install; cd ../../..
-  elif [ ! -f "./tpl/openmpi/lib/libmpi.so" ]; then
+  elif [ ! -f "${ompi_lib_folder}/libmpi.so" ]; then
     cd tpl/openmpi; ./autogen.pl; mkdir build; cd build
     ../configure --prefix=${PWD}/../ --with-ucx=${PWD}/../../ucx --without-verbs
     make -j$(nproc); make install; cd ../../..
   fi
 
   # Check for successful build
-  if [ ! -f "./tpl/openmpi/lib/libmpi.so" ]; then
+  if [ ! -f "${ompi_lib_folder}/libmpi.so" ]; then
     echo "Error: OpenMPI install unsuccessful."
     exit 3
   fi
