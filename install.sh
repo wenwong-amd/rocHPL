@@ -132,7 +132,7 @@ install_packages( )
 
   if [[ "${with_rocm}" == /opt/rocm ]]; then
     library_dependencies_ubuntu+=("rocblas" "rocblas-dev")
-    library_dependencies_centos+=("rocblas" "rocblas-dev")
+    library_dependencies_centos+=("rocblas" "rocblas-devel")
     library_dependencies_fedora+=("rocblas" "rocblas-dev")
     library_dependencies_sles+=("rocblas" "rocblas-dev")
   fi
