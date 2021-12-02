@@ -396,7 +396,7 @@ void HPL_pdinfo(int          ARGC,
      * Panel factorization algorithm (PF)
      */
     *NPFS = 1;
-    PF[i] = HPL_RIGHT_LOOKING; // HPL_LEFT_LOOKING, HPL_CROUT;
+    PF[0] = HPL_RIGHT_LOOKING; // HPL_LEFT_LOOKING, HPL_CROUT;
     /*
      * Recursive stopping criterium (>=1) (NBM)
      */
