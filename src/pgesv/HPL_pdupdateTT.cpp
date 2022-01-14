@@ -51,18 +51,18 @@ void HPL_pdupdateTT(HPL_T_panel* PANEL,
 
   if (UPD == HPL_LOOK_AHEAD) {
     Uptr    = PANEL->dU;
-    LDU     = PANEL->nu0;
+    LDU     = PANEL->ldu0;
     n  = Mmin(PANEL->nu0, n);
   } else if (UPD == HPL_UPD_1) {
     Uptr    = PANEL->dU1;
-    LDU     = PANEL->nu1;
+    LDU     = PANEL->ldu1;
     n  = Mmin(PANEL->nu1, n);
     //we call the row swap start before the first section is updated
     // so shift the pointers
     Aptr = Mptr(Aptr, 0, PANEL->nu0, lda);
   } else if (UPD == HPL_UPD_2) {
     Uptr    = PANEL->dU2;
-    LDU     = PANEL->nu2;
+    LDU     = PANEL->ldu2;
     n  = Mmin(PANEL->nu2, n);
     //we call the row swap start before the first section is updated
     // so shift the pointers

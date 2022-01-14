@@ -80,7 +80,7 @@ void HPL_pdpanel_init(HPL_T_grid*  GRID,
 
   size_t dalign;
   int icurcol, icurrow, ii, itmp1, jj, lwork, ml2, mp, mycol, myrow, nb, npcol,
-      nprow, nq, nu;
+      nprow, nq, nu, ldu;
 
   PANEL->grid = GRID; /* ptr to the process grid */
   PANEL->algo = ALGO; /* ptr to the algo parameters */
@@ -168,6 +168,9 @@ void HPL_pdpanel_init(HPL_T_grid*  GRID,
   PANEL->nu0   = 0;
   PANEL->nu1   = 0;
   PANEL->nu2   = 0;
+  PANEL->ldu0   = 0;
+  PANEL->ldu1   = 0;
+  PANEL->ldu2   = 0;
 
 
   /*
@@ -212,9 +215,10 @@ void HPL_pdpanel_init(HPL_T_grid*  GRID,
     PANEL->len = JB * JB + lpiv; // L1, integer arrays
     lwork      = ALGO->align + (PANEL->len + 1);
     nu = Mmax(0, nq - JB);
+    ldu = nu + 256; /*extra space for padding*/
     //if(nprow > 1) /* space for U */
     {
-      lwork += JB * nu;
+      lwork += JB * ldu;
     }
 
     if(PANEL->max_work_size < (size_t)(lwork) * sizeof(double)) {
@@ -274,21 +278,26 @@ void HPL_pdpanel_init(HPL_T_grid*  GRID,
     PANEL->U  = (double*)PANEL->WORK;
     PANEL->dU = (double*)PANEL->dWORK;
 
-    PANEL->L1  = (double*)PANEL->WORK + (JB * Mmax(0, nu));
-    PANEL->dL1 = (double*)PANEL->dWORK + (JB * Mmax(0, nu));
+    PANEL->L1  = (double*)PANEL->WORK + (JB * Mmax(0, ldu));
+    PANEL->dL1 = (double*)PANEL->dWORK + (JB * Mmax(0, ldu));
 
     PANEL->W  = A->W;
     PANEL->dW = A->dW;
 
     if(nprow == 1) {
       PANEL->nu0 = Mmin(JB, nu);
-      PANEL->nu1 = 0;
-      PANEL->nu2 = nu-PANEL->nu0;
+      PANEL->ldu0 = PANEL->nu0;
 
-      PANEL->U1  = PANEL->U   + PANEL->nu0*JB;
-      PANEL->dU1 = PANEL->dU  + PANEL->nu0*JB;
-      PANEL->U2  = PANEL->U1  + PANEL->nu1*JB;
-      PANEL->dU2 = PANEL->dU1 + PANEL->nu1*JB;
+      PANEL->nu1 = 0;
+      PANEL->ldu1 = 0;
+
+      PANEL->nu2 = nu-PANEL->nu0;
+      PANEL->ldu2 = ((PANEL->nu2 + 95) / 128 ) * 128 + 32; /*pad*/
+
+      PANEL->U1  = PANEL->U   + PANEL->ldu0*JB;
+      PANEL->dU1 = PANEL->dU  + PANEL->ldu0*JB;
+      PANEL->U2  = PANEL->U1  + PANEL->ldu1*JB;
+      PANEL->dU2 = PANEL->dU1 + PANEL->ldu1*JB;
 
       PANEL->permU  = (int*)(PANEL->L1 + JB * JB);
       PANEL->dpermU = (int*)(PANEL->dL1 + JB * JB);
@@ -300,18 +309,23 @@ void HPL_pdpanel_init(HPL_T_grid*  GRID,
     } else {
       const int NSplit = Mmax(0, ((((int)(A->nq*fraction))/nb)*nb));
       PANEL->nu0 = Mmin(JB, nu);
+      PANEL->ldu0 = PANEL->nu0;
+
       PANEL->nu2 = Mmin(nu-PANEL->nu0, NSplit);
+      PANEL->ldu2 = ((PANEL->nu2 + 95) / 128 ) * 128 + 32; /*pad*/
+
       PANEL->nu1 = nu-PANEL->nu0-PANEL->nu2;
+      PANEL->ldu1 = ((PANEL->nu1 + 95) / 128 ) * 128 + 32; /*pad*/
 
-      PANEL->U1  = PANEL->U   + PANEL->nu0*JB;
-      PANEL->dU1 = PANEL->dU  + PANEL->nu0*JB;
-      PANEL->U2  = PANEL->U1  + PANEL->nu1*JB;
-      PANEL->dU2 = PANEL->dU1 + PANEL->nu1*JB;
+      PANEL->U1  = PANEL->U   + PANEL->ldu0*JB;
+      PANEL->dU1 = PANEL->dU  + PANEL->ldu0*JB;
+      PANEL->U2  = PANEL->U1  + PANEL->ldu1*JB;
+      PANEL->dU2 = PANEL->dU1 + PANEL->ldu1*JB;
 
-      PANEL->W1  = PANEL->W   + PANEL->nu0*JB;
-      PANEL->dW1 = PANEL->dW  + PANEL->nu0*JB;
-      PANEL->W2  = PANEL->W1  + PANEL->nu1*JB;
-      PANEL->dW2 = PANEL->dW1 + PANEL->nu1*JB;
+      PANEL->W1  = PANEL->W   + PANEL->ldu0*JB;
+      PANEL->dW1 = PANEL->dW  + PANEL->ldu0*JB;
+      PANEL->W2  = PANEL->W1  + PANEL->ldu1*JB;
+      PANEL->dW2 = PANEL->dW1 + PANEL->ldu1*JB;
 
       PANEL->lindxA   = (int*)(PANEL->L1 + JB * JB);
       PANEL->dlindxA  = (int*)(PANEL->dL1 + JB * JB);
@@ -336,6 +350,7 @@ void HPL_pdpanel_init(HPL_T_grid*  GRID,
 
     ml2 = (myrow == icurrow ? mp - JB : mp);
     ml2 = Mmax(0, ml2);
+    ml2 = ((ml2 + 95) / 128 ) * 128 + 32; /*pad*/
 
     itmp1      = JB * JB + lpiv; // L1, integer arrays
     PANEL->len = ml2 * JB + itmp1;
@@ -343,9 +358,11 @@ void HPL_pdpanel_init(HPL_T_grid*  GRID,
     lwork = ALGO->align + PANEL->len + 1;
 
     nu = Mmax(0,(mycol == icurcol ? nq - JB : nq));
+    ldu = nu + 256; /*extra space for potential padding*/
+
     //if(nprow > 1) /* space for U */
     {
-      lwork += JB * nu;
+      lwork += JB * ldu;
     }
 
     if(PANEL->max_work_size < (size_t)(lwork) * sizeof(double)) {
@@ -403,8 +420,8 @@ void HPL_pdpanel_init(HPL_T_grid*  GRID,
     PANEL->W  = A->W;
     PANEL->dW = A->dW;
 
-    PANEL->L2    = (double*)PANEL->WORK + (JB * Mmax(0, nu));
-    PANEL->dL2   = (double*)PANEL->dWORK + (JB * Mmax(0, nu));
+    PANEL->L2    = (double*)PANEL->WORK + (JB * Mmax(0, ldu));
+    PANEL->dL2   = (double*)PANEL->dWORK + (JB * Mmax(0, ldu));
     PANEL->L1    = PANEL->L2 + ml2 * JB;
     PANEL->dL1   = PANEL->dL2 + ml2 * JB;
     PANEL->ldl2  = Mmax(1, ml2);
@@ -412,13 +429,18 @@ void HPL_pdpanel_init(HPL_T_grid*  GRID,
 
     if(nprow == 1) {
       PANEL->nu0 = (mycol == inxtcol) ? Mmin(JB, nu) : 0;
-      PANEL->nu1 = 0;
-      PANEL->nu2 = nu-PANEL->nu0;
+      PANEL->ldu0 = PANEL->nu0;
 
-      PANEL->U1  = PANEL->U   + PANEL->nu0*JB;
-      PANEL->dU1 = PANEL->dU  + PANEL->nu0*JB;
-      PANEL->U2  = PANEL->U1  + PANEL->nu1*JB;
-      PANEL->dU2 = PANEL->dU1 + PANEL->nu1*JB;
+      PANEL->nu1 = 0;
+      PANEL->ldu1 = 0;
+
+      PANEL->nu2 = nu-PANEL->nu0;
+      PANEL->ldu2 = ((PANEL->nu2 + 95) / 128 ) * 128 + 32; /*pad*/
+
+      PANEL->U1  = PANEL->U   + PANEL->ldu0*JB;
+      PANEL->dU1 = PANEL->dU  + PANEL->ldu0*JB;
+      PANEL->U2  = PANEL->U1  + PANEL->ldu1*JB;
+      PANEL->dU2 = PANEL->dU1 + PANEL->ldu1*JB;
 
       PANEL->permU  = (int*)(PANEL->L1 + JB * JB);
       PANEL->dpermU = (int*)(PANEL->dL1 + JB * JB);
@@ -430,18 +452,23 @@ void HPL_pdpanel_init(HPL_T_grid*  GRID,
     } else {
       const int NSplit = Mmax(0, ((((int)(A->nq*fraction))/nb)*nb));
       PANEL->nu0 = (mycol == inxtcol) ? Mmin(JB, nu) : 0;
+      PANEL->ldu0 = PANEL->nu0;
+
       PANEL->nu2 = Mmin(nu-PANEL->nu0, NSplit);
+      PANEL->ldu2 = ((PANEL->nu2 + 95) / 128 ) * 128 + 32; /*pad*/
+
       PANEL->nu1 = nu-PANEL->nu0-PANEL->nu2;
+      PANEL->ldu1 = ((PANEL->nu1 + 95) / 128 ) * 128 + 32; /*pad*/
 
-      PANEL->U1  = PANEL->U   + PANEL->nu0*JB;
-      PANEL->dU1 = PANEL->dU  + PANEL->nu0*JB;
-      PANEL->U2  = PANEL->U1  + PANEL->nu1*JB;
-      PANEL->dU2 = PANEL->dU1 + PANEL->nu1*JB;
+      PANEL->U1  = PANEL->U   + PANEL->ldu0*JB;
+      PANEL->dU1 = PANEL->dU  + PANEL->ldu0*JB;
+      PANEL->U2  = PANEL->U1  + PANEL->ldu1*JB;
+      PANEL->dU2 = PANEL->dU1 + PANEL->ldu1*JB;
 
-      PANEL->W1  = PANEL->W   + PANEL->nu0*JB;
-      PANEL->dW1 = PANEL->dW  + PANEL->nu0*JB;
-      PANEL->W2  = PANEL->W1  + PANEL->nu1*JB;
-      PANEL->dW2 = PANEL->dW1 + PANEL->nu1*JB;
+      PANEL->W1  = PANEL->W   + PANEL->ldu0*JB;
+      PANEL->dW1 = PANEL->dW  + PANEL->ldu0*JB;
+      PANEL->W2  = PANEL->W1  + PANEL->ldu1*JB;
+      PANEL->dW2 = PANEL->dW1 + PANEL->ldu1*JB;
 
       PANEL->lindxA   = (int*)(PANEL->L1 + JB * JB);
       PANEL->dlindxA  = (int*)(PANEL->dL1 + JB * JB);
