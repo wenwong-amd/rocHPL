@@ -396,7 +396,7 @@ void HPL_pdinfo(int          ARGC,
      * Panel factorization algorithm (PF)
      */
     *NPFS = 1;
-    PF[i] = HPL_RIGHT_LOOKING; // HPL_LEFT_LOOKING, HPL_CROUT;
+    PF[0] = HPL_RIGHT_LOOKING; // HPL_LEFT_LOOKING, HPL_CROUT;
     /*
      * Recursive stopping criterium (>=1) (NBM)
      */
@@ -416,7 +416,7 @@ void HPL_pdinfo(int          ARGC,
      * Broadcast topology (TP) (0=rg, 1=2rg, 2=rgM, 3=2rgM, 4=L)
      */
     *NTPS = 1;
-    TP[i] = HPL_1RING_M;
+    TP[0] = HPL_BLONG;
     /*
      * Lookahead depth (>=0) (NDH)
      */
@@ -589,6 +589,11 @@ void HPL_pdinfo(int          ARGC,
         lineptr += strlen(num) + 1;
         if((P[i] = atoi(num)) < 1) {
           HPL_pwarn(stderr, __LINE__, "HPL_pdinfo", "Value of P less than 1");
+          error = 1;
+          goto label_error;
+        }
+        if(P[i] != p) {
+          HPL_pwarn(stderr, __LINE__, "HPL_pdinfo", "Values of (P,Q) grid in input file must match commandline parameters");
           error = 1;
           goto label_error;
         }

@@ -72,8 +72,8 @@ void HPL_pdlaswp_start(HPL_T_panel* PANEL,
     W       = PANEL->W;
     dU      = PANEL->dU;
     dW      = PANEL->dW;
-    LDU     = PANEL->nu0;
-    LDW     = PANEL->nu0;
+    LDU     = PANEL->ldu0;
+    LDW     = PANEL->ldu0;
     n       = PANEL->nu0;
 
   } else if (UPD == HPL_UPD_1) {
@@ -81,8 +81,8 @@ void HPL_pdlaswp_start(HPL_T_panel* PANEL,
     W       = PANEL->W1;
     dU      = PANEL->dU1;
     dW      = PANEL->dW1;
-    LDU     = PANEL->nu1;
-    LDW     = PANEL->nu1;
+    LDU     = PANEL->ldu1;
+    LDW     = PANEL->ldu1;
     n       = PANEL->nu1;
     //we call the row swap start before the first section is updated
     // so shift the pointers
@@ -93,8 +93,8 @@ void HPL_pdlaswp_start(HPL_T_panel* PANEL,
     W       = PANEL->W2;
     dU      = PANEL->dU2;
     dW      = PANEL->dW2;
-    LDU     = PANEL->nu2;
-    LDW     = PANEL->nu2;
+    LDU     = PANEL->ldu2;
+    LDW     = PANEL->ldu2;
     n       = PANEL->nu2;
     //we call the row swap start before the first section is updated
     // so shift the pointers
@@ -296,8 +296,8 @@ void HPL_pdlaswp_exchange(HPL_T_panel* PANEL,
     W       = PANEL->W;
     dU      = PANEL->dU;
     dW      = PANEL->dW;
-    LDU     = PANEL->nu0;
-    LDW     = PANEL->nu0;
+    LDU     = PANEL->ldu0;
+    LDW     = PANEL->ldu0;
     n       = PANEL->nu0;
 
   } else if (UPD == HPL_UPD_1) {
@@ -305,8 +305,8 @@ void HPL_pdlaswp_exchange(HPL_T_panel* PANEL,
     W       = PANEL->W1;
     dU      = PANEL->dU1;
     dW      = PANEL->dW1;
-    LDU     = PANEL->nu1;
-    LDW     = PANEL->nu1;
+    LDU     = PANEL->ldu1;
+    LDW     = PANEL->ldu1;
     n       = PANEL->nu1;
     //we call the row swap start before the first section is updated
     // so shift the pointers
@@ -317,8 +317,8 @@ void HPL_pdlaswp_exchange(HPL_T_panel* PANEL,
     W       = PANEL->W2;
     dU      = PANEL->dU2;
     dW      = PANEL->dW2;
-    LDU     = PANEL->nu2;
-    LDW     = PANEL->nu2;
+    LDU     = PANEL->ldu2;
+    LDW     = PANEL->ldu2;
     n       = PANEL->nu2;
     //we call the row swap start before the first section is updated
     // so shift the pointers
@@ -360,11 +360,11 @@ void HPL_pdlaswp_exchange(HPL_T_panel* PANEL,
   dpermU_ex = dpermU + jb;
 
   /* Set MPI message counts and offsets */
-  ipcounts[0]  = (iplen[1] - iplen[0]) * n;
+  ipcounts[0]  = (iplen[1] - iplen[0]) * LDU;
   ipoffsets[0] = 0;
 
   for(int i = 1; i < nprow; ++i) {
-    ipcounts[i]  = (iplen[i + 1] - iplen[i]) * n;
+    ipcounts[i]  = (iplen[i + 1] - iplen[i]) * LDU;
     ipoffsets[i] = ipcounts[i - 1] + ipoffsets[i - 1];
   }
   ipoffsets[nprow] = ipcounts[nprow - 1] + ipoffsets[nprow - 1];
@@ -553,8 +553,8 @@ void HPL_pdlaswp_end(HPL_T_panel* PANEL,
     W       = PANEL->W;
     dU      = PANEL->dU;
     dW      = PANEL->dW;
-    LDU     = PANEL->nu0;
-    LDW     = PANEL->nu0;
+    LDU     = PANEL->ldu0;
+    LDW     = PANEL->ldu0;
     n       = PANEL->nu0;
 
   } else if (UPD == HPL_UPD_1) {
@@ -562,8 +562,8 @@ void HPL_pdlaswp_end(HPL_T_panel* PANEL,
     W       = PANEL->W1;
     dU      = PANEL->dU1;
     dW      = PANEL->dW1;
-    LDU     = PANEL->nu1;
-    LDW     = PANEL->nu1;
+    LDU     = PANEL->ldu1;
+    LDW     = PANEL->ldu1;
     n       = PANEL->nu1;
     //we call the row swap start before the first section is updated
     // so shift the pointers
@@ -574,8 +574,8 @@ void HPL_pdlaswp_end(HPL_T_panel* PANEL,
     W       = PANEL->W2;
     dU      = PANEL->dU2;
     dW      = PANEL->dW2;
-    LDU     = PANEL->nu2;
-    LDW     = PANEL->nu2;
+    LDU     = PANEL->ldu2;
+    LDW     = PANEL->ldu2;
     n       = PANEL->nu2;
     //we call the row swap start before the first section is updated
     // so shift the pointers

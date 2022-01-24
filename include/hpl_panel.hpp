@@ -68,6 +68,9 @@ typedef struct HPL_S_panel {
   int                nu0;
   int                nu1;
   int                nu2;
+  int                ldu0;
+  int                ldu1;
+  int                ldu2;
   int*               IWORK;      /* integer workspace for swapping */
   void*              buffers[2]; /* buffers for panel bcast */
   int                counts[2];  /* counts for panel bcast */

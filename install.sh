@@ -131,10 +131,10 @@ install_packages( )
   local library_dependencies_sles=(   "make" "cmake" "gcc-c++" "libcxxtools9" "rpm-build" "libnuma-devel" "autoconf" "libtool" "automake" "m4" "flex" )
 
   if [[ "${with_rocm}" == /opt/rocm ]]; then
-    library_dependencies_ubuntu+=("rocm-dev" "rocblas" "rocrand")
-    library_dependencies_centos+=("rocm-dev" "rocblas" "rocrand")
-    library_dependencies_fedora+=("rocm-dev" "rocblas" "rocrand")
-    library_dependencies_sles+=("rocm-dev" "rocblas" "rocrand")
+    library_dependencies_ubuntu+=("rocblas" "rocblas-dev")
+    library_dependencies_centos+=("rocblas" "rocblas-devel")
+    library_dependencies_fedora+=("rocblas" "rocblas-dev")
+    library_dependencies_sles+=("rocblas" "rocblas-devel")
   fi
 
   case "${ID}" in
@@ -266,19 +266,50 @@ install_blis( )
     git clone https://github.com/amd/blis --branch 3.0.1
     cd blis; ./configure --prefix=${PWD} --enable-cblas auto;
     make -j$(nproc); make install -j$(nproc); cd ../..
+  elif [ ! -f "./tpl/blis/lib/libblis.so" ]; then
+    cd tpl/blis; ./configure --prefix=${PWD} --enable-cblas auto;
+    make -j$(nproc); make install -j$(nproc); cd ../..
+  fi
+
+  # Check for successful build
+  if [ ! -f "./tpl/blis/lib/libblis.so" ]; then
+    echo "Error: BLIS install unsuccessful."
+    exit 3
   fi
 }
 
 # Clone and build OpenMPI+UCX in rochpl/tpl
 install_openmpi( )
 {
+  ucx_lib_folder=./tpl/ucx/lib
+  ompi_lib_folder=./tpl/openmpi/lib
+  case "${ID}" in
+    sles)
+      ucx_lib_folder=./tpl/ucx/lib64
+      ompi_lib_folder=./tpl/openmpi/lib64
+      ;;
+  esac
+
   if [ ! -d "./tpl/ucx" ]; then
     mkdir -p tpl && cd tpl
-    git clone --branch master https://github.com/openucx/ucx.git ucx
+    git clone --branch v1.11.2 https://github.com/openucx/ucx.git ucx
     cd ucx; ./autogen.sh; ./autogen.sh #why do we have to run this twice?
     mkdir build; cd build
     ../contrib/configure-opt --prefix=${PWD}/../ --with-rocm=${with_rocm} --without-knem --without-cuda --without-java
     make -j$(nproc); make install; cd ../../..
+  elif [ ! -f "${ucx_lib_folder}/libucm.so" ] || [ ! -f "${ucx_lib_folder}/libucp.so" ] || \
+       [ ! -f "${ucx_lib_folder}/libucs.so" ] || [ ! -f "${ucx_lib_folder}/libuct.so" ]; then
+    cd tpl/ucx; ./autogen.sh; ./autogen.sh
+    mkdir build; cd build
+    ../contrib/configure-opt --prefix=${PWD}/../ --with-rocm=${with_rocm} --without-knem --without-cuda --without-java
+    make -j$(nproc); make install; cd ../../..
+  fi
+
+  # Check for successful build
+  if [ ! -f "${ucx_lib_folder}/libucm.so" ] || [ ! -f "${ucx_lib_folder}/libucp.so" ] || \
+     [ ! -f "${ucx_lib_folder}/libucs.so" ] || [ ! -f "${ucx_lib_folder}/libuct.so" ]; then
+    echo "Error: UCX install unsuccessful."
+    exit 3
   fi
 
   if [ ! -d "./tpl/openmpi" ]; then
@@ -287,6 +318,16 @@ install_openmpi( )
     cd openmpi; ./autogen.pl; mkdir build; cd build
     ../configure --prefix=${PWD}/../ --with-ucx=${PWD}/../../ucx --without-verbs
     make -j$(nproc); make install; cd ../../..
+  elif [ ! -f "${ompi_lib_folder}/libmpi.so" ]; then
+    cd tpl/openmpi; ./autogen.pl; mkdir build; cd build
+    ../configure --prefix=${PWD}/../ --with-ucx=${PWD}/../../ucx --without-verbs
+    make -j$(nproc); make install; cd ../../..
+  fi
+
+  # Check for successful build
+  if [ ! -f "${ompi_lib_folder}/libmpi.so" ]; then
+    echo "Error: OpenMPI install unsuccessful."
+    exit 3
   fi
 }
 

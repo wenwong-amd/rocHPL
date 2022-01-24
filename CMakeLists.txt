@@ -77,7 +77,7 @@ option(BUILD_TEST "Build rocHPL single-node test" OFF)
 include(cmake/Dependencies.cmake)
 
 # Setup version
-rocm_setup_version(VERSION 4.4.0)
+rocm_setup_version(VERSION 5.1.0)
 
 # This option only works for make/nmake and the ninja generators, but no reason it shouldn't be on all the time
 # This tells cmake to create a compile_commands.json file that can be used with clang tooling or vim
@@ -181,23 +181,16 @@ target_link_options(rochpl PRIVATE "-fopenmp")
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/include/hpl_version.hpp.in"
                "${PROJECT_BINARY_DIR}/include/hpl_version.hpp")
 
-# Configure run script
+# Configure run scripts
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/scripts/run_rochpl.in"
                "${CMAKE_BINARY_DIR}/run_rochpl"
+               @ONLY)
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/scripts/mpirun_rochpl.in"
+               "${CMAKE_BINARY_DIR}/mpirun_rochpl"
                @ONLY)
 
 #move input file
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/scripts/HPL.dat
-     DESTINATION ${CMAKE_BINARY_DIR})
-
-#move core mapping scripts
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/scripts/cpu_core_mapP2Q1.sh
-     DESTINATION ${CMAKE_BINARY_DIR})
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/scripts/cpu_core_mapP2Q2.sh
-     DESTINATION ${CMAKE_BINARY_DIR})
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/scripts/cpu_core_mapP2Q4.sh
-     DESTINATION ${CMAKE_BINARY_DIR})
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/scripts/cpu_core_mapP4Q2.sh
      DESTINATION ${CMAKE_BINARY_DIR})
 
 # Install targets
