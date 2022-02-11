@@ -199,9 +199,9 @@ int HPL_pdmatgen(HPL_T_test* TEST,
   dworkspace_size = Mmax(2 * Anp * sizeof(double), dworkspace_size);
   workspace_size  = Mmax((2 * Anp + nq) * sizeof(double), workspace_size);
 
-  /*Scratch space for rows in pdlaswp */
-  dworkspace_size = Mmax(nq * mat->nb * sizeof(double), dworkspace_size);
-  workspace_size  = Mmax(nq * mat->nb * sizeof(double), workspace_size);
+  /*Scratch space for rows in pdlaswp (with extra space for padding) */
+  dworkspace_size = Mmax((nq+256) * mat->nb * sizeof(double), dworkspace_size);
+  workspace_size  = Mmax((nq+256) * mat->nb * sizeof(double), workspace_size);
 
 #ifdef HPL_VERBOSE_PRINT
   if((myrow == 0) && (mycol == 0)) {
