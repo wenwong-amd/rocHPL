@@ -592,11 +592,6 @@ void HPL_pdinfo(int          ARGC,
           error = 1;
           goto label_error;
         }
-        if(P[i] != p) {
-          HPL_pwarn(stderr, __LINE__, "HPL_pdinfo", "Values of (P,Q) grid in input file must match commandline parameters");
-          error = 1;
-          goto label_error;
-        }
       }
       status  = fgets(line, HPL_LINE_MAX - 2, infp);
       lineptr = line;
