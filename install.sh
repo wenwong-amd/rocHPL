@@ -451,12 +451,6 @@ rm -rf ${build_dir}
 # Default cmake executable is called cmake
 cmake_executable=cmake
 
-case "${ID}" in
-  centos|rhel)
-  cmake_executable=cmake3
-  ;;
-esac
-
 # #################################################
 # dependencies
 # #################################################

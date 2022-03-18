@@ -10,6 +10,9 @@
 
 #include "hpl.hpp"
 #include <hip/hip_runtime_api.h>
+#include <cassert>
+
+const int max_nthreads = 128;
 
 int HPL_pdmatgen(HPL_T_test* TEST,
                  HPL_T_grid* GRID,
@@ -142,7 +145,33 @@ int HPL_pdmatgen(HPL_T_test* TEST,
     fflush(stdout);
   }
 #endif
-  hipHostMalloc((void**)&(mat->A), A_hostsize);
+
+  /*Need space for a column of panels for pdfact on CPU*/
+  mat->A = (double *) malloc(A_hostsize);
+
+  // const int KB = ALGO->pfactb; //pfact blocking size
+  const int KB = NB; //pfact blocking size
+
+  #pragma omp parallel
+  {
+    /*First touch*/
+    const int thread_rank = omp_get_thread_num();
+    const int thread_size = omp_get_num_threads();
+    assert(thread_size <= max_nthreads);
+
+    for (int i=0;i<mat->ld;i+=KB) {
+      if( (i/NB) % thread_size == thread_rank) {
+        const int M = std::min(KB, mat->ld-i);
+        for (int k=0;k<NB;++k) {
+          for (int j=0;j<M;++j) {
+            mat->A[j+static_cast<size_t>(mat->ld)*k] = 0.0;
+          }
+        }
+      }
+    }
+  }
+  hipHostRegister(mat->A, A_hostsize, hipHostRegisterDefault);
+  // hipHostMalloc((void**)&(mat->A), A_hostsize);
 
   /*Check workspace allocation is valid*/
   info[0] = (mat->A == NULL);
@@ -275,7 +304,7 @@ void HPL_pdmatfree(HPL_T_pmat* mat) {
   if(mat->dX) {hipFree(mat->dX); mat->dX=nullptr;}
   if(mat->dW) {hipFree(mat->dW); mat->dW=nullptr;}
 
-  if(mat->A) {hipHostFree(mat->A); mat->A=nullptr;}
+  if(mat->A) {free(mat->A); mat->A=nullptr;}
   if(mat->W) {hipHostFree(mat->W); mat->W=nullptr;}
     // if(mat->W) free(mat->W);
 
