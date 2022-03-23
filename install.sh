@@ -494,7 +494,11 @@ pushd .
                         -DHPL_MPI_DIR=${with_mpi} -DROCM_PATH=${with_rocm} -DROCBLAS_PATH=${with_rocblas}"
 
   # build type
-  cmake_common_options="${cmake_common_options} -DCMAKE_BUILD_TYPE=Release"
+  if [[ "${build_release}" == true ]]; then
+    cmake_common_options="${cmake_common_options} -DCMAKE_BUILD_TYPE=Release"
+  else
+    cmake_common_options="${cmake_common_options} -DCMAKE_BUILD_TYPE=Debug"
+  fi
 
   shopt -s nocasematch
   if [[ "${gpu_aware_mpi}" == on || "${gpu_aware_mpi}" == true || "${gpu_aware_mpi}" == 1 || "${gpu_aware_mpi}" == enabled ]]; then

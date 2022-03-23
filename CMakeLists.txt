@@ -96,9 +96,9 @@ foreach(i ${rochpl_device_source})
 endforeach()
 
 # HIP flags workaround while target_compile_options does not work
-list(APPEND HIP_HIPCC_FLAGS "-O3 -march=native -Wno-unused-command-line-argument -ffp-contract=fast -ffast-math -funsafe-math-optimizations")
+list(APPEND HIP_HIPCC_FLAGS "-O3 -march=native -Wno-unused-command-line-argument -ffp-contract=fast -ffast-math -funsafe-math-optimizations -g -ggdb")
 
-list(APPEND CMAKE_HOST_FLAGS "-O3;-march=native")
+list(APPEND CMAKE_HOST_FLAGS "-O3;-march=native;-g")
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
   list(APPEND HIP_HIPCC_FLAGS "-g -ggdb")
@@ -151,7 +151,7 @@ target_include_directories(rochpl
                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
                            $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
                            $<BUILD_INTERFACE:${HIP_INCLUDE_DIRS}>
-			   $<BUILD_INTERFACE:${HPL_MPI_DIR}/include>
+                           $<BUILD_INTERFACE:${HPL_MPI_DIR}/include>
                            $<BUILD_INTERFACE:${ROCM_PATH}/include/roctracer>)
 
 #HIP
@@ -166,8 +166,8 @@ target_link_libraries(rochpl PRIVATE OpenMP::OpenMP_CXX)
 # Target link libraries
 target_link_libraries(rochpl PRIVATE BLAS::BLAS)
 target_link_libraries(rochpl PRIVATE roc::rocblas)
-target_link_libraries(rochpl PRIVATE ${ROCTRACER})
-target_link_libraries(rochpl PRIVATE ${ROCTX})
+target_link_libraries(rochpl PRIVATE roc::roctracer)
+target_link_libraries(rochpl PRIVATE roc::roctx)
 
 # Target properties
 set_target_properties(rochpl PROPERTIES VERSION ${rochpl_VERSION})

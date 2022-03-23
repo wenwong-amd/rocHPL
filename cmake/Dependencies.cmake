@@ -69,6 +69,19 @@ find_library(ROCTX NAMES roctx64
 message("-- roctracer:  ${ROCTRACER}")
 message("-- roctx:      ${ROCTX}")
 
+add_library(roc::roctracer SHARED IMPORTED)
+set_target_properties(roc::roctracer PROPERTIES
+  INTERFACE_INCLUDE_DIRECTORIES "${ROCM_PATH}/include"
+  INTERFACE_LINK_LIBRARIES "hip::host"
+  IMPORTED_LOCATION_RELEASE "${ROCTRACER}"
+  IMPORTED_SONAME_RELEASE "libroctracer.so")
+add_library(roc::roctx SHARED IMPORTED)
+set_target_properties(roc::roctx PROPERTIES
+  INTERFACE_INCLUDE_DIRECTORIES "${ROCM_PATH}/include"
+  INTERFACE_LINK_LIBRARIES "hip::host"
+  IMPORTED_LOCATION_RELEASE "${ROCTX}"
+  IMPORTED_SONAME_RELEASE "libroctx64.so")
+
 # Find HIP package
 find_package(HIP REQUIRED)
 
