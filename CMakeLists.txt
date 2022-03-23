@@ -172,7 +172,6 @@ target_link_libraries(rochpl PRIVATE roc::roctx)
 # Target properties
 set_target_properties(rochpl PROPERTIES VERSION ${rochpl_VERSION})
 set_target_properties(rochpl PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
-set_target_properties(rochpl PROPERTIES DEBUG_POSTFIX "-d")
 
 set_target_properties(rochpl PROPERTIES LINKER_LANGUAGE CXX)
 target_link_options(rochpl PRIVATE "-fopenmp")
