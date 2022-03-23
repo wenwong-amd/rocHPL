@@ -153,7 +153,7 @@ void HPL_pdpanel_init(HPL_T_grid*  GRID,
   PANEL->nq    = nq;          /* local # of cols of trailing part of A */
   PANEL->ii    = ii;          /* local row index of trailing part of A */
   PANEL->jj    = jj;          /* local col index of trailing part of A */
-  PANEL->lda   = Mmax(1, mp); /* local leading dim of array A */
+  PANEL->lda   = A->ld;       /* local leading dim of array A */
   PANEL->dlda  = A->ld;       /* local leading dim of array A */
   PANEL->prow  = icurrow;     /* proc row owning 1st row of trailing A */
   PANEL->pcol  = icurcol;     /* proc col owning 1st col of trailing A */

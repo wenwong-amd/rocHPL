@@ -161,9 +161,9 @@ int HPL_pdmatgen(HPL_T_test* TEST,
 
     for (int i=0;i<mat->ld;i+=KB) {
       if( (i/NB) % thread_size == thread_rank) {
-        const int M = std::min(KB, mat->ld-i);
+        const int mm = std::min(KB, mat->ld-i);
         for (int k=0;k<NB;++k) {
-          for (int j=0;j<M;++j) {
+          for (int j=0;j<mm;++j) {
             mat->A[j+static_cast<size_t>(mat->ld)*k] = 0.0;
           }
         }
