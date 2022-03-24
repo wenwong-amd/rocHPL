@@ -11,6 +11,7 @@
 #include "hpl.hpp"
 #include <hip/hip_runtime_api.h>
 #include <cassert>
+#include <unistd.h>
 
 const int max_nthreads = 128;
 
@@ -147,7 +148,10 @@ int HPL_pdmatgen(HPL_T_test* TEST,
 #endif
 
   /*Need space for a column of panels for pdfact on CPU*/
-  mat->A = (double *) malloc(A_hostsize);
+  unsigned long pg_size = sysconf(_SC_PAGESIZE);
+   /*Need space for a column of panels for pdfact on CPU*/
+  //mat->A = (double *) malloc(A_hostsize);
+  posix_memalign((void**)&(mat->A),pg_size, A_hostsize);
 
   // const int KB = ALGO->pfactb; //pfact blocking size
   const int KB = NB; //pfact blocking size
@@ -160,7 +164,7 @@ int HPL_pdmatgen(HPL_T_test* TEST,
     assert(thread_size <= max_nthreads);
 
     for (int i=0;i<mat->ld;i+=KB) {
-      if( (i/NB) % thread_size == thread_rank) {
+      if( (i/KB) % thread_size == thread_rank) {
         const int mm = std::min(KB, mat->ld-i);
         for (int k=0;k<NB;++k) {
           for (int j=0;j<mm;++j) {
@@ -170,6 +174,7 @@ int HPL_pdmatgen(HPL_T_test* TEST,
       }
     }
   }
+
   hipHostRegister(mat->A, A_hostsize, hipHostRegisterDefault);
   // hipHostMalloc((void**)&(mat->A), A_hostsize);
 
