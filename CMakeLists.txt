@@ -77,7 +77,7 @@ option(BUILD_TEST "Build rocHPL single-node test" OFF)
 include(cmake/Dependencies.cmake)
 
 # Setup version
-rocm_setup_version(VERSION 5.2.0)
+rocm_setup_version(VERSION 5.3.0)
 
 # This option only works for make/nmake and the ninja generators, but no reason it shouldn't be on all the time
 # This tells cmake to create a compile_commands.json file that can be used with clang tooling or vim
@@ -96,13 +96,15 @@ foreach(i ${rochpl_device_source})
 endforeach()
 
 # HIP flags workaround while target_compile_options does not work
-list(APPEND HIP_HIPCC_FLAGS "-O3 -march=native -Wno-unused-command-line-argument -ffp-contract=fast -ffast-math -funsafe-math-optimizations -g -ggdb")
-
-list(APPEND CMAKE_HOST_FLAGS "-O3;-march=native;-g")
+list(APPEND HIP_HIPCC_FLAGS "-Wno-unused-command-line-argument")
+list(APPEND CMAKE_HOST_FLAGS "")
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
   list(APPEND HIP_HIPCC_FLAGS "-g -ggdb")
-  list(APPEND CMAKE_HOST_FLAGS "-g")
+  list(APPEND CMAKE_HOST_FLAGS "-O0 -g")
+else()
+  list(APPEND HIP_HIPCC_FLAGS "-O3 -march=native -ffp-contract=fast -ffast-math -funsafe-math-optimizations")
+  list(APPEND CMAKE_HOST_FLAGS "-O3;-march=native")
 endif()
 
 
