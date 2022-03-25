@@ -228,7 +228,7 @@ void HPL_pdinfo(int          ARGC,
   int         p = 1, q = 1, n = 45312, nb = 384;
   bool        cmdlinerun    = false;
   bool        inputfile     = false;
-  double      frac = 0.7;
+  double      frac = 0.5;
   std::string inputFileName = "HPL.dat";
 
   for(int i = 1; i < ARGC; i++) {
