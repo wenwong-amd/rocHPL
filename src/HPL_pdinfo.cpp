@@ -416,7 +416,7 @@ void HPL_pdinfo(int          ARGC,
      * Broadcast topology (TP) (0=rg, 1=2rg, 2=rgM, 3=2rgM, 4=L)
      */
     *NTPS = 1;
-    TP[0] = HPL_BLONG;
+    TP[0] = HPL_1RING;
     /*
      * Lookahead depth (>=0) (NDH)
      */
