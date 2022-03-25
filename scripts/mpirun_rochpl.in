@@ -85,7 +85,7 @@ P=1
 Q=1
 N=45312
 NB=384
-frac=0.7
+frac=0.5
 
 filename=@CMAKE_BINARY_DIR@/HPL.dat
 inputfile=false
