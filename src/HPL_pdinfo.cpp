@@ -433,7 +433,7 @@ void HPL_pdinfo(int          ARGC,
     /*
      * L1 in (no-)transposed form (0 or 1)
      */
-    *L1NOTRAN = 1;
+    *L1NOTRAN = 0;
     /*
      * U  in (no-)transposed form (0 or 1)
      */
