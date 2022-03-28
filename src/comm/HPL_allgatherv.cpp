@@ -16,8 +16,11 @@
 
 #include "hpl.hpp"
 
-int HPL_allgatherv(double* BUF, const int SCOUNT, const int* RCOUNT,
-                   const int* DISPL, MPI_Comm COMM) {
+int HPL_allgatherv(double*    BUF,
+                   const int  SCOUNT,
+                   const int* RCOUNT,
+                   const int* DISPL,
+                   MPI_Comm   COMM) {
   /*
    * Purpose
    * =======
@@ -35,7 +38,7 @@ int HPL_allgatherv(double* BUF, const int SCOUNT, const int* RCOUNT,
    *         address of buffer to be gathered.
    *
    * SCOUNT  (local input)                 int
-   *         On entry,  SCOUNT is an array of length SIZE specifiying 
+   *         On entry,  SCOUNT is an array of length SIZE specifiying
    *         the number of  double precision entries in BUF to send to
    *         each process.
    *
@@ -45,7 +48,7 @@ int HPL_allgatherv(double* BUF, const int SCOUNT, const int* RCOUNT,
    *         each process.
    *
    * DISPL   (local input)                 int *
-   *         On entry,  DISPL is an array of length SIZE specifiying the  
+   *         On entry,  DISPL is an array of length SIZE specifiying the
    *         displacement (relative to BUF) from which to place the incoming
    *         data from each process.
    *
@@ -59,34 +62,28 @@ int HPL_allgatherv(double* BUF, const int SCOUNT, const int* RCOUNT,
 
 #ifdef HPL_USE_COLLECTIVES
 
-  int ierr = MPI_Allgatherv(MPI_IN_PLACE,
-                            SCOUNT,
-                            MPI_DOUBLE,
-                            BUF,
-                            RCOUNT,
-                            DISPL,
-                            MPI_DOUBLE,
-                            COMM);
+  int ierr = MPI_Allgatherv(
+      MPI_IN_PLACE, SCOUNT, MPI_DOUBLE, BUF, RCOUNT, DISPL, MPI_DOUBLE, COMM);
 
 #else
 
-  int rank, size, ierr=MPI_SUCCESS;
+  int rank, size, ierr = MPI_SUCCESS;
   MPI_Comm_rank(COMM, &rank);
   MPI_Comm_size(COMM, &size);
 
   /*
    * Ring exchange
    */
-  const int npm1  = size - 1;
-  const int prev  = MModSub1(rank, size);
-  const int next  = MModAdd1(rank, size);
+  const int npm1 = size - 1;
+  const int prev = MModSub1(rank, size);
+  const int next = MModAdd1(rank, size);
 
   const int tag = 0;
 
   for(int k = 0; k < npm1; k++) {
     MPI_Request request;
     MPI_Status  status;
-    const int l = (int)((unsigned int)(k) >> 1);
+    const int   l = (int)((unsigned int)(k) >> 1);
 
     int il, lengthS, lengthR, partner, ibufS, ibufR;
     if(((rank + k) & 1) != 0) {
@@ -109,23 +106,13 @@ int HPL_allgatherv(double* BUF, const int SCOUNT, const int* RCOUNT,
 
     if(lengthR > 0) {
       if(ierr == MPI_SUCCESS)
-        ierr = MPI_Irecv(BUF + ibufR,
-                         lengthR,
-                         MPI_DOUBLE,
-                         partner,
-                         tag,
-                         COMM,
-                         &request);
+        ierr = MPI_Irecv(
+            BUF + ibufR, lengthR, MPI_DOUBLE, partner, tag, COMM, &request);
     }
 
     if(lengthS > 0) {
       if(ierr == MPI_SUCCESS)
-        ierr = MPI_Send(BUF + ibufS,
-                        lengthS,
-                        MPI_DOUBLE,
-                        partner,
-                        tag,
-                        COMM);
+        ierr = MPI_Send(BUF + ibufS, lengthS, MPI_DOUBLE, partner, tag, COMM);
     }
 
     if(lengthR > 0) {

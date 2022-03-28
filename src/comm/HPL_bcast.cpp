@@ -16,7 +16,11 @@
 
 #include "hpl.hpp"
 
-int HPL_bcast(double* SBUF, int SCOUNT, int ROOT, MPI_Comm COMM, HPL_T_TOP top) {
+int HPL_bcast(double*   SBUF,
+              int       SCOUNT,
+              int       ROOT,
+              MPI_Comm  COMM,
+              HPL_T_TOP top) {
   /*
    * Purpose
    * =======
@@ -62,12 +66,12 @@ int HPL_bcast(double* SBUF, int SCOUNT, int ROOT, MPI_Comm COMM, HPL_T_TOP top) 
 
   switch(top) {
     case HPL_1RING_M: ierr = HPL_bcast_1rinM(SBUF, SCOUNT, ROOT, COMM); break;
-    case HPL_1RING:   ierr = HPL_bcast_1ring(SBUF, SCOUNT, ROOT, COMM); break;
+    case HPL_1RING: ierr = HPL_bcast_1ring(SBUF, SCOUNT, ROOT, COMM); break;
     case HPL_2RING_M: ierr = HPL_bcast_2rinM(SBUF, SCOUNT, ROOT, COMM); break;
-    case HPL_2RING:   ierr = HPL_bcast_2ring(SBUF, SCOUNT, ROOT, COMM); break;
+    case HPL_2RING: ierr = HPL_bcast_2ring(SBUF, SCOUNT, ROOT, COMM); break;
     case HPL_BLONG_M: ierr = HPL_bcast_blonM(SBUF, SCOUNT, ROOT, COMM); break;
-    case HPL_BLONG:   ierr = HPL_bcast_blong(SBUF, SCOUNT, ROOT, COMM); break;
-    default:          ierr = HPL_FAILURE;
+    case HPL_BLONG: ierr = HPL_bcast_blong(SBUF, SCOUNT, ROOT, COMM); break;
+    default: ierr = HPL_FAILURE;
   }
 
 #endif

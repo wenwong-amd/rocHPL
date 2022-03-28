@@ -56,7 +56,7 @@ void HPL_InitGPU(const HPL_T_grid* GRID) {
   int deviceCount;
   hipGetDeviceCount(&deviceCount);
 
-  if (deviceCount<1) {
+  if(deviceCount < 1) {
     if(localRank == 0)
       HPL_pwarn(stderr,
                 __LINE__,

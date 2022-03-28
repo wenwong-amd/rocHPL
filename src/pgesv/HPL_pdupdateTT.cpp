@@ -16,8 +16,7 @@
 
 #include "hpl.hpp"
 
-void HPL_pdupdateTT(HPL_T_panel* PANEL,
-                    const HPL_T_UPD UPD) {
+void HPL_pdupdateTT(HPL_T_panel* PANEL, const HPL_T_UPD UPD) {
   /*
    * Purpose
    * =======
@@ -40,41 +39,39 @@ void HPL_pdupdateTT(HPL_T_panel* PANEL,
 
   int curr, i, iroff, jb, lda, ldl2, LDU, mp, n, nb;
 
-/* ..
- * .. Executable Statements ..
- */
-  nb  = PANEL->nb;
-  jb  = PANEL->jb;
-  n   = PANEL->nq;
-  lda = PANEL->dlda;
-  Aptr  = PANEL->dA;
+  /* ..
+   * .. Executable Statements ..
+   */
+  nb   = PANEL->nb;
+  jb   = PANEL->jb;
+  n    = PANEL->nq;
+  lda  = PANEL->dlda;
+  Aptr = PANEL->dA;
 
-  if (UPD == HPL_LOOK_AHEAD) {
-    Uptr    = PANEL->dU;
-    LDU     = PANEL->ldu0;
-    n  = Mmin(PANEL->nu0, n);
-  } else if (UPD == HPL_UPD_1) {
-    Uptr    = PANEL->dU1;
-    LDU     = PANEL->ldu1;
-    n  = Mmin(PANEL->nu1, n);
-    //we call the row swap start before the first section is updated
-    // so shift the pointers
+  if(UPD == HPL_LOOK_AHEAD) {
+    Uptr = PANEL->dU;
+    LDU  = PANEL->ldu0;
+    n    = Mmin(PANEL->nu0, n);
+  } else if(UPD == HPL_UPD_1) {
+    Uptr = PANEL->dU1;
+    LDU  = PANEL->ldu1;
+    n    = Mmin(PANEL->nu1, n);
+    // we call the row swap start before the first section is updated
+    //  so shift the pointers
     Aptr = Mptr(Aptr, 0, PANEL->nu0, lda);
-  } else if (UPD == HPL_UPD_2) {
-    Uptr    = PANEL->dU2;
-    LDU     = PANEL->ldu2;
-    n  = Mmin(PANEL->nu2, n);
-    //we call the row swap start before the first section is updated
-    // so shift the pointers
-    Aptr = Mptr(Aptr, 0, PANEL->nu0+PANEL->nu1, lda);
+  } else if(UPD == HPL_UPD_2) {
+    Uptr = PANEL->dU2;
+    LDU  = PANEL->ldu2;
+    n    = Mmin(PANEL->nu2, n);
+    // we call the row swap start before the first section is updated
+    //  so shift the pointers
+    Aptr = Mptr(Aptr, 0, PANEL->nu0 + PANEL->nu1, lda);
   }
 
   /*
    * There is nothing to update, enforce the panel broadcast.
    */
-  if((n <= 0) || (jb <= 0)) {
-    return;
-  }
+  if((n <= 0) || (jb <= 0)) { return; }
 
   hipStream_t stream;
   rocblas_get_stream(handle, &stream);
@@ -88,7 +85,7 @@ void HPL_pdupdateTT(HPL_T_panel* PANEL,
   ldl2  = PANEL->dldl2;
   mp    = PANEL->mp - (curr != 0 ? jb : 0);
 
-  const double one = 1.0;
+  const double one  = 1.0;
   const double mone = -1.0;
 
   /*
@@ -150,8 +147,7 @@ void HPL_pdupdateTT(HPL_T_panel* PANEL,
                   lda);
     hipEventRecord(dgemmStop[UPD], stream);
 
-    if(PANEL->grid->nprow > 1)
-      HPL_dlatcpy_gpu(jb, n, Uptr, LDU, Aptr, lda);
+    if(PANEL->grid->nprow > 1) HPL_dlatcpy_gpu(jb, n, Uptr, LDU, Aptr, lda);
   } else {
     hipEventRecord(dgemmStart[UPD], stream);
     rocblas_dgemm(handle,

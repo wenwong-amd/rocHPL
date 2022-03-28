@@ -103,8 +103,16 @@ void HPL_pdpanel_SendToDevice(HPL_T_panel* PANEL) {
       if(*iflag == -1) /* no index arrays have been computed so far */
       {
         HPL_pipid(PANEL, ipl, ipID);
-        HPL_plindx(PANEL, *ipl, ipID, ipA, lindxU,
-                   lindxAU, lindxA, iplen, permU, iwork);
+        HPL_plindx(PANEL,
+                   *ipl,
+                   ipID,
+                   ipA,
+                   lindxU,
+                   lindxAU,
+                   lindxA,
+                   iplen,
+                   permU,
+                   iwork);
         *iflag = 1;
       }
 
@@ -128,11 +136,8 @@ void HPL_pdpanel_SendToDevice(HPL_T_panel* PANEL) {
                          dataStream);
       }
 
-      hipMemcpyAsync(dlindxU,
-                     lindxU,
-                     jb * sizeof(int),
-                     hipMemcpyHostToDevice,
-                     dataStream);
+      hipMemcpyAsync(
+          dlindxU, lindxU, jb * sizeof(int), hipMemcpyHostToDevice, dataStream);
 
       hipMemcpy2DAsync(dpermU,
                        jb * sizeof(int),
@@ -159,7 +164,7 @@ void HPL_pdpanel_SendToDevice(HPL_T_panel* PANEL) {
   }
 #endif
 
-  //record when the swap data will arrive
+  // record when the swap data will arrive
   hipEventRecord(swapDataTransfer, dataStream);
 
   // copy A and/or L2
@@ -174,7 +179,7 @@ void HPL_pdpanel_SendToDevice(HPL_T_panel* PANEL) {
                      hipMemcpyHostToDevice,
                      dataStream);
 
-    //record when L1 will arrive
+    // record when L1 will arrive
     hipEventRecord(L1Transfer, dataStream);
 
     if(PANEL->grid->npcol > 1) { // L2 is its own array
@@ -220,7 +225,7 @@ void HPL_pdpanel_SendToDevice(HPL_T_panel* PANEL) {
                          dataStream);
     }
 
-    //record when L2 will arrive
+    // record when L2 will arrive
     hipEventRecord(L2Transfer, dataStream);
 
   } else {
@@ -236,7 +241,7 @@ void HPL_pdpanel_SendToDevice(HPL_T_panel* PANEL) {
                      hipMemcpyHostToDevice,
                      dataStream);
 
-    //record when L1 will arrive
+    // record when L1 will arrive
     hipEventRecord(L1Transfer, dataStream);
 
     // L2+L1 were recieved via MPI, send them to device
@@ -251,11 +256,9 @@ void HPL_pdpanel_SendToDevice(HPL_T_panel* PANEL) {
                        hipMemcpyHostToDevice,
                        dataStream);
 
-    //record when L2 will arrive
+    // record when L2 will arrive
     hipEventRecord(L2Transfer, dataStream);
 
 #endif
   }
-
-
 }

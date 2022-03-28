@@ -52,8 +52,8 @@ typedef enum {
 
 typedef enum {
   HPL_LOOK_AHEAD = 0, /* look-ahead update */
-  HPL_UPD_1 = 1,      /* first update */
-  HPL_UPD_2 = 2,      /* second update */
+  HPL_UPD_1      = 1, /* first update */
+  HPL_UPD_2      = 2, /* second update */
 
   HPL_N_UPD = 3
 } HPL_T_UPD;
@@ -91,14 +91,12 @@ typedef struct HPL_S_pmat {
   double* dW;
 } HPL_T_pmat;
 
-
 extern hipEvent_t panelCopy, swapDataTransfer, L1Transfer, L2Transfer;
 extern hipEvent_t pdlaswpStart_1, pdlaswpStart_2;
 extern hipEvent_t pdlaswpFinish_1, pdlaswpFinish_2;
 extern hipEvent_t swapStartEvent[HPL_N_UPD], update[HPL_N_UPD];
 extern hipEvent_t swapUCopyEvent[HPL_N_UPD], swapWCopyEvent[HPL_N_UPD];
 extern hipEvent_t dgemmStart[HPL_N_UPD], dgemmStop[HPL_N_UPD];
-
 
 /*
  * ---------------------------------------------------------------------
@@ -141,12 +139,9 @@ void HPL_plindx(HPL_T_panel*,
                 int*,
                 int*);
 
-void HPL_pdlaswp_start(HPL_T_panel* PANEL,
-                       const HPL_T_UPD UPD);
-void HPL_pdlaswp_exchange(HPL_T_panel* PANEL,
-                       const HPL_T_UPD UPD);
-void HPL_pdlaswp_end(HPL_T_panel* PANEL,
-                       const HPL_T_UPD UPD);
+void HPL_pdlaswp_start(HPL_T_panel* PANEL, const HPL_T_UPD UPD);
+void HPL_pdlaswp_exchange(HPL_T_panel* PANEL, const HPL_T_UPD UPD);
+void HPL_pdlaswp_end(HPL_T_panel* PANEL, const HPL_T_UPD UPD);
 
 void HPL_pdupdateNT(HPL_T_panel*, const HPL_T_UPD);
 void HPL_pdupdateTT(HPL_T_panel*, const HPL_T_UPD);

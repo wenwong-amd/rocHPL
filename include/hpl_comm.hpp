@@ -42,7 +42,7 @@ typedef MPI_Op HPL_T_OP;
 #define HPL_MAX MPI_MAX
 #define HPL_MIN MPI_MIN
 
-extern MPI_Op HPL_DMXSWP;
+extern MPI_Op       HPL_DMXSWP;
 extern MPI_Datatype PDFACT_ROW;
 /*
  * ---------------------------------------------------------------------
@@ -56,11 +56,11 @@ extern MPI_Datatype PDFACT_ROW;
  * comm function prototypes
  * ---------------------------------------------------------------------
  */
-int  HPL_send(double*, int, int, int, MPI_Comm);
-int  HPL_recv(double*, int, int, int, MPI_Comm);
-int  HPL_sdrv(double*, int, int, double*, int, int, int, MPI_Comm);
+int HPL_send(double*, int, int, int, MPI_Comm);
+int HPL_recv(double*, int, int, int, MPI_Comm);
+int HPL_sdrv(double*, int, int, double*, int, int, int, MPI_Comm);
 
-int  HPL_bcast(double*, int, int, MPI_Comm, HPL_T_TOP top);
+int HPL_bcast(double*, int, int, MPI_Comm, HPL_T_TOP top);
 
 int HPL_bcast_1ring(double* SBUF, int SCOUNT, int ROOT, MPI_Comm COMM);
 int HPL_bcast_1rinM(double* SBUF, int SCOUNT, int ROOT, MPI_Comm COMM);
@@ -69,10 +69,8 @@ int HPL_bcast_2rinM(double* SBUF, int SCOUNT, int ROOT, MPI_Comm COMM);
 int HPL_bcast_blong(double* SBUF, int SCOUNT, int ROOT, MPI_Comm COMM);
 int HPL_bcast_blonM(double* SBUF, int SCOUNT, int ROOT, MPI_Comm COMM);
 
-int  HPL_scatterv(double*, const int*, const int*,
-                  const int, int, MPI_Comm);
-int  HPL_allgatherv(double*, const int, const int*,
-                    const int*, MPI_Comm);
+int HPL_scatterv(double*, const int*, const int*, const int, int, MPI_Comm);
+int HPL_allgatherv(double*, const int, const int*, const int*, MPI_Comm);
 
 int HPL_barrier(MPI_Comm);
 int HPL_broadcast(void*, const int, const HPL_T_TYPE, const int, MPI_Comm);

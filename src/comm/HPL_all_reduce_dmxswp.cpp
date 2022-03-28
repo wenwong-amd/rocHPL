@@ -18,12 +18,11 @@
 #include <assert.h>
 
 /* MPI_Op_create is called in main to bind HPL_dmxswp to this MPI_Op */
-MPI_Op HPL_DMXSWP;
+MPI_Op       HPL_DMXSWP;
 MPI_Datatype PDFACT_ROW;
 
 /* Swap-broadcast comparison function usable in MPI_Allreduce */
-void HPL_dmxswp(void* invec, void* inoutvec, int* len,
-                MPI_Datatype* datatype) {
+void HPL_dmxswp(void* invec, void* inoutvec, int* len, MPI_Datatype* datatype) {
 
   assert(*datatype == PDFACT_ROW);
   assert(*len == 1);
@@ -34,18 +33,17 @@ void HPL_dmxswp(void* invec, void* inoutvec, int* len,
   double* Wwork = static_cast<double*>(invec);
   double* WORK  = static_cast<double*>(inoutvec);
 
-  const int jb = ((N/sizeof(double))-4)/2;
+  const int jb = ((N / sizeof(double)) - 4) / 2;
 
-  //check max column value and overwirte row if new max is found
+  // check max column value and overwirte row if new max is found
   const double gmax = Mabs(WORK[0]);
   const double tmp1 = Mabs(Wwork[0]);
   if((tmp1 > gmax) || ((tmp1 == gmax) && (Wwork[3] < WORK[3]))) {
-    HPL_dcopy(jb+4, Wwork, 1, WORK, 1);
+    HPL_dcopy(jb + 4, Wwork, 1, WORK, 1);
   }
 
   // Add the input top row to the inout top row.
-  HPL_daxpy(jb, 1.0, Wwork+jb+4, 1, WORK+jb+4, 1);
-
+  HPL_daxpy(jb, 1.0, Wwork + jb + 4, 1, WORK + jb + 4, 1);
 }
 
 void HPL_all_reduce_dmxswp(double*   BUFFER,
@@ -57,8 +55,8 @@ void HPL_all_reduce_dmxswp(double*   BUFFER,
    * Purpose
    * =======
    *
-   * HPL_all_reduce_dmxswp is a specialized all_reduce that performs 
-   * the swap-broadcast of rows. 
+   * HPL_all_reduce_dmxswp is a specialized all_reduce that performs
+   * the swap-broadcast of rows.
    *
    * Arguments
    * =========
@@ -88,20 +86,18 @@ void HPL_all_reduce_dmxswp(double*   BUFFER,
 
   roctxRangePush("HPL_all_reduce_dmxswp");
 
-
 #if 0
 
   /* Use a normal all_reduce */
   (void) MPI_Allreduce(MPI_IN_PLACE, BUFFER, 1,
                        PDFACT_ROW, HPL_DMXSWP, COMM);
 
-
 #else
   double       gmax, tmp1;
   double *     A0, *Wmx;
   unsigned int hdim, ip2, ip2_, ipow, k, mask;
-  int Np2, cnt_, cnt0, i, icurrow, mydist, mydis_, myrow, n0, nprow,
-      partner, rcnt, root, scnt, size_;
+  int Np2, cnt_, cnt0, i, icurrow, mydist, mydis_, myrow, n0, nprow, partner,
+      rcnt, root, scnt, size_;
 
   MPI_Comm_rank(COMM, &myrow);
   MPI_Comm_size(COMM, &nprow);
@@ -119,7 +115,7 @@ void HPL_all_reduce_dmxswp(double*   BUFFER,
     hdim++;
   }
 
-  n0      = (COUNT-4)/2;
+  n0      = (COUNT - 4) / 2;
   icurrow = ROOT;
   Np2     = (int)((size_ = nprow - ip2) != 0);
   mydist  = MModSub(myrow, icurrow, nprow);
@@ -132,7 +128,7 @@ void HPL_all_reduce_dmxswp(double*   BUFFER,
    */
 
   cnt0 = (cnt_ = n0 + 4) + n0;
-  A0    = (Wmx = BUFFER + 4) + n0;
+  A0   = (Wmx = BUFFER + 4) + n0;
 
   /*
    * Combine the results (bi-directional exchange):  the process coordina-

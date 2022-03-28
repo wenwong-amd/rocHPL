@@ -53,18 +53,18 @@ typedef struct HPL_S_panel {
   int*               dlindxU;
   int*               permU;
   int*               dpermU;
-  double*            U;          /* ptr to U */
-  double*            dU;         /* ptr to U */
-  double*            W;          /* ptr to W */
-  double*            dW;         /* ptr to W */
-  double*            U1;          /* ptr to U1 */
-  double*            dU1;         /* ptr to U1 */
-  double*            W1;          /* ptr to W1 */
-  double*            dW1;         /* ptr to W1 */
-  double*            U2;          /* ptr to U2 */
-  double*            dU2;         /* ptr to U2 */
-  double*            W2;          /* ptr to W2 */
-  double*            dW2;         /* ptr to W2 */
+  double*            U;   /* ptr to U */
+  double*            dU;  /* ptr to U */
+  double*            W;   /* ptr to W */
+  double*            dW;  /* ptr to W */
+  double*            U1;  /* ptr to U1 */
+  double*            dU1; /* ptr to U1 */
+  double*            W1;  /* ptr to W1 */
+  double*            dW1; /* ptr to W1 */
+  double*            U2;  /* ptr to U2 */
+  double*            dU2; /* ptr to U2 */
+  double*            W2;  /* ptr to W2 */
+  double*            dW2; /* ptr to W2 */
   int                nu0;
   int                nu1;
   int                nu2;

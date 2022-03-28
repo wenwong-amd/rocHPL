@@ -22,7 +22,7 @@ int HPL_bcast_blonM(double* SBUF, int SCOUNT, int ROOT, MPI_Comm COMM) {
   MPI_Comm_rank(COMM, &rank);
   MPI_Comm_size(COMM, &size);
 
-  if(size<= 1) return (MPI_SUCCESS);
+  if(size <= 1) return (MPI_SUCCESS);
 
   /*
    * Cast phase:  ROOT process  sends to its right neighbor,  then spread
@@ -32,31 +32,22 @@ int HPL_bcast_blonM(double* SBUF, int SCOUNT, int ROOT, MPI_Comm COMM) {
    * keep spreading on those npcol - 2 processes.  Otherwise,  inform the
    * caller that the panel has still not been received.
    */
-  int count, ierr = MPI_SUCCESS, ibuf, ibufR, ibufS,
-      indx, ip2 = 1, k, l, lbuf, lbufR, lbufS, mask = 1,
-      mydist, mydist2, next, npm1, npm2, partner, prev;
+  int count, ierr = MPI_SUCCESS, ibuf, ibufR, ibufS, indx, ip2 = 1, k, l, lbuf,
+             lbufR, lbufS, mask = 1, mydist, mydist2, next, npm1, npm2, partner,
+             prev;
 
-  const int tag=ROOT;
-  next = MModAdd1(rank, size);
-  prev = MModSub1(rank, size);
+  const int tag = ROOT;
+  next          = MModAdd1(rank, size);
+  prev          = MModSub1(rank, size);
 
   if(rank == ROOT) {
     if(ierr == MPI_SUCCESS)
-      ierr = MPI_Send(SBUF,
-                      SCOUNT,
-                      MPI_DOUBLE,
-                      MModAdd1(rank, size),
-                      tag,
-                      COMM);
+      ierr =
+          MPI_Send(SBUF, SCOUNT, MPI_DOUBLE, MModAdd1(rank, size), tag, COMM);
   } else if(prev == ROOT) {
     if(ierr == MPI_SUCCESS)
-      ierr = MPI_Recv(SBUF,
-                      SCOUNT,
-                      MPI_DOUBLE,
-                      ROOT,
-                      tag,
-                      COMM,
-                      MPI_STATUS_IGNORE);
+      ierr = MPI_Recv(
+          SBUF, SCOUNT, MPI_DOUBLE, ROOT, tag, COMM, MPI_STATUS_IGNORE);
   }
   /*
    * if I am just after the ROOT, exit now. The message receive  completed
@@ -68,7 +59,7 @@ int HPL_bcast_blonM(double* SBUF, int SCOUNT, int ROOT, MPI_Comm COMM) {
    * Otherwise, proceed with broadcast -  Spread  the panel across process
    * columns
    */
-  npm2  = (npm1 = size - 1) - 1;
+  npm2 = (npm1 = size - 1) - 1;
 
   k = npm2;
   while(k > 1) {
@@ -104,7 +95,7 @@ int HPL_bcast_blonM(double* SBUF, int SCOUNT, int ROOT, MPI_Comm COMM) {
 
         if(lbuf > 0) {
           if(ierr == MPI_SUCCESS)
-            ierr = MPI_Recv(SBUF+ibuf,
+            ierr = MPI_Recv(SBUF + ibuf,
                             lbuf,
                             MPI_DOUBLE,
                             partner,
@@ -118,7 +109,7 @@ int HPL_bcast_blonM(double* SBUF, int SCOUNT, int ROOT, MPI_Comm COMM) {
 
         if(lbuf > 0) {
           if(ierr == MPI_SUCCESS)
-            ierr = MPI_Send(SBUF+ibuf, lbuf, MPI_DOUBLE, partner, tag, COMM);
+            ierr = MPI_Send(SBUF + ibuf, lbuf, MPI_DOUBLE, partner, tag, COMM);
         }
       }
     }
@@ -173,32 +164,21 @@ int HPL_bcast_blonM(double* SBUF, int SCOUNT, int ROOT, MPI_Comm COMM) {
      * Exchange the messages
      */
     MPI_Request request;
-    MPI_Status status;
+    MPI_Status  status;
 
     if(lbufR > 0) {
       if(ierr == MPI_SUCCESS)
-        ierr = MPI_Irecv(SBUF+ibufR,
-                         lbufR,
-                         MPI_DOUBLE,
-                         partner,
-                         tag,
-                         COMM,
-                         &request);
+        ierr = MPI_Irecv(
+            SBUF + ibufR, lbufR, MPI_DOUBLE, partner, tag, COMM, &request);
     }
 
     if(lbufS > 0) {
       if(ierr == MPI_SUCCESS)
-        ierr = MPI_Send(SBUF+ibufS,
-                        lbufS,
-                        MPI_DOUBLE,
-                        partner,
-                        tag,
-                        COMM);
+        ierr = MPI_Send(SBUF + ibufS, lbufS, MPI_DOUBLE, partner, tag, COMM);
     }
 
     if(lbufR > 0)
-      if(ierr == MPI_SUCCESS)
-        ierr = MPI_Wait(&request, &status);
+      if(ierr == MPI_SUCCESS) ierr = MPI_Wait(&request, &status);
   }
 
   return ierr;

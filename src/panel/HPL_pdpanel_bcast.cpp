@@ -21,8 +21,8 @@ int HPL_pdpanel_bcast(HPL_T_panel* PANEL) {
    * Purpose
    * =======
    *
-   * HPL_pdpanel_bcast broadcasts  the  current  panel.  Successful  completion is
-   * indicated by a return code of HPL_SUCCESS.
+   * HPL_pdpanel_bcast broadcasts  the  current  panel.  Successful  completion
+   * is indicated by a return code of HPL_SUCCESS.
    *
    * Arguments
    * =========
@@ -34,15 +34,11 @@ int HPL_pdpanel_bcast(HPL_T_panel* PANEL) {
    * ---------------------------------------------------------------------
    */
 
-  if(PANEL == NULL) {
-    return HPL_SUCCESS;
-  }
-  if(PANEL->grid->npcol <= 1) {
-    return HPL_SUCCESS;
-  }
+  if(PANEL == NULL) { return HPL_SUCCESS; }
+  if(PANEL->grid->npcol <= 1) { return HPL_SUCCESS; }
 
-  MPI_Comm comm  = PANEL->grid->row_comm;
-  int root  = PANEL->pcol;
+  MPI_Comm comm = PANEL->grid->row_comm;
+  int      root = PANEL->pcol;
 
   /*
    * Force the copy of the panel into a contiguous buffer

@@ -42,21 +42,21 @@
  * Function prototypes
  * ---------------------------------------------------------------------
  */
-void HPL_xjumpm(const int       JUMPM,
-                const uint64_t  MULT,
-                const uint64_t  IADD,
-                const uint64_t  IRANN,
-                      uint64_t& IRANM,
-                      uint64_t& IAM,
-                      uint64_t& ICM);
+void HPL_xjumpm(const int      JUMPM,
+                const uint64_t MULT,
+                const uint64_t IADD,
+                const uint64_t IRANN,
+                uint64_t&      IRANM,
+                uint64_t&      IAM,
+                uint64_t&      ICM);
 
-void   HPL_pdrandmat(const HPL_T_grid*,
-                     const int,
-                     const int,
-                     const int,
-                     double*,
-                     const int,
-                     const int);
+void HPL_pdrandmat(const HPL_T_grid*,
+                   const int,
+                   const int,
+                   const int,
+                   double*,
+                   const int,
+                   const int);
 
 int  HPL_pdmatgen(HPL_T_test*,
                   HPL_T_grid*,

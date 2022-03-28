@@ -105,7 +105,7 @@ void HPL_pdtest(HPL_T_test* TEST,
   }
 
   /* Create row-swapping data type */
-  MPI_Type_contiguous(2*NB+4, MPI_DOUBLE, &PDFACT_ROW);
+  MPI_Type_contiguous(2 * NB + 4, MPI_DOUBLE, &PDFACT_ROW);
   MPI_Type_commit(&PDFACT_ROW);
 
   /*

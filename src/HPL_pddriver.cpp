@@ -44,7 +44,7 @@ int main(int ARGC, char** ARGV) {
   HPL_T_ORDER pmapping;
   HPL_T_FACT  rpfa;
   HPL_T_SWAP  fswap;
-  double frac;
+  double      frac;
 
   MPI_Init(&ARGC, &ARGV);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -198,7 +198,7 @@ int main(int ARGC, char** ARGV) {
                     algo.equil = equil;
                     algo.align = align;
 
-                    algo.frac  = frac;
+                    algo.frac = frac;
 
                     HPL_pdtest(&test, &grid, &algo, nval[in], nbval[inb]);
                   }

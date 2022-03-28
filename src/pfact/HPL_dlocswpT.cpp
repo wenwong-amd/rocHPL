@@ -60,10 +60,10 @@ void HPL_dlocswpT(HPL_T_panel* PANEL,
   double *A1, *A2, *L, *Wr0, *Wmx;
   int     ilindx, lda, myrow, n0;
 
-  myrow = PANEL->grid->myrow;
-  n0    = PANEL->jb;
+  myrow  = PANEL->grid->myrow;
+  n0     = PANEL->jb;
   int NB = PANEL->nb;
-  lda   = PANEL->lda;
+  lda    = PANEL->lda;
 
   Wr0     = (Wmx = WORK + 4) + NB;
   Wmx[JJ] = gmax = WORK[0];

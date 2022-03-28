@@ -52,7 +52,8 @@ int HPL_all_reduce(void*            BUFFER,
    * ---------------------------------------------------------------------
    */
 
-  int ierr = MPI_Allreduce(MPI_IN_PLACE, BUFFER, COUNT, HPL_2_MPI_TYPE(DTYPE), OP, COMM);
+  int ierr = MPI_Allreduce(
+      MPI_IN_PLACE, BUFFER, COUNT, HPL_2_MPI_TYPE(DTYPE), OP, COMM);
 
   return ((ierr == MPI_SUCCESS ? HPL_SUCCESS : HPL_FAILURE));
 }

@@ -22,7 +22,7 @@ int HPL_bcast_blong(double* SBUF, int SCOUNT, int ROOT, MPI_Comm COMM) {
   MPI_Comm_rank(COMM, &rank);
   MPI_Comm_size(COMM, &size);
 
-  if(size<= 1) return (MPI_SUCCESS);
+  if(size <= 1) return (MPI_SUCCESS);
 
   /*
    * Cast phase:  If I am the ROOT process, start spreading the panel.  If
@@ -31,9 +31,8 @@ int HPL_bcast_blong(double* SBUF, int SCOUNT, int ROOT, MPI_Comm COMM) {
    * blocking fashion this time.  Otherwise,  inform  the caller  that the
    * panel has still not been received.
    */
-  int count, ierr = MPI_SUCCESS, ibuf, ibufR, ibufS, indx,
-      ip2, k, l, lbuf, lbufR, lbufS, mask, mydist, mydist2,
-      npm1, partner, next, prev;
+  int count, ierr = MPI_SUCCESS, ibuf, ibufR, ibufS, indx, ip2, k, l, lbuf,
+             lbufR, lbufS, mask, mydist, mydist2, npm1, partner, next, prev;
 
   const int tag = 0;
 
@@ -86,7 +85,7 @@ int HPL_bcast_blong(double* SBUF, int SCOUNT, int ROOT, MPI_Comm COMM) {
 
         if(lbuf > 0) {
           if(ierr == MPI_SUCCESS)
-            ierr = MPI_Send(SBUF+ibuf, lbuf, MPI_DOUBLE, partner, tag, COMM);
+            ierr = MPI_Send(SBUF + ibuf, lbuf, MPI_DOUBLE, partner, tag, COMM);
         }
       }
     }
@@ -141,27 +140,17 @@ int HPL_bcast_blong(double* SBUF, int SCOUNT, int ROOT, MPI_Comm COMM) {
      * Exchange the messages
      */
     MPI_Request request;
-    MPI_Status status;
+    MPI_Status  status;
 
     if(lbufR > 0) {
       if(ierr == MPI_SUCCESS)
-        ierr = MPI_Irecv(SBUF+ibufR,
-                         lbufR,
-                         MPI_DOUBLE,
-                         partner,
-                         tag,
-                         COMM,
-                         &request);
+        ierr = MPI_Irecv(
+            SBUF + ibufR, lbufR, MPI_DOUBLE, partner, tag, COMM, &request);
     }
 
     if(lbufS > 0) {
       if(ierr == MPI_SUCCESS)
-        ierr = MPI_Send(SBUF+ibufS,
-                        lbufS,
-                        MPI_DOUBLE,
-                        partner,
-                        tag,
-                        COMM);
+        ierr = MPI_Send(SBUF + ibufS, lbufS, MPI_DOUBLE, partner, tag, COMM);
     }
 
     if(lbufR > 0)
@@ -170,4 +159,3 @@ int HPL_bcast_blong(double* SBUF, int SCOUNT, int ROOT, MPI_Comm COMM) {
 
   return ierr;
 }
-

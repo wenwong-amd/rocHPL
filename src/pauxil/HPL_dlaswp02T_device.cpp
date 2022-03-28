@@ -28,12 +28,11 @@ __global__ void dlaswp02T(const int M,
                           const int* __restrict__ LINDXAU,
                           const int* __restrict__ LINDXA) {
 
-
   const int n = blockIdx.x;
   const int m = threadIdx.x;
 
-  const int ipau = LINDXAU[m]; //src row
-  const int ipa  = LINDXA[m];  //dst row
+  const int ipau = LINDXAU[m]; // src row
+  const int ipa  = LINDXA[m];  // dst row
 
   const double An = A[ipau + n * ((size_t)LDA)];
 
@@ -99,17 +98,8 @@ void HPL_dlaswp02T(const int  M,
 
   dim3 grid_size(N);
   dim3 block_size(M);
-  hipLaunchKernelGGL((dlaswp02T),
-                     N,
-                     M,
-                     0,
-                     computeStream,
-                     M,
-                     N,
-                     A,
-                     LDA,
-                     LINDXAU,
-                     LINDXA);
+  hipLaunchKernelGGL(
+      (dlaswp02T), N, M, 0, computeStream, M, N, A, LDA, LINDXAU, LINDXA);
 
   /*
    * End of HPL_dlaswp02T

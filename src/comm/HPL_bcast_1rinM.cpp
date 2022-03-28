@@ -22,7 +22,7 @@ int HPL_bcast_1rinM(double* SBUF, int SCOUNT, int ROOT, MPI_Comm COMM) {
   MPI_Comm_rank(COMM, &rank);
   MPI_Comm_size(COMM, &size);
 
-  if(size<= 1) return (MPI_SUCCESS);
+  if(size <= 1) return (MPI_SUCCESS);
 
   /*
    * Cast phase:  If I am the ROOT process,  then  send message to its two
@@ -31,15 +31,16 @@ int HPL_bcast_1rinM(double* SBUF, int SCOUNT, int ROOT, MPI_Comm COMM) {
    * just after the ROOT process, then forward it to the next.  Otherwise,
    * inform the caller that the panel has still not been received.
    */
-  int      ierr, partner, next, prev;
-  const int tag=ROOT;
-  next  = MModAdd1(rank, size);
-  prev  = MModSub1(rank, size);
+  int       ierr, partner, next, prev;
+  const int tag = ROOT;
+  next          = MModAdd1(rank, size);
+  prev          = MModSub1(rank, size);
 
   if(rank == ROOT) {
     ierr = MPI_Send(SBUF, SCOUNT, MPI_DOUBLE, next, tag, COMM);
     if((ierr == MPI_SUCCESS) && (size > 2)) {
-      ierr = MPI_Send(SBUF, SCOUNT, MPI_DOUBLE, MModAdd1(next, size), tag, COMM);
+      ierr =
+          MPI_Send(SBUF, SCOUNT, MPI_DOUBLE, MModAdd1(next, size), tag, COMM);
     }
   } else {
 
@@ -48,13 +49,8 @@ int HPL_bcast_1rinM(double* SBUF, int SCOUNT, int ROOT, MPI_Comm COMM) {
     else
       partner = prev;
 
-    ierr = MPI_Recv(SBUF,
-                    SCOUNT,
-                    MPI_DOUBLE,
-                    partner,
-                    tag,
-                    COMM,
-                    MPI_STATUS_IGNORE);
+    ierr = MPI_Recv(
+        SBUF, SCOUNT, MPI_DOUBLE, partner, tag, COMM, MPI_STATUS_IGNORE);
     if((ierr == MPI_SUCCESS) && (prev != ROOT) && (next != ROOT)) {
       ierr = MPI_Send(SBUF, SCOUNT, MPI_DOUBLE, next, tag, COMM);
     }

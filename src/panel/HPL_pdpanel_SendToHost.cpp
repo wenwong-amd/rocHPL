@@ -26,6 +26,6 @@ void HPL_pdpanel_SendToHost(HPL_T_panel* PANEL) {
                      hipMemcpyDeviceToHost,
                      dataStream);
 
-  //record when panel will arrive
+  // record when panel will arrive
   hipEventRecord(panelCopy, dataStream);
 }

@@ -35,7 +35,7 @@ __global__ void dlaswp01T(const int M,
   const int n = threadIdx.y + TILE_DIM * blockIdx.y;
 
   if(m < M) {
-    const int ipa  = LINDXU[m];
+    const int ipa = LINDXU[m];
 
     // save in LDS for the moment
     // possible cache-hits if ipas are close

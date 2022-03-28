@@ -49,7 +49,7 @@ int HPL_pdmatgen(HPL_T_test* TEST,
       ii >>= 1;
       ip2 <<= 1;
     }
-    im4096 = (mat->ld % 512 ) ? 0 : 1;
+    im4096 = (mat->ld % 512) ? 0 : 1;
   } while((mat->ld == ip2) || im4096);
 
   mat->nq = nq + 1;
@@ -85,15 +85,14 @@ int HPL_pdmatgen(HPL_T_test* TEST,
 
   /*Check matrix allocation is valid*/
 #ifdef HPL_VERBOSE_PRINT
-  if (mat->dA==NULL) {
+  if(mat->dA == NULL) {
     char host_name[MPI_MAX_PROCESSOR_NAME];
-    int rank, namelen;
+    int  rank, namelen;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Get_processor_name(host_name, &namelen);
 
-    printf("Matrix allocation on node %s, rank %d, failed. \n",
-           host_name,
-           rank);
+    printf(
+        "Matrix allocation on node %s, rank %d, failed. \n", host_name, rank);
   }
 #endif
   info[0] = (mat->dA == NULL);
@@ -149,26 +148,26 @@ int HPL_pdmatgen(HPL_T_test* TEST,
 
   /*Need space for a column of panels for pdfact on CPU*/
   unsigned long pg_size = sysconf(_SC_PAGESIZE);
-   /*Need space for a column of panels for pdfact on CPU*/
-  //mat->A = (double *) malloc(A_hostsize);
-  posix_memalign((void**)&(mat->A),pg_size, A_hostsize);
+  /*Need space for a column of panels for pdfact on CPU*/
+  // mat->A = (double *) malloc(A_hostsize);
+  posix_memalign((void**)&(mat->A), pg_size, A_hostsize);
 
   // const int KB = ALGO->pfactb; //pfact blocking size
-  const int KB = NB; //pfact blocking size
+  const int KB = NB; // pfact blocking size
 
-  #pragma omp parallel
+#pragma omp parallel
   {
     /*First touch*/
     const int thread_rank = omp_get_thread_num();
     const int thread_size = omp_get_num_threads();
     assert(thread_size <= max_nthreads);
 
-    for (int i=0;i<mat->ld;i+=KB) {
-      if( (i/KB) % thread_size == thread_rank) {
-        const int mm = std::min(KB, mat->ld-i);
-        for (int k=0;k<NB;++k) {
-          for (int j=0;j<mm;++j) {
-            mat->A[j+i+static_cast<size_t>(mat->ld)*k] = 0.0;
+    for(int i = 0; i < mat->ld; i += KB) {
+      if((i / KB) % thread_size == thread_rank) {
+        const int mm = std::min(KB, mat->ld - i);
+        for(int k = 0; k < NB; ++k) {
+          for(int j = 0; j < mm; ++j) {
+            mat->A[j + i + static_cast<size_t>(mat->ld) * k] = 0.0;
           }
         }
       }
@@ -234,8 +233,9 @@ int HPL_pdmatgen(HPL_T_test* TEST,
   workspace_size  = Mmax((2 * Anp + nq) * sizeof(double), workspace_size);
 
   /*Scratch space for rows in pdlaswp (with extra space for padding) */
-  dworkspace_size = Mmax((nq+256) * mat->nb * sizeof(double), dworkspace_size);
-  workspace_size  = Mmax((nq+256) * mat->nb * sizeof(double), workspace_size);
+  dworkspace_size =
+      Mmax((nq + 256) * mat->nb * sizeof(double), dworkspace_size);
+  workspace_size = Mmax((nq + 256) * mat->nb * sizeof(double), workspace_size);
 
 #ifdef HPL_VERBOSE_PRINT
   if((myrow == 0) && (mycol == 0)) {
@@ -305,13 +305,28 @@ int HPL_pdmatgen(HPL_T_test* TEST,
 
 void HPL_pdmatfree(HPL_T_pmat* mat) {
 
-  if(mat->dA) {hipFree(mat->dA); mat->dA=nullptr;}
-  if(mat->dX) {hipFree(mat->dX); mat->dX=nullptr;}
-  if(mat->dW) {hipFree(mat->dW); mat->dW=nullptr;}
+  if(mat->dA) {
+    hipFree(mat->dA);
+    mat->dA = nullptr;
+  }
+  if(mat->dX) {
+    hipFree(mat->dX);
+    mat->dX = nullptr;
+  }
+  if(mat->dW) {
+    hipFree(mat->dW);
+    mat->dW = nullptr;
+  }
 
-  if(mat->A) {free(mat->A); mat->A=nullptr;}
-  if(mat->W) {hipHostFree(mat->W); mat->W=nullptr;}
-    // if(mat->W) free(mat->W);
+  if(mat->A) {
+    free(mat->A);
+    mat->A = nullptr;
+  }
+  if(mat->W) {
+    hipHostFree(mat->W);
+    mat->W = nullptr;
+  }
+  // if(mat->W) free(mat->W);
 
 #if 0
   // tell rocblas we free'd the workspace

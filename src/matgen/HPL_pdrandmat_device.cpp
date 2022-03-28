@@ -18,10 +18,10 @@
 
 #define BLOCK_SIZE 512
 
-__global__ void hpl_randmat(const int mp,
-                            const int nq,
-                            const int NB,
-                            const int LDA,
+__global__ void hpl_randmat(const int      mp,
+                            const int      nq,
+                            const int      NB,
+                            const int      LDA,
                             const uint64_t cblkjumpA,
                             const uint64_t cblkjumpC,
                             const uint64_t rblkjumpA,
@@ -37,59 +37,47 @@ __global__ void hpl_randmat(const int mp,
   const int iblk = blockIdx.x;
 
   /* Get panel size */
-  const int jb = (jblk == gridDim.y - 1)
-                  ? nq - ((nq - 1) / NB) * NB
-                  : NB;
-  const int ib = (iblk == gridDim.x - 1)
-                  ? mp - ((mp - 1) / NB) * NB
-                  : NB;
+  const int jb = (jblk == gridDim.y - 1) ? nq - ((nq - 1) / NB) * NB : NB;
+  const int ib = (iblk == gridDim.x - 1) ? mp - ((mp - 1) / NB) * NB : NB;
 
-  double* Ab = A + iblk*NB + static_cast<size_t>(jblk*NB)*LDA;
+  double* Ab = A + iblk * NB + static_cast<size_t>(jblk * NB) * LDA;
 
   /* Start at first uint64_t */
   uint64_t irand = startrand;
 
   /* Jump rand M*NB*npcol for each jblk */
-  for (int j=0;j<jblk;++j) {
-    irand = cblkjumpA * irand + cblkjumpC;
-  }
+  for(int j = 0; j < jblk; ++j) { irand = cblkjumpA * irand + cblkjumpC; }
 
   /* Jump rand NB*nprow for each iblk */
-  for (int i=0;i<iblk;++i) {
-    irand = rblkjumpA * irand + rblkjumpC;
-  }
+  for(int i = 0; i < iblk; ++i) { irand = rblkjumpA * irand + rblkjumpC; }
 
   /* Shift per-column irand */
   const int n = threadIdx.x;
-  for (int j=0;j<threadIdx.x;++j) {
-    irand = cjumpA * irand + cjumpC;
-  }
+  for(int j = 0; j < threadIdx.x; ++j) { irand = cjumpA * irand + cjumpC; }
 
-  for (int n=threadIdx.x;n<jb;n+=blockDim.x) {
+  for(int n = threadIdx.x; n < jb; n += blockDim.x) {
     /*Grab rand at top of block*/
     uint64_t r = irand;
 
     /* Each thread traverses a column */
-    for (int m=0;m<ib;++m) {
+    for(int m = 0; m < ib; ++m) {
       /*Generate a random double from the current r */
-      const double p1 = ((r & (65535LU<<0 )) >> 0 );
-      const double p2 = ((r & (65535LU<<16)) >> 16);
-      const double p3 = ((r & (65535LU<<32)) >> 32);
-      const double p4 = ((r & (65535LU<<48)) >> 48);
+      const double p1 = ((r & (65535LU << 0)) >> 0);
+      const double p2 = ((r & (65535LU << 16)) >> 16);
+      const double p3 = ((r & (65535LU << 32)) >> 32);
+      const double p4 = ((r & (65535LU << 48)) >> 48);
 
-      Ab[m+n*LDA] = (HPL_HALF - (((p1) + (p2) * HPL_POW16) /
-                             HPL_DIVFAC * HPL_HALF +
-                                  (p3) + (p4) * HPL_POW16) /
-                             HPL_DIVFAC * HPL_HALF);
+      Ab[m + n * LDA] =
+          (HPL_HALF - (((p1) + (p2)*HPL_POW16) / HPL_DIVFAC * HPL_HALF + (p3) +
+                       (p4)*HPL_POW16) /
+                          HPL_DIVFAC * HPL_HALF);
 
       /*Increment rand*/
       r = rjumpA * r + rjumpC;
     }
 
     /* Block-shift per-column irand */
-    for (int j=0;j<blockDim.x;++j) {
-      irand = cjumpA * irand + cjumpC;
-    }
+    for(int j = 0; j < blockDim.x; ++j) { irand = cjumpA * irand + cjumpC; }
   }
 }
 
@@ -147,8 +135,8 @@ void HPL_pdrandmat(const HPL_T_grid* GRID,
   int mp, mycol, myrow, npcol, nprow, nq;
   (void)HPL_grid_info(GRID, &nprow, &npcol, &myrow, &mycol);
 
-  uint64_t mult64 = HPL_MULT;
-  uint64_t iadd64 = HPL_IADD;
+  uint64_t mult64  = HPL_MULT;
+  uint64_t iadd64  = HPL_IADD;
   uint64_t jseed64 = static_cast<uint64_t>(ISEED);
 
   /*
@@ -199,11 +187,18 @@ void HPL_pdrandmat(const HPL_T_grid* GRID,
                      BLOCK_SIZE,
                      0,
                      0,
-                     mp, nq, NB, LDA,
-                     cblkjumpA, cblkjumpC,
-                     rblkjumpA, rblkjumpC,
-                     cjumpA, cjumpC,
-                     rjumpA, rjumpC,
+                     mp,
+                     nq,
+                     NB,
+                     LDA,
+                     cblkjumpA,
+                     cblkjumpC,
+                     rblkjumpA,
+                     rblkjumpC,
+                     cjumpA,
+                     cjumpC,
+                     rjumpA,
+                     rjumpC,
                      startrand,
                      A);
 

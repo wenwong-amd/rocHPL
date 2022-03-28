@@ -16,13 +16,13 @@
 
 #include "hpl.hpp"
 
-void HPL_xjumpm(const int       JUMPM,
-                const uint64_t  MULT,
-                const uint64_t  IADD,
-                const uint64_t  IRANN,
-                      uint64_t& IRANM,
-                      uint64_t& IAM,
-                      uint64_t& ICM) {
+void HPL_xjumpm(const int      JUMPM,
+                const uint64_t MULT,
+                const uint64_t IADD,
+                const uint64_t IRANN,
+                uint64_t&      IRANM,
+                uint64_t&      IAM,
+                uint64_t&      ICM) {
   /*
    * Purpose
    * =======
@@ -83,9 +83,9 @@ void HPL_xjumpm(const int       JUMPM,
     ICM = IADD;
     for(int k = 1; k <= JUMPM - 1; k++) {
       IAM *= MULT;
-      ICM = ICM*MULT + IADD;
+      ICM = ICM * MULT + IADD;
     }
-    IRANM = IRANN*IAM + ICM;
+    IRANM = IRANN * IAM + ICM;
   } else {
     IRANM = IRANN;
   }

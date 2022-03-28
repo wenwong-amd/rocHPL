@@ -30,10 +30,10 @@ void HPL_plindx(HPL_T_panel* PANEL,
    * Purpose
    * =======
    *
-   * HPL_plindx computes three local arrays LINDXU, LINDXA, and  LINDXAU  containing
-   * the  local  source and final destination position  resulting from the
-   * application of row interchanges.  In addition, this function computes
-   * the array IPLEN that contains the mapping information for the
+   * HPL_plindx computes three local arrays LINDXU, LINDXA, and  LINDXAU
+   * containing the  local  source and final destination position  resulting
+   * from the application of row interchanges.  In addition, this function
+   * computes the array IPLEN that contains the mapping information for the
    * spreading phase.
    *
    * Arguments
@@ -133,8 +133,8 @@ void HPL_plindx(HPL_T_panel* PANEL,
         if((dstrow == icurrow) && (dst - ia < jb)) {
           // if I own the dst and it's in U
 
-          PERMU[ipU]  = dst - ia;      // row index in U
-          iwork[ipU]  = IPLEN[dstrow]; // Index in AllGathered U
+          PERMU[ipU] = dst - ia;      // row index in U
+          iwork[ipU] = IPLEN[dstrow]; // Index in AllGathered U
           ipU++;
 
           LINDXU[IPLEN[dstrow]] = il - iroff; // Index in AllGathered U
@@ -151,20 +151,20 @@ void HPL_plindx(HPL_T_panel* PANEL,
           } while(!fndd && (j < K));
           // This pair must have dst being sent to a position in U
 
-          PERMU[ipU]  = IPID[j - 1] - ia; // row index in U
-          iwork[ipU]  = IPLEN[dstrow];    // Index in AllGathered U
+          PERMU[ipU] = IPID[j - 1] - ia; // row index in U
+          iwork[ipU] = IPLEN[dstrow];    // Index in AllGathered U
           ipU++;
 
-          LINDXU[IPLEN[dstrow]] = il - iroff;    // Index in AllGathered U
+          LINDXU[IPLEN[dstrow]] = il - iroff; // Index in AllGathered U
           IPLEN[dstrow]++;
         } else if((dstrow == icurrow) && (dst - ia >= jb)) {
-          //else I own the dst, but it's not in U
+          // else I own the dst, but it's not in U
 
-          LINDXAU[ip] = il - iroff; //the src row must be in the first jb rows
+          LINDXAU[ip] = il - iroff; // the src row must be in the first jb rows
 
           int il;
           Mindxg2l(il, dst, nb, nb, myrow, 0, nprow);
-          LINDXA[ip] = il - iroff; //the dst is somewhere below
+          LINDXA[ip] = il - iroff; // the dst is somewhere below
           ip++;
         }
       }

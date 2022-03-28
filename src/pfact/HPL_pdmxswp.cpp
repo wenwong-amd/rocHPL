@@ -71,10 +71,10 @@ void HPL_pdmxswp(HPL_T_panel* PANEL,
    * ---------------------------------------------------------------------
    */
 
-  double *     A0, *Wmx, *Wwork;
-  HPL_T_grid*  grid;
-  MPI_Comm     comm;
-  int cnt_, cnt0, i, icurrow, lda, myrow, n0;
+  double *    A0, *Wmx, *Wwork;
+  HPL_T_grid* grid;
+  MPI_Comm    comm;
+  int         cnt_, cnt0, i, icurrow, lda, myrow, n0;
 
 /* ..
  * .. Executable Statements ..
@@ -82,9 +82,9 @@ void HPL_pdmxswp(HPL_T_panel* PANEL,
 #ifdef HPL_DETAILED_TIMING
   HPL_ptimer(HPL_TIMING_MXSWP);
 #endif
-  grid  = PANEL->grid;
+  grid    = PANEL->grid;
   comm    = grid->col_comm;
-  myrow = grid->myrow;
+  myrow   = grid->myrow;
   n0      = PANEL->jb;
   int NB  = PANEL->nb;
   icurrow = PANEL->prow;
@@ -94,7 +94,7 @@ void HPL_pdmxswp(HPL_T_panel* PANEL,
    * owning the local (before combine) and global (after combine) absolute
    * value max. A0 points to the copy of the current row of the matrix.
    */
-  cnt0 = 4 + 2*NB;
+  cnt0 = 4 + 2 * NB;
 
   A0    = (Wmx = WORK + 4) + NB;
   Wwork = WORK + cnt0;

@@ -16,8 +16,12 @@
 
 #include "hpl.hpp"
 
-int HPL_scatterv(double* BUF, const int* SCOUNT, const int* DISPL,
-                 const int RCOUNT, int ROOT, MPI_Comm COMM) {
+int HPL_scatterv(double*    BUF,
+                 const int* SCOUNT,
+                 const int* DISPL,
+                 const int  RCOUNT,
+                 int        ROOT,
+                 MPI_Comm   COMM) {
   /*
    * Purpose
    * =======
@@ -36,12 +40,12 @@ int HPL_scatterv(double* BUF, const int* SCOUNT, const int* DISPL,
    *         BUF specifies the starting point of the received buffer.
    *
    * SCOUNT  (local input)                 int *
-   *         On entry,  SCOUNT is an array of length SIZE specifiying 
+   *         On entry,  SCOUNT is an array of length SIZE specifiying
    *         the number of  double precision entries in BUF to send to
    *         each process.
    *
    * DISPL   (local input)                 int *
-   *         On entry,  DISPL is an array of length SIZE specifiying the  
+   *         On entry,  DISPL is an array of length SIZE specifiying the
    *         displacement (relative to BUF) from which to take the outgoing
    *         data to each process from the root process, and the displacement
    *         (relative to BUF) from which to receive the incoming data on
@@ -61,7 +65,7 @@ int HPL_scatterv(double* BUF, const int* SCOUNT, const int* DISPL,
    * ---------------------------------------------------------------------
    */
 
-  int rank, ierr=MPI_SUCCESS;
+  int rank, ierr = MPI_SUCCESS;
   MPI_Comm_rank(COMM, &rank);
 
   roctxRangePush("HPL_Scatterv");
@@ -69,7 +73,7 @@ int HPL_scatterv(double* BUF, const int* SCOUNT, const int* DISPL,
 //#ifdef HPL_USE_COLLECTIVES
 #if 1
 
-  if (rank==ROOT) {
+  if(rank == ROOT) {
     ierr = MPI_Scatterv(BUF,
                         SCOUNT,
                         DISPL,
@@ -80,15 +84,8 @@ int HPL_scatterv(double* BUF, const int* SCOUNT, const int* DISPL,
                         ROOT,
                         COMM);
   } else {
-    ierr = MPI_Scatterv(NULL,
-                        SCOUNT,
-                        DISPL,
-                        MPI_DOUBLE,
-                        BUF,
-                        RCOUNT,
-                        MPI_DOUBLE,
-                        ROOT,
-                        COMM);
+    ierr = MPI_Scatterv(
+        NULL, SCOUNT, DISPL, MPI_DOUBLE, BUF, RCOUNT, MPI_DOUBLE, ROOT, COMM);
   }
 
 #else
@@ -97,25 +94,25 @@ int HPL_scatterv(double* BUF, const int* SCOUNT, const int* DISPL,
   MPI_Comm_size(COMM, &size);
 
   const int tag = ROOT;
-  if (rank==ROOT) {
+  if(rank == ROOT) {
     /*Just send size-1 messages*/
-    for (int i = 0; i < size; ++i) {
-      if (i==ROOT) {continue;}
+    for(int i = 0; i < size; ++i) {
+      if(i == ROOT) { continue; }
       const int ibuf = DISPL[i];
       const int lbuf = SCOUNT[i];
 
-      if (lbuf >0) {
-        (void) MPI_Send(BUF+ibuf, lbuf, MPI_DOUBLE, i, tag, COMM);
+      if(lbuf > 0) {
+        (void)MPI_Send(BUF + ibuf, lbuf, MPI_DOUBLE, i, tag, COMM);
       }
     }
   } else {
-    if (RCOUNT>0)
-      ierr = MPI_Recv(BUF, RCOUNT, MPI_DOUBLE, ROOT, tag, COMM, MPI_STATUS_IGNORE);
+    if(RCOUNT > 0)
+      ierr =
+          MPI_Recv(BUF, RCOUNT, MPI_DOUBLE, ROOT, tag, COMM, MPI_STATUS_IGNORE);
   }
 
 #endif
   roctxRangePop();
-
 
   return ((ierr == MPI_SUCCESS ? HPL_SUCCESS : HPL_FAILURE));
 }

@@ -22,7 +22,7 @@ int HPL_bcast_2ring(double* SBUF, int SCOUNT, int ROOT, MPI_Comm COMM) {
   MPI_Comm_rank(COMM, &rank);
   MPI_Comm_size(COMM, &size);
 
-  if(size<= 1) return (MPI_SUCCESS);
+  if(size <= 1) return (MPI_SUCCESS);
 
   /*
    * Cast phase: ROOT process  send to its right neighbor and mid-process.
@@ -32,11 +32,11 @@ int HPL_bcast_2ring(double* SBUF, int SCOUNT, int ROOT, MPI_Comm COMM) {
    * the panel has still not been received.
    */
 
-  int      ierr, partner, roo2;
-  const int tag=ROOT;
-  const int next  = MModAdd1(rank, size);
-  roo2  = ((size + 1) >> 1);
-  roo2  = MModAdd(ROOT, roo2, size);
+  int       ierr, partner, roo2;
+  const int tag  = ROOT;
+  const int next = MModAdd1(rank, size);
+  roo2           = ((size + 1) >> 1);
+  roo2           = MModAdd(ROOT, roo2, size);
 
   if(rank == ROOT) {
     ierr = MPI_Send(SBUF, SCOUNT, MPI_DOUBLE, next, tag, COMM);
@@ -47,13 +47,8 @@ int HPL_bcast_2ring(double* SBUF, int SCOUNT, int ROOT, MPI_Comm COMM) {
     partner = MModSub1(rank, size);
     if((partner == ROOT) || (rank == roo2)) partner = ROOT;
 
-    ierr = MPI_Recv(SBUF,
-                    SCOUNT,
-                    MPI_DOUBLE,
-                    partner,
-                    tag,
-                    COMM,
-                    MPI_STATUS_IGNORE);
+    ierr = MPI_Recv(
+        SBUF, SCOUNT, MPI_DOUBLE, partner, tag, COMM, MPI_STATUS_IGNORE);
     if((ierr == MPI_SUCCESS) && (next != roo2) && (next != ROOT)) {
       ierr = MPI_Send(SBUF, SCOUNT, MPI_DOUBLE, next, tag, COMM);
     }

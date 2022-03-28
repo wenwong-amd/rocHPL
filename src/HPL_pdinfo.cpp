@@ -228,44 +228,45 @@ void HPL_pdinfo(int          ARGC,
   int         p = 1, q = 1, n = 45312, nb = 384;
   bool        cmdlinerun    = false;
   bool        inputfile     = false;
-  double      frac = 0.5;
+  double      frac          = 0.5;
   std::string inputFileName = "HPL.dat";
 
   for(int i = 1; i < ARGC; i++) {
     if(strcmp(ARGV[i], "-h") == 0 || strcmp(ARGV[i], "--help") == 0) {
       if(rank == 0) {
-        std::cout << "rocHPL client command line options:                      "
-                     "           \n"
-                     "-P  [ --ranksP ] arg (=1)          Specific MPI grid "
-                     "size: the number of      \n"
-                     "                                   rows in MPI grid.     "
-                     "                     \n"
-                     "-Q  [ --ranksQ ] arg (=1)          Specific MPI grid "
-                     "size: the number of      \n"
-                     "                                   columns in MPI grid.  "
-                     "                     \n"
-                     "-N  [ --sizeN ]  arg (=45312)      Specific matrix size: "
-                     "the number of rows   \n"
-                     "                                   /columns in global "
-                     "matrix.                 \n"
-                     "-NB [ --sizeNB ] arg (=384)        Specific panel size: "
-                     "the number of rows    \n"
-                     "                                   /columns in panels.   "
-                     "                     \n"
-                     "-f  [ --frac ] arg (=0.6)          Specific update split: "
-                     "the percentage to    \n"
-                     "                                   split the trailing "
-                     "submatrix.           \n"
-                     "-i  [ --input ]  arg (=HPL.dat)    Input file. When set, "
-                     "all other commnand   \n"
-                     "                                   line parameters are "
-                     "ignored, and problem   \n"
-                     "                                   parameters are read "
-                     "from input file.       \n"
-                     "-h  [ --help ]                     Produces this help "
-                     "message                 \n"
-                     "--version                          Prints the version "
-                     "number                  \n";
+        std::cout
+            << "rocHPL client command line options:                      "
+               "           \n"
+               "-P  [ --ranksP ] arg (=1)          Specific MPI grid "
+               "size: the number of      \n"
+               "                                   rows in MPI grid.     "
+               "                     \n"
+               "-Q  [ --ranksQ ] arg (=1)          Specific MPI grid "
+               "size: the number of      \n"
+               "                                   columns in MPI grid.  "
+               "                     \n"
+               "-N  [ --sizeN ]  arg (=45312)      Specific matrix size: "
+               "the number of rows   \n"
+               "                                   /columns in global "
+               "matrix.                 \n"
+               "-NB [ --sizeNB ] arg (=384)        Specific panel size: "
+               "the number of rows    \n"
+               "                                   /columns in panels.   "
+               "                     \n"
+               "-f  [ --frac ] arg (=0.6)          Specific update split: "
+               "the percentage to    \n"
+               "                                   split the trailing "
+               "submatrix.           \n"
+               "-i  [ --input ]  arg (=HPL.dat)    Input file. When set, "
+               "all other commnand   \n"
+               "                                   line parameters are "
+               "ignored, and problem   \n"
+               "                                   parameters are read "
+               "from input file.       \n"
+               "-h  [ --help ]                     Produces this help "
+               "message                 \n"
+               "--version                          Prints the version "
+               "number                  \n";
       }
       MPI_Barrier(MPI_COMM_WORLD);
       MPI_Finalize();
@@ -782,7 +783,7 @@ void HPL_pdinfo(int          ARGC,
           TP[i] = HPL_2RING_M;
         else if(j == 4)
           TP[i] = HPL_BLONG;
-        else //if(j == 5)
+        else // if(j == 5)
           TP[i] = HPL_BLONG_M;
       }
       /*
@@ -815,10 +816,7 @@ void HPL_pdinfo(int          ARGC,
         }
         // NC: We require lookahead depth of 1
         if(DH[i] != 1) {
-          HPL_pwarn(stderr,
-                    __LINE__,
-                    "HPL_pdinfo",
-                    "Value of DEPTH must be 1");
+          HPL_pwarn(stderr, __LINE__, "HPL_pdinfo", "Value of DEPTH must be 1");
           error = 1;
           goto label_error;
         }
@@ -839,10 +837,7 @@ void HPL_pdinfo(int          ARGC,
         *FSWAP = HPL_SWAP01;
       // NC: Only one rowswapping algorithm implemented
       if(*FSWAP != HPL_SWAP01) {
-        HPL_pwarn(stderr,
-                  __LINE__,
-                  "HPL_pdinfo",
-                  "Value of SWAP must be 1");
+        HPL_pwarn(stderr, __LINE__, "HPL_pdinfo", "Value of SWAP must be 1");
         error = 1;
         goto label_error;
       }
