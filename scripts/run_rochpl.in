@@ -314,8 +314,29 @@ fi
 mygpu=${rank_to_device[rank]}
 mynuma=${device_to_numa[mygpu]}
 
+#Bind each rank to the numa node its GPU hangs off of. An unbound rank is free
+#to migrate across every cpu on the node, which costs performance under
+#contention. Binding granularity inside the node makes no measurable
+#difference, so bind to the whole node rather than carving out per-rank core
+#ranges.
+#numactl is probed, not merely located. Under a scheduler that constrains cores
+#(slurm cgroup.conf ConstrainCores=yes), binding to a numa node outside the
+#allocation fails with sched_setaffinity: Invalid argument. numactl prefixes the
+#binary below, so an unprobed failure would kill the rank instead of leaving it
+#unbound. Observed on a partial allocation of an 8-numa-node machine, where 7 of
+#the 8 nodes are refused.
+numa_bind=
+if [[ "${mynuma}" =~ ^[0-9]+$ ]] && command -v numactl > /dev/null 2>&1 \
+   && numactl --cpunodebind=${mynuma} --membind=${mynuma} true > /dev/null 2>&1; then
+  numa_bind="numactl --cpunodebind=${mynuma} --membind=${mynuma}"
+fi
+
 if [[ $globalRank -lt $size ]]; then
-  echo "Node Binding: Process $rank [(p,q)=($myp,$myq)] GPU: $mygpu, NUMA: $mynuma"
+  #Report what was actually applied: numactl is optional, so the rank may be
+  #running unbound even though a numa node was identified for its GPU.
+  if [[ -n "${numa_bind}" ]]; then bind_report="NUMA: ${mynuma}"
+  else bind_report="NUMA: ${mynuma} (not bound)"; fi
+  echo "Node Binding: Process $rank [(p,q)=($myp,$myq)] GPU: $mygpu, ${bind_report}"
 fi
 
 rochpl_args="-P ${P} -Q ${Q} -p ${p} -q ${q} -f ${frac} -it ${it}"
@@ -326,4 +347,4 @@ else
 fi
 
 #run
-${rochpl_bin} ${rochpl_args}
+${numa_bind} ${rochpl_bin} ${rochpl_args}

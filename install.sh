@@ -49,10 +49,10 @@ exit_with_error( )
     # Print some message about needed dependencies
 
     # dependencies needed for executable to build
-    local library_dependencies_ubuntu=( "git" "make" "cmake" "libnuma-dev" "pkg-config" "autoconf" "libtool" "automake" "m4" "flex" "libgomp1")
-    local library_dependencies_centos=( "git" "make" "cmake3" "gcc-c++" "rpm-build" "epel-release" "numactl-libs" "autoconf" "libtool" "automake" "m4" "flex" "libgomp")
-    local library_dependencies_fedora=( "git" "make" "cmake" "gcc-c++" "libcxx-devel" "rpm-build" "numactl-libs"  "autoconf" "libtool" "automake" "m4" "flex" "libgomp")
-    local library_dependencies_sles=(   "git" "make" "cmake" "gcc-c++" "libcxxtools9" "rpm-build" "libnuma-devel" "autoconf" "libtool" "automake" "m4" "flex" "libgomp1")
+    local library_dependencies_ubuntu=( "git" "make" "cmake" "libnuma-dev" "numactl" "pkg-config" "autoconf" "libtool" "automake" "m4" "flex" "libgomp1")
+    local library_dependencies_centos=( "git" "make" "cmake3" "gcc-c++" "rpm-build" "epel-release" "numactl-libs" "numactl" "autoconf" "libtool" "automake" "m4" "flex" "libgomp")
+    local library_dependencies_fedora=( "git" "make" "cmake" "gcc-c++" "libcxx-devel" "rpm-build" "numactl-libs" "numactl"  "autoconf" "libtool" "automake" "m4" "flex" "libgomp")
+    local library_dependencies_sles=(   "git" "make" "cmake" "gcc-c++" "libcxxtools9" "rpm-build" "libnuma-devel" "numactl" "autoconf" "libtool" "automake" "m4" "flex" "libgomp1")
 
     if [[ "${with_rocm}" == /opt/rocm ]]; then
       library_dependencies_ubuntu+=("rocblas" "rocblas-dev")

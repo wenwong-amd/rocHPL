@@ -97,7 +97,7 @@ HPL.out      output file name (if any)
 8            memory alignment in double (> 0)
 ```
 
-The `mpirun_rochpl` wraps a second script, `run_rochpl`, wherein some CPU core bindings are determined autmotically based on the node-local MPI grid. 
+The `mpirun_rochpl` wraps a second script, `run_rochpl`, which binds each rank to the NUMA node of its assigned GPU using `numactl` when available. 
 
 Users wishing to launch rocHPL via a workload manager such as slurm may launch the `run_rochpl` script, or may launch the `rochpl` binary directly and specify CPU+GPU bindings via the job manager. For example:
 ```
