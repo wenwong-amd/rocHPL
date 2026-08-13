@@ -282,6 +282,19 @@ device_to_numa=($(ROCM_PATH=${rocm_dir} ${rocm_dir}/bin/amd-smi static --numa --
                   | awk -F',' 'NR==1 {for (i=1;i<=NF;i++) {if ($i=="gpu") g=i; else if ($i=="node") n=i}; next}
                                g && n && $g ~ /^[0-9]+$/ && !seen[$g]++ {print $n}'))
 
+#Fall back to the deprecated rocm-smi for ROCm versions whose amd-smi does not
+#provide "static --numa".
+if [[ ${#device_to_numa[@]} -eq 0 && -x ${rocm_dir}/bin/rocm-smi ]]; then
+  device_to_numa=($(${rocm_dir}/bin/rocm-smi --showtoponuma --csv 2>/dev/null \
+                    | awk -F',' 'NR>1 && $1 ~ /^card[0-9]+$/ {sub(/^card/,"",$1); print $1" "$2}' \
+                    | sort -k1 -g | awk '{print $2}'))
+fi
+
+if [[ ${#device_to_numa[@]} -eq 0 ]]; then
+  echo "Unable to determine GPU numa affinity from ${rocm_dir}; aborting"
+  exit 1
+fi
+
 #count the cpus per core
 threads_per_core=$(echo "${cpulist}" | grep -c ".*	0	.*")
 
