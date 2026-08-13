@@ -272,8 +272,15 @@ myq=$((rank/p))
 #construct a list of all cpus, sorted by core
 cpulist=$(lscpu --parse=CPU,CORE,NODE | awk '!/#/' | tr ',' "\t" | sort -k 2 -g -s)
 
-#construct list of devices and their numa affinities
-devicelist=$(${rocm_dir}/bin/rocm-smi --csv --showtoponuma | tail -n +2 | tr ',' "\t")
+#Map each device to its numa node. amd-smi replaces the deprecated rocm-smi.
+#ROCM_PATH is pinned so that amd-smi loads the libamd_smi.so belonging to this
+#ROCm install; on a side-by-side installation it otherwise picks up whatever
+#/opt/rocm currently points at. The csv has one row per (gpu, cpu_list) pair,
+#so keep only the first row of each gpu, and locate the columns by header name
+#since their layout has changed between amd-smi releases.
+device_to_numa=($(ROCM_PATH=${rocm_dir} ${rocm_dir}/bin/amd-smi static --numa --csv 2>/dev/null \
+                  | awk -F',' 'NR==1 {for (i=1;i<=NF;i++) {if ($i=="gpu") g=i; else if ($i=="node") n=i}; next}
+                               g && n && $g ~ /^[0-9]+$/ && !seen[$g]++ {print $n}'))
 
 #count the cpus per core
 threads_per_core=$(echo "${cpulist}" | grep -c ".*	0	.*")
@@ -299,12 +306,6 @@ done <<< ${corelist}
 numa_core_offsets=(0)
 for i in $(seq 1 $((n_numa-1))); do numa_core_offsets+=($((numa_core_offsets[$((i-1))] + numa_core_counts[$i]))); done
 
-#parse device to numa mapping
-device_to_numa=()
-while read -a line; do
-  device_to_numa+=(${line[1]})
-done <<< ${devicelist}
-
 rank_to_device=()
 
 if [ ! -z "${devices}" ]; then
@@ -316,7 +317,7 @@ if [ ! -z "${devices}" ]; then
 
   export ROCR_VISIBLE_DEVICES=${rank_to_device[rank]}
 else
-	n_devices=$(echo "${devicelist}" | grep -c "card")
+	n_devices=${#device_to_numa[@]}
   for i in $(seq 0 $((size-1))); do
     rank_to_device+=($((i%n_devices)))
   done
