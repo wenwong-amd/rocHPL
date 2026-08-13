@@ -269,9 +269,6 @@ fi
 myp=$((rank%p))
 myq=$((rank/p))
 
-#construct a list of all cpus, sorted by core
-cpulist=$(lscpu --parse=CPU,CORE,NODE | awk '!/#/' | tr ',' "\t" | sort -k 2 -g -s)
-
 #Map each device to its numa node. amd-smi replaces the deprecated rocm-smi.
 #ROCM_PATH is pinned so that amd-smi loads the libamd_smi.so belonging to this
 #ROCm install; on a side-by-side installation it otherwise picks up whatever
@@ -298,30 +295,6 @@ if [[ ${#device_to_numa[@]} -eq 0 ]]; then
   exit 1
 fi
 
-#count the cpus per core
-threads_per_core=$(echo "${cpulist}" | grep -c ".*	0	.*")
-
-#remove the extra cpus on each core to make a list of just physical cores, then sort by numa domain
-corelist=$(echo "$cpulist" | awk -v tpc=${threads_per_core} '(NR-1)%tpc==0' | sort -k 3 -g -s)
-
-#count numa domains
-line=($(echo "$cpulist" | tail -n 1))
-n_numa=$((line[2]+1))
-
-numa_core_counts=()
-numa_proc_counts=()
-for i in $(seq 1 ${n_numa}); do numa_core_counts+=(0); numa_proc_counts+=(0); done
-
-#parse the list of cpus to array and count cpus in each numa
-cpus=()
-while read -a line; do
-  cpus+=(${line[0]})
-  ((numa_core_counts[${line[2]}]++))
-done <<< ${corelist}
-
-numa_core_offsets=(0)
-for i in $(seq 1 $((n_numa-1))); do numa_core_offsets+=($((numa_core_offsets[$((i-1))] + numa_core_counts[$i]))); done
-
 rank_to_device=()
 
 if [ ! -z "${devices}" ]; then
@@ -341,45 +314,8 @@ fi
 mygpu=${rank_to_device[rank]}
 mynuma=${device_to_numa[mygpu]}
 
-rank_to_numa=()
-for i in $(seq 0 $((size-1))); do
-  rank_to_numa+=(${device_to_numa[${rank_to_device[$((i%n_devices))]}]})
-done
-
-for i in $(seq 0 $((size-1))); do
-  numa=${rank_to_numa[$i]}
-  ((numa_proc_counts[numa]++))
-done
-
-omp_num_threads=$((numa_core_counts[mynuma]/numa_proc_counts[mynuma]))
-
-core_offset=${numa_core_offsets[mynuma]}
-for i in $(seq 0 $((rank-1))); do
-  numa=${rank_to_numa[$i]}
-  if [[ $numa -eq $mynuma ]]; then
-    core_offset=$((core_offset + omp_num_threads))
-  fi
-done
-
-omp_places="{${cpus[core_offset]}}"
-for c in $(seq 1 $((omp_num_threads-1))); do
-  omp_places+=",{${cpus[core_offset+c]}}"
-done
-
-if [[ $omp_num_threads -gt 1 ]]; then
-  places="{${cpus[core_offset]}-${cpus[core_offset+$((omp_num_threads-1))]}}"
-else
-  places="{${cpus[core_offset]}}"
-fi
-
-# Export OpenMP config
-export OMP_NUM_THREADS=${omp_num_threads}
-export OMP_PLACES=${omp_places}
-export OMP_PROC_BIND=true
-
-
 if [[ $globalRank -lt $size ]]; then
-  echo "Node Binding: Process $rank [(p,q)=($myp,$myq)] GPU: $mygpu, CPU Cores: $omp_num_threads - $places"
+  echo "Node Binding: Process $rank [(p,q)=($myp,$myq)] GPU: $mygpu, NUMA: $mynuma"
 fi
 
 rochpl_args="-P ${P} -Q ${Q} -p ${p} -q ${q} -f ${frac} -it ${it}"
